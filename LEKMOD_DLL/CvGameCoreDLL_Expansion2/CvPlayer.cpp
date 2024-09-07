@@ -19721,10 +19721,26 @@ int CvPlayer::GetScienceFromBudgetDeficitTimes100() const
 	}
 
 
-	int iGoldPerTurn = calculateGoldRateTimes100();
-	if(GetTreasury()->GetGoldTimes100() + iGoldPerTurn < 0)
+	int iGoldPerTurn = calculateGoldRateTimes100();// Loup Changes
+	if (GetTreasury()->GetGoldTimes100() + iGoldPerTurn < 0) // If we're in the red
 	{
-		iScience += (GetTreasury()->GetGoldTimes100() + iGoldPerTurn);
+		// If we're in the red, then we lose Science equal to our Gold deficit (old)
+		//iScience += (GetTreasury()->GetGoldTimes100() + iGoldPerTurn);
+
+		// If we're in the red, then we lose Science equal to 20% of our Gold deficit
+		iScience += (GetTreasury()->GetGoldTimes100() / 5);
+		// if we have 0 or positive GPT
+		if (iGoldPerTurn >= 0) 
+		{
+			// we don't lose any science
+			iScience = 0;
+		}
+		// if science deficit is greater than our negative GPT
+		if (-1*iScience > -1*iGoldPerTurn) 
+		{
+			// we lose science equal to our negative GPT
+			iScience = iGoldPerTurn;
+		}
 	}
 
 	return iScience;
