@@ -1,5 +1,5 @@
 /*	-------------------------------------------------------------------------------------------------------
-	© 1991-2012 Take-Two Interactive Software and its subsidiaries.  Developed by Firaxis Games.  
+	Â© 1991-2012 Take-Two Interactive Software and its subsidiaries.  Developed by Firaxis Games.  
 	Sid Meier's Civilization V, Civ, Civilization, 2K Games, Firaxis Games, Take-Two Interactive Software 
 	and their respective logos are all trademarks of Take-Two interactive Software, Inc.  
 	All other marks and trademarks are the property of their respective owners.  
@@ -12927,8 +12927,13 @@ CombatPredictionTypes CvGame::GetCombatPrediction(const CvUnit* pAttackingUnit, 
 	int iDefenderDamageInflicted  = pDefendingUnit->getCombatDamage(iDefenderStrength, iAttackingStrength, pDefendingUnit->getDamage(), false, false, false);
 	//iTheirDamageInflicted = iTheirDamageInflicted + iTheirFireSupportCombatDamage;
 #endif
+#ifdef LOUP_UNIT_MAX_HP
+	CvUnit* pUnit;
 
+	int iMaxUnitHitPoints = pUnit->GetMaxHitPoints();
+#else
 	int iMaxUnitHitPoints = GC.getMAX_HIT_POINTS();
+#endif
 	if(iAttackingDamageInflicted > iMaxUnitHitPoints)
 	{
 		iAttackingDamageInflicted = iMaxUnitHitPoints;
