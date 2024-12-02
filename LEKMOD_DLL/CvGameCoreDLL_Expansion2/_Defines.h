@@ -998,7 +998,11 @@
 //#define LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
 
 
-
+// -------------------------------------------------------------------------------------
+// Changes made by Loupgarou#5299 if confused ask him
+// -------------------------------------------------------------------------------------
+// Allow the intake of a value from the XML that will be used to alter the maximum Hit Points of a unit.
+#define LOUP_UNIT_MAX_HP
 
 
 ////////////////////////

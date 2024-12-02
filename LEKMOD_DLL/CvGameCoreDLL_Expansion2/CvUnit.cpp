@@ -153,6 +153,9 @@ CvUnit::CvUnit() :
 	, m_iRivalTerritoryCount("CvUnit::m_iRivalTerritoryCount", m_syncArchive)
 	, m_iMustSetUpToRangedAttackCount("CvUnit::m_iMustSetUpToRangedAttackCount", m_syncArchive)
 	, m_iRangeAttackIgnoreLOSCount("CvUnit::m_iRangeAttackIgnoreLOSCount", m_syncArchive)
+#ifdef LOUP_UNIT_MAX_HP//CvUnit::CvUnit()
+	, m_iExtraUnitHitPoints(0)
+#endif
 	, m_iCityAttackOnlyCount(0)
 	, m_iCaptureDefeatedEnemyCount(0)
 	, m_iRangedSupportFireCount("CvUnit::m_iRangedSupportFireCount", m_syncArchive)
@@ -377,6 +380,7 @@ CvUnit::~CvUnit()
 }
 
 
+
 //	--------------------------------------------------------------------------------
 #ifdef AUI_UNIT_FIX_GIFTED_UNITS_ARE_GIFTED_NOT_CLONED
 void CvUnit::init(int iID, UnitTypes eUnit, UnitAITypes eUnitAI, PlayerTypes eOwner, int iX, int iY, DirectionTypes eFacingDirection, bool bNoMove, bool bSetupGraphical, int iMapLayer /*= DEFAULT_UNIT_MAP_LAYER*/, int iNumGoodyHutsPopped, bool bIsGifted)
@@ -386,6 +390,13 @@ void CvUnit::init(int iID, UnitTypes eUnit, UnitAITypes eUnitAI, PlayerTypes eOw
 void CvUnit::init(int iID, UnitTypes eUnit, UnitAITypes eUnitAI, PlayerTypes eOwner, int iX, int iY, DirectionTypes eFacingDirection, bool bNoMove, bool bSetupGraphical, int iMapLayer /*= DEFAULT_UNIT_MAP_LAYER*/, int iNumGoodyHutsPopped)
 {
 	initWithNameOffset(iID, eUnit, -1, eUnitAI, eOwner, iX, iY, eFacingDirection, bNoMove, bSetupGraphical, iMapLayer, iNumGoodyHutsPopped);
+
+#endif
+#ifdef LOUP_UNIT_MAX_HP//CvUnit::init
+	CvUnitEntry* pkUnitEntry = GC.getUnitInfo(eUnit);
+	if (pkUnitEntry) {
+		m_iExtraUnitHitPoints = pkUnitEntry->GetExtraUnitHitPoints();
+	}
 #endif
 }
 
@@ -396,6 +407,8 @@ void CvUnit::initWithNameOffset(int iID, UnitTypes eUnit, int iNameOffset, UnitA
 #else
 void CvUnit::initWithNameOffset(int iID, UnitTypes eUnit, int iNameOffset, UnitAITypes eUnitAI, PlayerTypes eOwner, int iX, int iY, DirectionTypes eFacingDirection, bool bNoMove, bool bSetupGraphical, int iMapLayer, int iNumGoodyHutsPopped)
 #endif
+
+
 {
 	VALIDATE_OBJECT
 	CvString strBuffer;
@@ -3583,22 +3596,32 @@ int CvUnit::getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDa
 
 	if(bAttackerIsCity)
 	{
+#ifdef LOUP_UNIT_MAX_HP
+		iDamageRatio = GetMaxHitPoints();
+#else
 		iDamageRatio = GC.getMAX_HIT_POINTS();		// JON: Cities don't do less damage when wounded
+#endif
 	}
 	else
 	{
 		// Mod (Policies, etc.)
 		iWoundedDamageMultiplier += GET_PLAYER(getOwner()).GetWoundedUnitDamageMod();
-
+#ifdef LOUP_UNIT_MAX_HP
+		iDamageRatio = GetMaxHitPoints() - (iCurrentDamage * iWoundedDamageMultiplier / 100);
+#else
 		iDamageRatio = GC.getMAX_HIT_POINTS() - (iCurrentDamage * iWoundedDamageMultiplier / 100);
+#endif
 	}
 
 #ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 	int iDamage = /*400*/ GC.getATTACK_SAME_STRENGTH_MIN_DAMAGE();
 #else
 	int iDamage = 0;
-
+#ifdef LOUP_UNIT_MAX_HP
+	iDamage = /*400*/ GC.getATTACK_SAME_STRENGTH_MIN_DAMAGE() * iDamageRatio / GetMaxHitPoints();
+#else
 	iDamage = /*400*/ GC.getATTACK_SAME_STRENGTH_MIN_DAMAGE() * iDamageRatio / GC.getMAX_HIT_POINTS();
+#endif
 #endif
 
 	// Don't use rand when calculating projected combat results
@@ -4192,7 +4215,11 @@ int CvUnit::GetScrapGold() const
 	iNumGold /= 100;
 
 	// Modify amount based on current health
+#ifdef LOUP_UNIT_MAX_HP
+	iNumGold *= 100 * (GetMaxHitPoints() - getDamage()) / GetMaxHitPoints();
+#else
 	iNumGold *= 100 * (GC.getMAX_HIT_POINTS() - getDamage()) / GC.getMAX_HIT_POINTS();
+#endif
 	iNumGold /= 100;
 
 
@@ -6086,8 +6113,11 @@ void CvUnit::DoAttrition()
 		strAppendText =  GetLocalizedText("TXT_KEY_MISC_YOU_UNIT_WAS_DAMAGED_ATTRITION");
 		changeDamage(50, NO_PLAYER, 0.0, &strAppendText);
 	}
-
+#ifdef LOUP_UNIT_MAX_HP
+	if (getDamage() >= GetMaxHitPoints())
+#else
 	if(getDamage() >= GC.getMAX_HIT_POINTS())
+#endif
 	{
 		CvString strBuffer;
 		CvNotifications* pNotification = GET_PLAYER(getOwner()).GetNotifications();
@@ -11821,14 +11851,29 @@ bool CvUnit::isInCombat() const
 	return (isFighting() || isAttacking());
 }
 
-
+//	--------------------------------------------------------------------------------
+#ifdef LOUP_UNIT_MAX_HP//CvUnit::GetMaxHitPoints
+int CvUnit::GetMaxHitPoints() const
+{
+	VALIDATE_OBJECT
+		return GC.getMAX_HIT_POINTS() + m_iExtraUnitHitPoints;
+}
+#else
 //	--------------------------------------------------------------------------------
 int CvUnit::GetMaxHitPoints() const
 {
 	VALIDATE_OBJECT
 	return GC.getMAX_HIT_POINTS();
 }
-
+#endif
+#ifdef LOUP_UNIT_MAX_HP//CvUnit::GetExtraUnitHitPoints
+//	--------------------------------------------------------------------------------
+int CvUnit::GetExtraUnitHitPoints() const
+{
+	VALIDATE_OBJECT
+		return m_iExtraUnitHitPoints;
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 int CvUnit::GetCurrHitPoints()	const
@@ -11950,9 +11995,12 @@ int CvUnit::GetBaseCombatStrengthConsideringDamage() const
 
 	// How much does damage weaken the effectiveness of the Unit?
 	int iDamageMod = m_iDamage * iWoundedDamageMultiplier / 100;
-
+#ifdef LOUP_UNIT_MAX_HP
+	iStrength -= (iStrength * iDamageMod / GetMaxHitPoints());
+#else
 	// Reduce strength points based on damage mod calculated above. Example: 4 damage will normally reduce a 20 strength Unit by 2/10ths, or 1/5, or 4, making it effectively a 16
 	iStrength -= (iStrength * iDamageMod / GC.getMAX_HIT_POINTS());
+#endif
 
 	return iStrength;
 }
@@ -13085,7 +13133,11 @@ int CvUnit::GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bInc
 	// The roll will vary damage between 30 and 40 (out of 100) for two units of identical strength
 
 	// Note, 0 is valid - means we don't do anything
+#ifdef LOUP_UNIT_MAX_HP
+	int iAttackerDamageRatio = GetMaxHitPoints() - getDamage() - iAssumeExtraDamage;
+#else
 	int iAttackerDamageRatio = GC.getMAX_HIT_POINTS() - getDamage() - iAssumeExtraDamage;
+#endif
 	if(iAttackerDamageRatio < 0)
 		iAttackerDamageRatio = 0;
 
@@ -13210,8 +13262,11 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 	int iWoundedDamageMultiplier = /*50*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
 	iWoundedDamageMultiplier += kPlayer.GetWoundedUnitDamageMod();
 
-
+#ifdef LOUP_UNIT_MAX_HP
+	int iAttackerDamageRatio = GetMaxHitPoints() - ((getDamage() - iAssumeExtraDamage) * iWoundedDamageMultiplier / 100);
+#else
 	int iAttackerDamageRatio = GC.getMAX_HIT_POINTS() - ((getDamage() - iAssumeExtraDamage) * iWoundedDamageMultiplier / 100);
+#endif
 	if(iAttackerDamageRatio < 0)
 		iAttackerDamageRatio = 0;
 
@@ -13302,7 +13357,11 @@ int CvUnit::GetAirStrikeDefenseDamage(const CvUnit* pAttacker, bool bIncludeRand
 	if(iDefenderStrength == 0)
 		return 0;
 
+#ifdef LOUP_UNIT_MAX_HP
+	int iDefenderDamageRatio = GetMaxHitPoints() - getDamage();
+#else
 	int iDefenderDamageRatio = GC.getMAX_HIT_POINTS() - getDamage();
+#endif
 #ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 	int iDefenderDamage = /*200*/ GC.getAIR_STRIKE_SAME_STRENGTH_MIN_DEFENSE_DAMAGE();
 #else
@@ -13522,8 +13581,11 @@ int CvUnit::GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand) co
 	iInterceptorStrength /= 100;
 
 	// The roll will vary damage between 2 and 3 (out of 10) for two units of identical strength
-
+#ifdef LOUP_UNIT_MAX_HP
+	int iInterceptorDamageRatio = GetMaxHitPoints() - getDamage();
+#else
 	int iInterceptorDamageRatio = GC.getMAX_HIT_POINTS() - getDamage();
+#endif
 #ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 	int iInterceptorDamage = /*400*/ GC.getINTERCEPTION_SAME_STRENGTH_MIN_DAMAGE();
 #else
@@ -20726,6 +20788,25 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iEnemyDamageChance;
 	kStream >> m_iNeutralDamageChance;
 
+#ifdef LOUP_UNIT_MAX_HP //CvUnit::read
+    if (uiVersion >= 3)
+    {
+        kStream >> m_iExtraUnitHitPoints;
+    }
+    else
+    {
+        // Recalculate
+        if (m_pUnitInfo)
+        {
+            m_iExtraUnitHitPoints = m_pUnitInfo->GetExtraUnitHitPoints();
+        }
+        else
+        {
+            m_iExtraUnitHitPoints = 0;
+        }
+    }
+#endif
+
 	kStream >> m_iEnemyDamage;
 	kStream >> m_iNeutralDamage;
 
@@ -20897,6 +20978,8 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iMapLayer;
 	kStream << m_iNumGoodyHutsPopped;
 
+
+
 	// slewis - move to autovariable when saves are broken
 	kStream << m_bIgnoreDangerWakeup;
 	kStream << m_iEmbarkedAllWaterCount;
@@ -20904,6 +20987,9 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iEmbarkDefensiveModifier;
 	kStream << m_iCapitalDefenseModifier;
 	kStream << m_iCapitalDefenseFalloff;
+#ifdef LOUP_UNIT_MAX_HP //CvUnit::write
+	kStream << m_iExtraUnitHitPoints;
+#endif
 	kStream << m_iCityAttackPlunderModifier;
 #ifdef LEKMOD_MOVE_PENALTY_CITY_COMBAT
 	kStream << m_iCityAttackMovePenalty;

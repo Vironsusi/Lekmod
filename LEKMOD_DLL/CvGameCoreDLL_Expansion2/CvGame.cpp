@@ -12927,8 +12927,13 @@ CombatPredictionTypes CvGame::GetCombatPrediction(const CvUnit* pAttackingUnit, 
 	int iDefenderDamageInflicted  = pDefendingUnit->getCombatDamage(iDefenderStrength, iAttackingStrength, pDefendingUnit->getDamage(), false, false, false);
 	//iTheirDamageInflicted = iTheirDamageInflicted + iTheirFireSupportCombatDamage;
 #endif
+#ifdef LOUP_UNIT_MAX_HP
+	CvUnit* pUnit;
 
+	int iMaxUnitHitPoints = pUnit->GetMaxHitPoints();
+#else
 	int iMaxUnitHitPoints = GC.getMAX_HIT_POINTS();
+#endif
 	if(iAttackingDamageInflicted > iMaxUnitHitPoints)
 	{
 		iAttackingDamageInflicted = iMaxUnitHitPoints;
