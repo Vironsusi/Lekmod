@@ -393,10 +393,9 @@ void CvUnit::init(int iID, UnitTypes eUnit, UnitAITypes eUnitAI, PlayerTypes eOw
 
 #endif
 #ifdef LOUP_UNIT_MAX_HP//CvUnit::init
-	CvUnitEntry* pkUnitEntry = GC.getUnitInfo(eUnit);
-	if (pkUnitEntry) {
-		m_iExtraUnitHitPoints = pkUnitEntry->GetExtraUnitHitPoints();
-	}
+	CvUnit* pUnit;
+	if (pUnit)
+		m_iExtraUnitHitPoints = pUnit->GetMaxHitPoints();
 #endif
 }
 
@@ -954,6 +953,9 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iGameTurnCreated = 0;
 	m_iDamage = 0;
 	m_iMoves = 0;
+#ifdef LOUP_UNIT_MAX_HP //CvUnit::reset
+	m_iExtraUnitHitPoints = 0;
+#endif
 	m_bImmobile = false;
 	m_iExperience = 0;
 	m_iLevel = 1;
@@ -1336,7 +1338,7 @@ void CvUnit::uninitInfos()
 void CvUnit::convert(CvUnit* pUnit, bool bIsUpgrade)
 {
 	VALIDATE_OBJECT
-	IDInfo* pUnitNode;
+		IDInfo* pUnitNode;
 	CvUnit* pTransportUnit;
 	CvUnit* pLoopUnit;
 	CvPlot* pPlot;
@@ -1347,30 +1349,30 @@ void CvUnit::convert(CvUnit* pUnit, bool bIsUpgrade)
 #ifdef AUI_WARNING_FIXES
 	for (uint iI = 0; iI < GC.getNumPromotionInfos(); iI++)
 #else
-	for(int iI = 0; iI < GC.getNumPromotionInfos(); iI++)
+	for (int iI = 0; iI < GC.getNumPromotionInfos(); iI++)
 #endif
 	{
 		const PromotionTypes ePromotion = static_cast<PromotionTypes>(iI);
 		CvPromotionEntry* pkPromotionInfo = GC.getPromotionInfo(ePromotion);
-		if(pkPromotionInfo)
+		if (pkPromotionInfo)
 		{
 			bool bGivePromotion = false;
 
 			// Old unit has the promotion
-			if(pUnit->isHasPromotion(ePromotion) && !pkPromotionInfo->IsLostWithUpgrade())
+			if (pUnit->isHasPromotion(ePromotion) && !pkPromotionInfo->IsLostWithUpgrade())
 			{
 				bGivePromotion = true;
 			}
 
 			// New unit gets promotion for free (as per XML)
-			else if(getUnitInfo().GetFreePromotions(ePromotion) && (!bIsUpgrade || !pkPromotionInfo->IsNotWithUpgrade()))
+			else if (getUnitInfo().GetFreePromotions(ePromotion) && (!bIsUpgrade || !pkPromotionInfo->IsNotWithUpgrade()))
 			{
 				bGivePromotion = true;
 			}
 
 			// if we get this due to a policy or wonder
-			else if(GET_PLAYER(getOwner()).IsFreePromotion(ePromotion) && (
-			            ::IsPromotionValidForUnitCombatType(ePromotion, getUnitType()) || ::IsPromotionValidForCivilianUnitType(ePromotion, getUnitType())))
+			else if (GET_PLAYER(getOwner()).IsFreePromotion(ePromotion) && (
+				::IsPromotionValidForUnitCombatType(ePromotion, getUnitType()) || ::IsPromotionValidForCivilianUnitType(ePromotion, getUnitType())))
 			{
 				bGivePromotion = true;
 			}
@@ -1378,6 +1380,28 @@ void CvUnit::convert(CvUnit* pUnit, bool bIsUpgrade)
 			setHasPromotion(ePromotion, bGivePromotion);
 		}
 	}
+#ifdef LOUP_UNIT_MAX_HP // CvUnit::convert
+	// Reset extra hit points before applying new value
+	ChangeExtraUnitHitPoints(-m_iExtraUnitHitPoints);
+
+	// Check if the new unit type has extra hit points
+	CvUnitEntry* pkUnitEntry = GC.getUnitInfo(getUnitType());
+	if (pkUnitEntry)
+	{
+		int iNewUnitExtraHitPoints = pkUnitEntry->GetExtraUnitHitPoints();
+		if (iNewUnitExtraHitPoints > 0)
+		{
+			m_iExtraUnitHitPoints = iNewUnitExtraHitPoints;
+			ChangeExtraUnitHitPoints(m_iExtraUnitHitPoints); // Apply the extra hit points
+		}
+		else
+		{
+			m_iExtraUnitHitPoints = 0;
+		}
+	}
+
+	
+#endif
 
 	setGameTurnCreated(pUnit->getGameTurnCreated());
 	setLastMoveTurn(pUnit->getLastMoveTurn());
@@ -11856,7 +11880,7 @@ bool CvUnit::isInCombat() const
 int CvUnit::GetMaxHitPoints() const
 {
 	VALIDATE_OBJECT
-		return GC.getMAX_HIT_POINTS() + m_iExtraUnitHitPoints;
+		return GC.getMAX_HIT_POINTS() + GetExtraUnitHitPoints();
 }
 #else
 //	--------------------------------------------------------------------------------
@@ -11871,8 +11895,25 @@ int CvUnit::GetMaxHitPoints() const
 int CvUnit::GetExtraUnitHitPoints() const
 {
 	VALIDATE_OBJECT
-		return m_iExtraUnitHitPoints;
+		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(getUnitType());
+		return pkUnitInfo->GetExtraUnitHitPoints();
 }
+// --------------------------------------------------------------------------------
+void CvUnit::ChangeExtraUnitHitPoints(int iValue)
+{
+	if (iValue != 0)
+	{
+		m_iExtraUnitHitPoints += iValue;
+//		FAssertMsg(m_iExtraUnitHitPoints >= 0, "Trying to set ExtraHitPoints to a negative value");
+//		if (m_iExtraUnitHitPoints < 0)
+//			m_iExtraUnitHitPoints = 0;
+
+		int iCurrentDamage = getDamage();
+		if (iCurrentDamage > GetMaxHitPoints())
+			setDamage(iCurrentDamage);  // Call setDamage, it will clamp the value.
+	}
+}
+
 #endif
 
 //	--------------------------------------------------------------------------------
@@ -16161,6 +16202,7 @@ int CvUnit::getDamage() const
 	VALIDATE_OBJECT
 	return m_iDamage;
 }
+
 
 
 //	--------------------------------------------------------------------------------
@@ -20789,22 +20831,8 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iNeutralDamageChance;
 
 #ifdef LOUP_UNIT_MAX_HP //CvUnit::read
-    if (uiVersion >= 3)
-    {
-        kStream >> m_iExtraUnitHitPoints;
-    }
-    else
-    {
-        // Recalculate
-        if (m_pUnitInfo)
-        {
-            m_iExtraUnitHitPoints = m_pUnitInfo->GetExtraUnitHitPoints();
-        }
-        else
-        {
-            m_iExtraUnitHitPoints = 0;
-        }
-    }
+	kStream >> m_iExtraUnitHitPoints;
+	ChangeExtraUnitHitPoints(m_iExtraUnitHitPoints); // Apply the extra hit points
 #endif
 
 	kStream >> m_iEnemyDamage;

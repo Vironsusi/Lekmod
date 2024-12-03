@@ -442,6 +442,7 @@ public:
 	int GetRange() const;
 #ifdef LOUP_UNIT_MAX_HP
 	int GetExtraUnitHitPoints() const;
+	void ChangeExtraUnitHitPoints(int iChange);
 #endif
 	int GetNukeDamageLevel() const;
 
