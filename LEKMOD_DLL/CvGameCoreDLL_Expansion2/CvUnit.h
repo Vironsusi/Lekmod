@@ -1,5 +1,5 @@
 /*	-------------------------------------------------------------------------------------------------------
-	© 1991-2012 Take-Two Interactive Software and its subsidiaries.  Developed by Firaxis Games.  
+	Â© 1991-2012 Take-Two Interactive Software and its subsidiaries.  Developed by Firaxis Games.  
 	Sid Meier's Civilization V, Civ, Civilization, 2K Games, Firaxis Games, Take-Two Interactive Software 
 	and their respective logos are all trademarks of Take-Two interactive Software, Inc.  
 	All other marks and trademarks are the property of their respective owners.  
@@ -440,6 +440,10 @@ public:
 	bool hasMoved() const;
 
 	int GetRange() const;
+#ifdef LOUP_UNIT_MAX_HP
+	int GetExtraUnitHitPoints() const;
+	void ChangeExtraUnitHitPoints(int iChange);
+#endif
 	int GetNukeDamageLevel() const;
 
 	bool canBuildRoute() const;
@@ -1491,6 +1495,7 @@ protected:
 
 	FAutoVariable<int, CvUnit> m_iIgnoreTerrainCostCount;
 
+
 	// CMP
 
 	FAutoVariable<int, CvUnit> m_eGiveDomain;
@@ -1614,6 +1619,7 @@ protected:
 
 	UnitMovementQueue m_unitMoveLocs;
 
+
 	bool m_bIgnoreDangerWakeup; // slewis - make this an autovariable when saved games are broken
 	int m_iEmbarkedAllWaterCount;
 	int m_iEmbarkExtraVisibility;
@@ -1679,7 +1685,9 @@ protected:
 #endif
 
 private:
-
+#ifdef LOUP_UNIT_MAX_HP
+		int m_iExtraUnitHitPoints;
+#endif
 	mutable MissionQueue m_missionQueue;
 };
 
@@ -1693,3 +1701,4 @@ void ClearUnitDeltas();
 }
 
 #endif
+	
