@@ -7,6 +7,6 @@ It includes the custom mapscript and the custom .dll source files in addition to
 
 
 ### Current Bugs
-Units with Additional HP steal gold when attacking cities
+Units with Additional HP steal gold when attacking cities after reloading.
 Units with additional HP, when getting upgraded and having taken more damamge the the unit it is 
 upgrading into has HP will kill the Unit.
