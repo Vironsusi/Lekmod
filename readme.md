@@ -1,18 +1,12 @@
-# Lekmod
+# Loup's Modified Lekmod
 
-This is the source code for the Lekmod project.
+This is the source code for Loup's Modified Lekmod.
+Go to EnormousApplePie's repo for Lekmod proper.
 
 It includes the custom mapscript and the custom .dll source files in addition to the main mod files.
 
 
-### Want to contribute?
-* UPDATE 30th of September 2024: I now accept pull request again, provided the quality of the request is sufficient.
-
-
-
-
-
-
-
-
-
+### Current Bugs
+Units with Additional HP steal gold when attacking cities
+Units with additional HP, when getting upgraded and having taken more damamge the the unit it is 
+upgrading into has HP will kill the Unit.
