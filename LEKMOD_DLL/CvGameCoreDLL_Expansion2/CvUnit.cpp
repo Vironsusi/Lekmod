@@ -1405,7 +1405,18 @@ void CvUnit::convert(CvUnit* pUnit, bool bIsUpgrade)
 
 	setGameTurnCreated(pUnit->getGameTurnCreated());
 	setLastMoveTurn(pUnit->getLastMoveTurn());
+#ifdef LOUP_UNIT_MAX_HP // CvUnit::convert setDamage
+    if (pUnit->getDamage() >= GetMaxHitPoints())
+    {
+        setDamage(GetMaxHitPoints() - 1);
+    }
+    else
+    {
+        setDamage(pUnit->getDamage());
+    }
+#else
 	setDamage(pUnit->getDamage());
+#endif
 	setMoves(pUnit->getMoves());
 	setEmbarked(pUnit->isEmbarked());
 	setFacingDirection(pUnit->getFacingDirection(false));
@@ -21016,7 +21027,7 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iCapitalDefenseModifier;
 	kStream << m_iCapitalDefenseFalloff;
 #ifdef LOUP_UNIT_MAX_HP //CvUnit::write
-	kStream << m_iExtraUnitHitPoints;
+    kStream << m_iExtraUnitHitPoints;
 #endif
 	kStream << m_iCityAttackPlunderModifier;
 #ifdef LEKMOD_MOVE_PENALTY_CITY_COMBAT
@@ -21113,6 +21124,7 @@ void CvUnit::write(FDataStream& kStream) const
 		kStream << pNode->iFlags;
 		kStream << pNode->iPushTurn;
 	}
+
 }
 
 //	--------------------------------------------------------------------------------

@@ -1002,6 +1002,7 @@
 // Changes made by Loupgarou#5299 if confused ask him
 // -------------------------------------------------------------------------------------
 // Allow the intake of a value from the XML that will be used to alter the maximum Hit Points of a unit.
+// Units that have taken more damage than the unit it upgrades into the unit will be destroyed on upgrade.
 #define LOUP_UNIT_MAX_HP
 
 
