@@ -630,8 +630,13 @@ int CvTreasury::CalculateUnitCost(int& iFreeUnits, int& iPaidUnits, int& iBaseUn
 	// Human bonus for unit maintenance costs
 	if(m_pPlayer->isHuman())
 	{
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human Unit Cost Percent
+		dFinalCost *= GC.getGame().getHandicapInfo().getHumanUnitCostPercent();
+		dFinalCost /= 100;
+#else
 		dFinalCost *= playerHandicap.getUnitCostPercent();
 		dFinalCost /= 100;
+#endif
 	}
 	// AI bonus for unit maintenance costs
 	else if(!m_pPlayer->IsAITeammateOfHuman())
@@ -788,8 +793,13 @@ int CvTreasury::GetBuildingGoldMaintenance() const
 	// Human bonus for Building maintenance costs
 	if(m_pPlayer->isHuman())
 	{
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human Building Cost Percent
+		iMaintenance *= GC.getGame().getHandicapInfo().getHumanBuildingCostPercent();
+		iMaintenance /= 100;
+#else
 		iMaintenance *= playerHandicap.getBuildingCostPercent();
 		iMaintenance /= 100;
+#endif
 	}
 	// AI bonus for Building maintenance costs
 	else if(!m_pPlayer->IsAITeammateOfHuman())

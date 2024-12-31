@@ -5463,6 +5463,13 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 		iCost *= GC.getGame().getHandicapInfo().getAITrainPercent();
 		iCost /= 100;
 	}
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // HumanTrainPercent
+	if (isHuman())
+	{
+		iCost *= GC.getGame().getHandicapInfo().getHumanTrainPercent();
+		iCost /= 100;
+	}
+#endif
 
 	// Modify by any beliefs
 #ifdef NQ_FIX_MISSIONARY_COST_MODIFIER_BELIEF
@@ -5604,6 +5611,13 @@ int CvCity::GetFaithPurchaseCost(BuildingTypes eBuilding)
 		iCost *= GC.getGame().getHandicapInfo().getAIConstructPercent();
 		iCost /= 100;
 	}
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // HumanConstructPercent
+	if (isHuman())
+	{
+		iCost *= GC.getGame().getHandicapInfo().getHumanConstructPercent();
+		iCost /= 100;
+	}
+#endif
 
 	// Make the number not be funky
 	int iDivisor = /*10*/ GC.getGOLD_PURCHASE_VISIBLE_DIVISOR();

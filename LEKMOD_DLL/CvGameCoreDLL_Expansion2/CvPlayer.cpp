@@ -1664,13 +1664,31 @@ void CvPlayer::initFreeUnits(CvGameInitialItemsOverrides& /*kOverrides*/)
 				iFreeCount = playerCivilization.getCivilizationFreeUnitsClass(iI);
 				iDefaultAI = playerCivilization.getCivilizationFreeUnitsDefaultUnitAI(iI);
 
-#ifdef NQ_AI_HANDICAP_START // from Bing - Higher level AIs don't start with tech's and units which the player doesn't get.
-				if(!GC.getGame().isOption("GAMEOPTION_AI_HANDICAP_START"))
+
+#ifdef NQ_AI_HANDICAP_START
+			if(!GC.getGame().isOption("GAMEOPTION_AI_HANDICAP_START"))
+			{
+				iFreeCount *= gameStartEra.getStartingUnitMultiplier();
+				if (!isHuman())
 				{
-					iFreeCount *= (gameStartEra.getStartingUnitMultiplier() + ((!isHuman()) ? gameHandicap.getAIStartingUnitMultiplier() : 0));
+					iFreeCount += gameHandicap.getAIStartingUnitMultiplier();
 				}
+				
+				if (isHuman())
+				{
+					iFreeCount += playerHandicap.getHumanStartingUnitMultiplier();
+				}
+			}
 #else
-				iFreeCount *= (gameStartEra.getStartingUnitMultiplier() + ((!isHuman()) ? gameHandicap.getAIStartingUnitMultiplier() : 0));
+			iFreeCount *= gameStartEra.getStartingUnitMultiplier();
+			if (!isHuman())
+			{
+				iFreeCount += gameHandicap.getAIStartingUnitMultiplier();
+			}
+			else
+			{
+				iFreeCount += playerHandicap.getHumanStartingUnitMultiplier();
+			}
 #endif
 				// City states only get 1 of something
 				if(isMinorCiv() && iFreeCount > 1)
@@ -9631,6 +9649,24 @@ int CvPlayer::getProductionNeeded(UnitTypes eUnit) const
 		iProductionNeeded /= 100;
 	}
 
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human World and Normal Train Percent
+	if (isHuman())
+	{
+		if(isWorldUnitClass(eUnitClass))
+		{
+			iProductionNeeded *= GC.getGame().getHandicapInfo().getHumanWorldTrainPercent();
+			iProductionNeeded /= 100;
+		}
+		else
+		{
+			iProductionNeeded *= GC.getGame().getHandicapInfo().getHumanTrainPercent();
+			iProductionNeeded /= 100;
+		}
+
+		iProductionNeeded *= std::max(0, ((GC.getGame().getHandicapInfo().getHumanPerEraModifier() * GetCurrentEra()) + 100));
+		iProductionNeeded /= 100;
+	}
+#endif
 	iProductionNeeded += getUnitExtraCost(eUnitClass);
 
 #ifdef NQ_UNIT_FINAL_PRODUCTION_COST_MODIFIER
@@ -9736,6 +9772,23 @@ int CvPlayer::getProductionNeeded(BuildingTypes eBuilding) const
 		iProductionNeeded *= std::max(0, ((GC.getGame().getHandicapInfo().getAIPerEraModifier() * GetCurrentEra()) + 100));
 		iProductionNeeded /= 100;
 	}
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human World and Normal Construct Percent
+	if (isHuman())
+	{
+		if (isWorldWonderClass(pkBuildingInfo->GetBuildingClassInfo()))
+		{
+			iProductionNeeded *= GC.getGame().getHandicapInfo().getHumanWorldConstructPercent();
+			iProductionNeeded /= 100;
+		}
+		else
+		{
+			iProductionNeeded *= GC.getGame().getHandicapInfo().getHumanConstructPercent();
+			iProductionNeeded /= 100;
+		}
+		iProductionNeeded *= std::max(0, ((GC.getGame().getHandicapInfo().getHumanPerEraModifier() * GetCurrentEra()) + 100));
+		iProductionNeeded /= 100;
+	}
+#endif
 
 	return std::max(1, iProductionNeeded);
 }
@@ -9779,6 +9832,23 @@ int CvPlayer::getProductionNeeded(ProjectTypes eProject) const
 		iProductionNeeded *= std::max(0, ((GC.getGame().getHandicapInfo().getAIPerEraModifier() * GetCurrentEra()) + 100));
 		iProductionNeeded /= 100;
 	}
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human World and Normal Create Percent
+	if (isHuman())
+	{
+		if (isWorldProject(eProject))
+		{
+			iProductionNeeded *= GC.getGame().getHandicapInfo().getHumanWorldCreatePercent();
+			iProductionNeeded /= 100;
+		}
+		else
+		{
+			iProductionNeeded *= GC.getGame().getHandicapInfo().getHumanCreatePercent();
+			iProductionNeeded /= 100;
+		}
+		iProductionNeeded *= std::max(0, ((GC.getGame().getHandicapInfo().getHumanPerEraModifier() * GetCurrentEra()) + 100));
+		iProductionNeeded /= 100;
+	}
+#endif
 
 	return std::max(1, iProductionNeeded);
 }
@@ -14371,7 +14441,13 @@ int CvPlayer::GetUnhappiness(CvCity* pAssumeCityAnnexed, CvCity* pAssumeCityPupp
 		iUnhappiness *= GC.getGame().getHandicapInfo().getAIUnhappinessPercent();
 		iUnhappiness /= 100;
 	}
-
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // human unhappiness reduction
+	if (isHuman())
+	{
+		iUnhappiness *= GC.getGame().getHandicapInfo().getHumanUnhappinessPercent();
+		iUnhappiness /= 100;
+	}
+#endif
 	return iUnhappiness;
 }
 
@@ -27925,6 +28001,17 @@ int CvPlayer::getGrowthThreshold(int iPopulation) const
 		iThreshold *= std::max(0, ((GC.getGame().getHandicapInfo().getAIPerEraModifier() * GetCurrentEra()) + 100));
 		iThreshold /= 100;
 	}
+
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human growth bonus
+	if (isHuman())
+	{
+		iThreshold *= GC.getGame().getHandicapInfo().getHumanGrowthPercent();
+		iThreshold /= 100;
+
+		iThreshold *= std::max(0, ((GC.getGame().getHandicapInfo().getHumanPerEraModifier() * GetCurrentEra()) + 100));
+		iThreshold /= 100;
+	}
+#endif
 
 	return std::max(1, iThreshold);
 }

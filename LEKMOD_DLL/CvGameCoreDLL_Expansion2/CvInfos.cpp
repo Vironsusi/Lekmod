@@ -2868,6 +2868,25 @@ CvHandicapInfo::CvHandicapInfo() :
 	m_iAIAdvancedStartPercent(0),
 	m_iAIFreeXP(0),
 	m_iAIFreeXPPercent(0),
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // initiate new variables
+	m_iHumanStartingUnitMultiplier(0),
+	m_iHumanWorkRateModifier(0),
+	m_iHumanGrowthPercent(0),
+	m_iHumanTrainPercent(0),
+	m_iHumanWorldTrainPercent(0),
+	m_iHumanConstructPercent(0),
+	m_iHumanWorldConstructPercent(0),
+	m_iHumanCreatePercent(0),
+	m_iHumanWorldCreatePercent(0),
+	m_iHumanBuildingCostPercent(0),
+	m_iHumanUnitCostPercent(0),
+	m_iHumanUnitSupplyPercent(0),
+	m_iHumanUnitUpgradePercent(0),
+	m_iHumanPerEraModifier(0),
+	m_iHumanAdvancedStartPercent(0),
+	m_iHumanFreeXP(0),
+	m_iHumanFreeXPPercent(0),
+#endif
 	m_iNumGoodies(0),
 	m_piGoodies(NULL),
 	m_pbFreeTechs(NULL),
@@ -3176,6 +3195,98 @@ int CvHandicapInfo::getAIFreeXPPercent() const
 {
 	return m_iAIFreeXPPercent;
 }
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // accessors for new variables
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanStartingUnitMultiplier() const
+{
+	return m_iHumanStartingUnitMultiplier;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanWorkRateModifier() const
+{
+	return m_iHumanWorkRateModifier;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanUnhappinessPercent() const
+{
+	return m_iHumanUnhappinessPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanGrowthPercent() const
+{
+	return m_iHumanGrowthPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanTrainPercent() const
+{
+	return m_iHumanTrainPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanWorldTrainPercent() const
+{
+	return m_iHumanWorldTrainPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanConstructPercent() const
+{
+	return m_iHumanConstructPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanWorldConstructPercent() const
+{
+	return m_iHumanWorldConstructPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanCreatePercent() const
+{
+	return m_iHumanCreatePercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanWorldCreatePercent() const
+{
+	return m_iHumanWorldCreatePercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanBuildingCostPercent() const
+{
+	return m_iHumanBuildingCostPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanUnitCostPercent() const
+{
+	return m_iHumanUnitCostPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanUnitSupplyPercent() const
+{
+	return m_iHumanUnitSupplyPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanUnitUpgradePercent() const
+{
+	return m_iHumanUnitUpgradePercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanPerEraModifier() const
+{
+	return m_iHumanPerEraModifier;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanAdvancedStartPercent() const
+{
+	return m_iHumanAdvancedStartPercent;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanFreeXP() const
+{
+	return m_iHumanFreeXP;
+}
+//------------------------------------------------------------------------------
+int CvHandicapInfo::getHumanFreeXPPercent() const
+{
+	return m_iHumanFreeXPPercent;
+}
+#endif
 //------------------------------------------------------------------------------
 int CvHandicapInfo::getNumGoodies() const
 {
@@ -3267,6 +3378,27 @@ bool CvHandicapInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 	m_iAIAdvancedStartPercent = kResults.GetInt("AIAdvancedStartPercent");
 	m_iAIFreeXP = kResults.GetInt("AIFreeXP");
 	m_iAIFreeXPPercent = kResults.GetInt("AIFreeXPPercent");
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES //Cache new variables
+	// Human Handicap Info
+	m_iHumanStartingUnitMultiplier = kResults.GetInt("HumanStartingUnitMultiplier");
+	m_iHumanWorkRateModifier = kResults.GetInt("HumanWorkRateModifier");
+	m_iHumanUnhappinessPercent = kResults.GetInt("HumanUnhappinessPercent");
+	m_iHumanGrowthPercent = kResults.GetInt("HumanGrowthPercent");
+	m_iHumanTrainPercent = kResults.GetInt("HumanTrainPercent");
+	m_iHumanWorldTrainPercent = kResults.GetInt("HumanWorldTrainPercent");
+	m_iHumanConstructPercent = kResults.GetInt("HumanConstructPercent");
+	m_iHumanWorldConstructPercent = kResults.GetInt("HumanWorldConstructPercent");
+	m_iHumanCreatePercent = kResults.GetInt("HumanCreatePercent");
+	m_iHumanWorldCreatePercent = kResults.GetInt("HumanWorldCreatePercent");
+	m_iHumanBuildingCostPercent = kResults.GetInt("HumanBuildingCostPercent");
+	m_iHumanUnitCostPercent = kResults.GetInt("HumanUnitCostPercent");
+	m_iHumanUnitSupplyPercent = kResults.GetInt("HumanUnitSupplyPercent");
+	m_iHumanUnitUpgradePercent = kResults.GetInt("HumanUnitUpgradePercent");
+	m_iHumanPerEraModifier = kResults.GetInt("HumanPerEraModifier");
+	m_iHumanAdvancedStartPercent = kResults.GetInt("HumanAdvancedStartPercent");
+	m_iHumanFreeXP = kResults.GetInt("HumanFreeXP");
+	m_iHumanFreeXPPercent = kResults.GetInt("HumanFreeXPPercent");
+#endif
 
 	//Arrays
 	const char* szHandicapType = GetType();

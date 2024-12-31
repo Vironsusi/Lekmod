@@ -664,6 +664,20 @@ void CvUnit::initWithNameOffset(int iID, UnitTypes eUnit, int iNameOffset, UnitA
 		changeExperiencePercent(iXPPercent);
 	}
 
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // FreeXP and FreeXPPercent from handicap
+	int iHumanXP = GC.getGame().getHandicapInfo().getHumanFreeXP();
+	if (iHumanXP && kPlayer.isHuman() && /*kPlayer.GetID() < MAX_MAJOR_CIVS &&*/ canAcquirePromotionAny())
+	{
+		changeExperience(iHumanXP);
+	}
+
+	int iHumanXPPercent = GC.getGame().getHandicapInfo().getHumanFreeXPPercent();
+	if (iHumanXPPercent && kPlayer.isHuman() && /*kPlayer.GetID() < MAX_MAJOR_CIVS &&*/ canAcquirePromotionAny())
+	{
+		changeExperiencePercent(iHumanXPPercent);
+	}
+#endif
+
 
 	// Is this Unit immobile?
 	if(getUnitInfo().IsImmobile())
@@ -11154,6 +11168,16 @@ int CvUnit::upgradePrice(UnitTypes eUnit) const
 		iPrice *= std::max(0, ((GC.getGame().getHandicapInfo().getAIPerEraModifier() * GET_TEAM(getTeam()).GetCurrentEra()) + 100));
 		iPrice /= 100;
 	}
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human Unit Upgrade Cost Mod
+	if (kPlayer.isHuman())
+	{
+		iPrice *= GC.getGame().getHandicapInfo().getHumanUnitUpgradePercent();
+		iPrice /= 100;
+
+		iPrice *= std::max(0, ((GC.getGame().getHandicapInfo().getHumanPerEraModifier() * GET_TEAM(getTeam()).GetCurrentEra()) + 100));
+		iPrice /= 100;
+	}	
+#endif
 
 	// Discount
 	iPrice -= (iPrice * getUpgradeDiscount()) / 100;
@@ -11719,12 +11743,18 @@ int CvUnit::workRate(bool bMax, BuildTypes /*eBuild*/) const
 	iRate *= std::max(0, (kPlayer.getWorkerSpeedModifier() + kPlayer.GetPlayerTraits()->GetWorkerSpeedModifier() + 100));
 	iRate /= 100;
 
-	if(!kPlayer.isHuman() && !kPlayer.IsAITeammateOfHuman() && !kPlayer.isBarbarian())
+	if (!kPlayer.isHuman() && !kPlayer.IsAITeammateOfHuman() && !kPlayer.isBarbarian())
 	{
 		iRate *= std::max(0, (GC.getGame().getHandicapInfo().getAIWorkRateModifier() + 100));
 		iRate /= 100;
 	}
-
+#ifdef LOUP_PLAYER_HANDICAP_BONUSES // Human work rate bonus
+	if (kPlayer.isHuman())
+	{
+		iRate *= std::max(0, (GC.getGame().getHandicapInfo().getHumanWorkRateModifier() + 100));
+		iRate /= 100;
+	}
+#endif
 	return iRate;
 }
 
