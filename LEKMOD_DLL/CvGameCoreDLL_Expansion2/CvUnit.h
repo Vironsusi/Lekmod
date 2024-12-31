@@ -440,6 +440,12 @@ public:
 	bool hasMoved() const;
 
 	int GetRange() const;
+
+#ifdef LOUP_UNIT_MAX_HP //class CvUnit
+	int GetExtraUnitHitPoints() const;
+	void ChangeExtraUnitHitPoints(int iChange);
+#endif
+
 	int GetNukeDamageLevel() const;
 
 	bool canBuildRoute() const;
@@ -1687,7 +1693,9 @@ protected:
 #endif
 
 private:
-
+#ifdef LOUP_UNIT_MAX_HP //protected CvUnit
+	int m_iExtraUnitHitPoints;
+#endif
 	mutable MissionQueue m_missionQueue;
 };
 

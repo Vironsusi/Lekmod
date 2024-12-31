@@ -1403,14 +1403,18 @@ int PathCost(CvAStarNode* parent, CvAStarNode* node, int data, const void* point
 		}
 
 		// Damage caused by features (mods)
-		if(0 != GC.getPATH_DAMAGE_WEIGHT())
+		if (0 != GC.getPATH_DAMAGE_WEIGHT())
 		{
-			if(pToPlot->getFeatureType() != NO_FEATURE)
+			if (pToPlot->getFeatureType() != NO_FEATURE)
 			{
 #ifdef AUI_ASTAR_MINOR_OPTIMIZATION
 				iCost += (GC.getPATH_DAMAGE_WEIGHT() * MAX(0, GC.getFeatureInfo(pToPlot->getFeatureType())->getTurnDamage())) / GC.getMAX_HIT_POINTS();
 #else
+#ifdef LOUP_UNIT_MAX_HP //Damage is now based on max hit points
+				iCost += (GC.getPATH_DAMAGE_WEIGHT() * std::max(0, GC.getFeatureInfo(pToPlot->getFeatureType())->getTurnDamage())) / pUnit->GetMaxHitPoints();
+#else
 				iCost += (GC.getPATH_DAMAGE_WEIGHT() * std::max(0, GC.getFeatureInfo(pToPlot->getFeatureType())->getTurnDamage())) / GC.getMAX_HIT_POINTS();
+#endif
 #endif
 			}
 
@@ -2577,14 +2581,18 @@ int IgnoreUnitsCost(CvAStarNode* parent, CvAStarNode* node, int data, const void
 		}
 
 		// Damage caused by features (mods)
-		if(0 != GC.getPATH_DAMAGE_WEIGHT())
+		if (0 != GC.getPATH_DAMAGE_WEIGHT())
 		{
-			if(pToPlot->getFeatureType() != NO_FEATURE)
+			if (pToPlot->getFeatureType() != NO_FEATURE)
 			{
 #ifdef AUI_ASTAR_MINOR_OPTIMIZATION
 				iCost += (GC.getPATH_DAMAGE_WEIGHT() * MAX(0, GC.getFeatureInfo(pToPlot->getFeatureType())->getTurnDamage())) / GC.getMAX_HIT_POINTS();
 #else
+#ifdef LOUP_UNIT_MAX_HP // Damage is now proportional to max HP
+				iCost += (GC.getPATH_DAMAGE_WEIGHT() * std::max(0, GC.getFeatureInfo(pToPlot->getFeatureType())->getTurnDamage())) / pUnit->GetMaxHitPoints();
+#else
 				iCost += (GC.getPATH_DAMAGE_WEIGHT() * std::max(0, GC.getFeatureInfo(pToPlot->getFeatureType())->getTurnDamage())) / GC.getMAX_HIT_POINTS();
+#endif
 #endif
 			}
 

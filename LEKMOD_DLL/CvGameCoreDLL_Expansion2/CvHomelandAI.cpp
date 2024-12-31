@@ -4693,7 +4693,11 @@ void CvHomelandAI::ExecuteAircraftMoves()
 		{
 			CvPlot* pLoopUnitPlot = pLoopUnit->plot();
 
-			if(pLoopUnit->getDamage() > (GC.getMAX_HIT_POINTS() / 5))  // this might not be a good place to land
+#ifdef LOUP_UNIT_MAX_HP //CvHomelandAI::ExecuteAircraftMoves()
+			if (pLoopUnit->getDamage() > (pUnit->GetMaxHitPoints() / 5))  // this might not be a good place to land
+#else
+			if (pLoopUnit->getDamage() > (GC.getMAX_HIT_POINTS() / 5))  // this might not be a good place to land
+#endif
 			{
 				continue;
 			}

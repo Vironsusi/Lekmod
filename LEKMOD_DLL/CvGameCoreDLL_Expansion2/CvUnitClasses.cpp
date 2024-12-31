@@ -28,6 +28,9 @@ CvUnitEntry::CvUnitEntry(void) :
 	m_bMoves(false),
 	m_iBaseSightRange(0),
 	m_iRange(0),
+#ifdef LOUP_UNIT_MAX_HP //CvUnitEntry::CvUnitEntry constructor
+	m_iExtraUnitHitPoints(0),
+#endif
 	m_iAirInterceptRange(0),
 	m_iAirUnitCap(0),
 	m_iNukeDamageLevel(0),
@@ -181,6 +184,9 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	m_bMoves = kResults.GetInt("Immobile");
 	m_iBaseSightRange = kResults.GetInt("BaseSightRange");
 	m_iRange = kResults.GetInt("Range");
+#ifdef LOUP_UNIT_MAX_HP //CvUnitEntry::CacheResults
+	m_iExtraUnitHitPoints = kResults.GetInt("ExtraUnitHitPoints");
+#endif
 	m_iAirInterceptRange = kResults.GetInt("AirInterceptRange");
 	m_iAirUnitCap = kResults.GetInt("AirUnitCap");
 	m_iNukeDamageLevel = kResults.GetInt("NukeDamageLevel");
@@ -519,6 +525,14 @@ int CvUnitEntry::GetRange() const
 {
 	return m_iRange;
 }
+
+#ifdef LOUP_UNIT_MAX_HP //CvUnitEntry::GetExtraUnitHitPoints
+/// Extra hit points for this unit on birth
+int CvUnitEntry::GetExtraUnitHitPoints() const
+{
+	return m_iExtraUnitHitPoints;
+}
+#endif
 
 /// Air interception range
 int CvUnitEntry::GetAirInterceptRange() const

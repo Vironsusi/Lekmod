@@ -12211,9 +12211,13 @@ void CvCity::updateStrengthValue()
 	// Garrisoned Unit
 	CvUnit* pGarrisonedUnit = GetGarrisonedUnit();
 	int iStrengthFromUnits = 0;
-	if(pGarrisonedUnit)
+	if (pGarrisonedUnit)
 	{
+#ifdef LOUP_UNIT_MAX_HP // Garrisoned unit
+		int iMaxHits = pGarrisonedUnit->GetMaxHitPoints();
+#else
 		int iMaxHits = GC.getMAX_HIT_POINTS();
+#endif
 		iStrengthFromUnits = pGarrisonedUnit->GetBaseCombatStrength() * 100 * (iMaxHits - pGarrisonedUnit->getDamage()) / iMaxHits;
 	}
 

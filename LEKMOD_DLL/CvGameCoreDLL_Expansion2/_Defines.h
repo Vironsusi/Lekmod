@@ -996,7 +996,16 @@
 //Added a notification step mid-turn when you found a religion after having the reformation policy
 //#define LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
 
-
+// -------------------------------------------------------------------------------------
+// Changes made by Loupgarou#5299 if confused ask him
+// -------------------------------------------------------------------------------------
+// Allow the intake of a value from the XML that will be used to alter the maximum Hit Points of a unit.
+// Currently does not have any support for Promotions. Might add.
+#define LOUP_UNIT_MAX_HP
+// allows the player to be given Handicap bonuses that are usually only given to AI
+#define LOUP_PLAYER_HANDICAP_BONUSES
+// 
+// -------------------------------------------------------------------------------------
 
 
 

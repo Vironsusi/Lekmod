@@ -44,6 +44,9 @@ public:
 	bool IsImmobile() const;
 	int GetBaseSightRange() const;
 	int GetRange() const;
+#ifdef LOUP_UNIT_MAX_HP //CvUnitEntry::GetExtraUnitHitPoints
+	int GetExtraUnitHitPoints() const;
+#endif
 	int GetAirInterceptRange() const;
 	int GetAirUnitCap() const;
 	int GetNukeDamageLevel() const;
@@ -181,6 +184,9 @@ private:
 	bool m_bMoves;
 	int m_iBaseSightRange;
 	int m_iRange;
+#ifdef LOUP_UNIT_MAX_HP //CvUnitEntry
+	int m_iExtraUnitHitPoints;
+#endif
 	int m_iAirInterceptRange;
 	int m_iAirUnitCap;
 	int m_iNukeDamageLevel;
