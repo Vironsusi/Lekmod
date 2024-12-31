@@ -1,12 +1,9 @@
 # Lekmod
 
-This is the source code for the Lekmod project.
+This is the code for Loupgarou's changes to Lekmod, if you are looking for Lekmod proper
+go to https://github.com/EnormousApplePie/Lekmod for Lekmod proper.
 
-It includes the custom mapscript and the custom .dll source files in addition to the main mod files.
-
-
-### Want to contribute?
-* UPDATE 30th of September 2024: I now accept pull request again, provided the quality of the request is sufficient.
+BUGS: Currently none. Probably some that I don't know about.
 
 
 
