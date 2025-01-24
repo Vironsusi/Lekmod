@@ -8289,25 +8289,28 @@ void CvGame::doTurn()
 		float fGameTurnEnd = static_cast<float>(kGame.getMaxTurnLen());
 #endif
 		float fTimeElapsed = kGame.getTimeElapsed();
-		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+		for (int jJ = MAX_MAJOR_CIVS; jJ < MAX_MINOR_CIVS; jJ++)
 		{
-			for (int jJ = 0; jJ < MAX_MAJOR_CIVS; jJ++)
+			PlayerTypes eMinor = (PlayerTypes)jJ;
+			GET_PLAYER(eMinor).GetMinorCivAI()->RecalculateMajorPriority();
+			for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
 			{
-				for (int kK = MAX_MAJOR_CIVS; kK < MAX_MINOR_CIVS; kK++)
+				if (kGame.getGameTurn() == GET_PLAYER((PlayerTypes)iI).getPriorityTurn(eMinor))
 				{
-					PlayerTypes eMinor = (PlayerTypes)kK;
-					if (kGame.getGameTurn() < GET_PLAYER((PlayerTypes)iI).getTurnCSWarAllowingMinor((PlayerTypes)jJ, eMinor))
+					if (fTimeElapsed < GET_PLAYER((PlayerTypes)iI).getPriorityTime(eMinor))
 					{
-						GET_PLAYER((PlayerTypes)iI).setTimeCSWarAllowingMinor((PlayerTypes)jJ, eMinor, GET_PLAYER((PlayerTypes)iI).getTimeCSWarAllowingMinor((PlayerTypes)jJ, eMinor) + (fGameTurnEnd - fTimeElapsed));
+						GET_PLAYER((PlayerTypes)iI).setPriorityTime(eMinor, GET_PLAYER((PlayerTypes)iI).getPriorityTime(eMinor) - fTimeElapsed);
 					}
-					if (kGame.getGameTurn() == GET_PLAYER((PlayerTypes)iI).getTurnCSWarAllowingMinor((PlayerTypes)jJ, eMinor))
+					else
 					{
-						if (fTimeElapsed < GET_PLAYER((PlayerTypes)iI).getTimeCSWarAllowingMinor((PlayerTypes)jJ, eMinor))
-						{
-							GET_PLAYER((PlayerTypes)iI).setTurnCSWarAllowingMinor((PlayerTypes)jJ, eMinor, kGame.getGameTurn() + 1);
-							GET_PLAYER((PlayerTypes)iI).setTimeCSWarAllowingMinor((PlayerTypes)jJ, eMinor, GET_PLAYER((PlayerTypes)iI).getTimeCSWarAllowingMinor((PlayerTypes)jJ, eMinor) - (fGameTurnEnd - fTimeElapsed));
-						}
+						GET_PLAYER((PlayerTypes)iI).setPriorityTurn(eMinor, -1);
+						GET_PLAYER((PlayerTypes)iI).setPriorityTime(eMinor, 0.f);
 					}
+				}
+				if (kGame.getGameTurn() < GET_PLAYER((PlayerTypes)iI).getPriorityTurn(eMinor))
+				{
+					GET_PLAYER((PlayerTypes)iI).setPriorityTurn(eMinor, kGame.getGameTurn());
+					GET_PLAYER((PlayerTypes)iI).setPriorityTime(eMinor, GET_PLAYER((PlayerTypes)iI).getPriorityTime(eMinor) + (fGameTurnEnd - fTimeElapsed));
 				}
 			}
 		}
@@ -8407,6 +8410,61 @@ void CvGame::doTurn()
 #endif
 	incrementGameTurn();
 	incrementElapsedGameTurns();
+#ifdef AVOID_UNIT_SPLIT_MID_TURN
+	for (iI = 0; iI < MAX_PLAYERS; iI++)
+	{
+		CvPlayer& player = GET_PLAYER((PlayerTypes)iI);
+		if (player.isAlive())
+		{
+			for (int iI = 0; iI < GC.getMap().numPlots(); iI++)
+			{
+				FStaticVector<IDInfo, 50, true, c_eCiv5GameplayDLL, 0> oldUnitList;
+
+				IDInfo* pUnitNode;
+				CvUnit* pLoopUnit;
+
+				oldUnitList.clear();
+
+				pUnitNode = GC.getMap().plotByIndexUnchecked(iI)->headUnitNode();
+
+				while (pUnitNode != NULL)
+				{
+					oldUnitList.push_back(*pUnitNode);
+					pUnitNode = GC.getMap().plotByIndexUnchecked(iI)->nextUnitNode(pUnitNode);
+				}
+				int iUnitListSize = (int)oldUnitList.size();
+				for (int iVectorLoop = 0; iVectorLoop < (int)iUnitListSize; ++iVectorLoop)
+				{
+					pLoopUnit = GetPlayerUnit(oldUnitList[iVectorLoop]);
+					if (pLoopUnit != NULL)
+					{
+						if (!pLoopUnit->isDelayedDeath())
+						{
+							if (pLoopUnit->atPlot(*(GC.getMap().plotByIndexUnchecked(iI))))
+							{
+								if (!(pLoopUnit->isCargo()))
+								{
+									if (!(pLoopUnit->isInCombat()))
+									{
+										// Unit not allowed to be here
+										if (GC.getMap().plotByIndexUnchecked(iI)->getNumFriendlyUnitsOfType(pLoopUnit) > /*1*/ GC.getPLOT_UNIT_LIMIT())
+										{
+											if (!pLoopUnit->jumpToNearestValidPlot())
+											{
+												pLoopUnit->kill(false);
+												pLoopUnit = NULL;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
 
 #ifdef AUI_YIELDS_APPLIED_AFTER_TURN_NOT_BEFORE
 	// Victory stuff
@@ -9342,57 +9400,6 @@ void CvGame::updateMoves()
 
 					// check if the (for now human) player is overstacked and move the units
 					//if (player.isHuman())
-#ifdef AVOID_UNIT_SPLIT_MID_TURN
-					if (player.isHuman())
-					{
-						for (int iI = 0; iI < GC.getMap().numPlots(); iI++)
-						{
-							FStaticVector<IDInfo, 50, true, c_eCiv5GameplayDLL, 0> oldUnitList;
-
-							IDInfo* pUnitNode;
-							CvUnit* pLoopUnit;
-
-							oldUnitList.clear();
-
-							pUnitNode = GC.getMap().plotByIndexUnchecked(iI)->headUnitNode();
-
-							while (pUnitNode != NULL)
-							{
-								oldUnitList.push_back(*pUnitNode);
-								pUnitNode = GC.getMap().plotByIndexUnchecked(iI)->nextUnitNode(pUnitNode);
-							}
-							int iUnitListSize = (int)oldUnitList.size();
-							for (int iVectorLoop = 0; iVectorLoop < (int)iUnitListSize; ++iVectorLoop)
-							{
-								pLoopUnit = GetPlayerUnit(oldUnitList[iVectorLoop]);
-								if (pLoopUnit != NULL)
-								{
-									if (!pLoopUnit->isDelayedDeath())
-									{
-										if (pLoopUnit->atPlot(*(GC.getMap().plotByIndexUnchecked(iI))))
-										{
-											if (!(pLoopUnit->isCargo()))
-											{
-												if (!(pLoopUnit->isInCombat()))
-												{
-													// Unit not allowed to be here
-													if (GC.getMap().plotByIndexUnchecked(iI)->getNumFriendlyUnitsOfType(pLoopUnit) > /*1*/ GC.getPLOT_UNIT_LIMIT())
-													{
-														if (!pLoopUnit->jumpToNearestValidPlot())
-														{
-															pLoopUnit->kill(false);
-															pLoopUnit = NULL;
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-#endif
 					// slewis - I changed this to only be the AI because human players should have the tools to deal with this now
 					if(!player.isHuman())
 					{

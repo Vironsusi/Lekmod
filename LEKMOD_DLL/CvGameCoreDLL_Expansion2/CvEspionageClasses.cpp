@@ -519,7 +519,7 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 			{
 				int iCounterspyIndex = GET_PLAYER(eCityOwner).GetEspionage()->GetSpyIndexInCity(pCity);
 				iCounterspyRank = GET_PLAYER(eCityOwner).GetEspionage()->m_aSpyList[iCounterspyIndex].m_eRank;
-				iCounterspyRank += GET_PLAYER(pCity->getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER) / 100;
+				// iCounterspyRank += GET_PLAYER(pCity->getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER) / 100;
 				if (pCity->GetCityBuildings()->GetNumBuilding((BuildingTypes)GC.getInfoTypeForString("BUILDING_CONSTABLE")) >= GC.getCITY_MAX_NUM_BUILDINGS())
 					iCounterspyRank++;
 				if (pCity->GetCityBuildings()->GetNumBuilding((BuildingTypes)GC.getInfoTypeForString("BUILDING_INTELLIGENCE_AGENCY")) >= GC.getCITY_MAX_NUM_BUILDINGS())
@@ -529,7 +529,7 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 #ifdef UNDERGROUND_SECT_REWORK
 			int iSpyRankDifference = (pSpy->m_eRank + GET_PLAYER(ePlayer).GetReligions()->GetSpyPressure() + 1) - iCounterspyRank + 1;
 #else
-			int iSpyRankDifference = pSpy->m_eRank - iCounterspyRank + 1;
+			int iSpyRankDifference = (pSpy->m_eRank + 1) - iCounterspyRank + 1;
 #endif
 
 			bool bSpyUpgrade = false;
@@ -2304,41 +2304,59 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 	}
 
 #ifdef CS_ALLYING_WAR_RESCTRICTION
-	if (GC.getGame().isOption(GAMEOPTION_END_TURN_TIMER_ENABLED))
+	CvGame& kGame = GC.getGame();
+	if (GC.getGame().isOption(GAMEOPTION_END_TURN_TIMER_ENABLED) && GC.getGame().isNetworkMultiPlayer())
 	{
-		if (ePreviousAlly != NO_PLAYER)
+		pMinorCivAI->RecalculateMajorPriority();
+
+		if (m_pPlayer->GetID() != NO_PLAYER)
 		{
-			if (ePreviousAlly != NO_PLAYER)
+			if (pMinorCivAI->GetMajorPriority(m_pPlayer->GetID()) == MAX_MAJOR_CIVS)
 			{
-				if (GET_PLAYER(ePreviousAlly).isHuman() && GET_PLAYER(m_pPlayer->GetID()).isHuman() && GET_PLAYER(ePreviousAlly).getTeam() != GET_PLAYER(m_pPlayer->GetID()).getTeam())
+				pMinorCivAI->SetMajorPriority(m_pPlayer->GetID(), pMinorCivAI->GetMaxMajorPriority() + 1);
+				if (ePreviousAlly != NO_PLAYER)
 				{
-					CvGame& kGame = GC.getGame();
 #ifdef GAME_UPDATE_TURN_TIMER_ONCE_PER_TURN
 					float fGameTurnEnd = kGame.getPreviousTurnLen();
 #else
 					float fGameTurnEnd = static_cast<float>(kGame.getMaxTurnLen());
 #endif
 					float fTimeElapsed = kGame.getTimeElapsed();
-					float fRestrictionTime = std::min(CS_ALLYING_WAR_RESCTRICTION_TIMER, fGameTurnEnd);
+					float fRestrictionTime = CS_ALLYING_WAR_RESCTRICTION_TIMER;
 					if (fGameTurnEnd - fTimeElapsed > fRestrictionTime)
 					{
-						GET_PLAYER(m_pPlayer->GetID()).setTurnCSWarAllowingMinor(ePreviousAlly, eCityOwner, kGame.getGameTurn());
-						GET_PLAYER(m_pPlayer->GetID()).setTimeCSWarAllowingMinor(ePreviousAlly, eCityOwner, fTimeElapsed + fRestrictionTime);
+						GET_PLAYER(ePreviousAlly).setPriorityTurn(eCityOwner, kGame.getGameTurn());
+						GET_PLAYER(ePreviousAlly).setPriorityTime(eCityOwner, fTimeElapsed + fRestrictionTime);
 					}
 					else
 					{
-						GET_PLAYER(m_pPlayer->GetID()).setTurnCSWarAllowingMinor(ePreviousAlly, eCityOwner, kGame.getGameTurn() + 1);
-						GET_PLAYER(m_pPlayer->GetID()).setTimeCSWarAllowingMinor(ePreviousAlly, eCityOwner, fRestrictionTime - (fGameTurnEnd - fTimeElapsed));
+						GET_PLAYER(ePreviousAlly).setPriorityTurn(eCityOwner, kGame.getGameTurn() + 1);
+						GET_PLAYER(ePreviousAlly).setPriorityTime(eCityOwner, fRestrictionTime - (fGameTurnEnd - fTimeElapsed));
 					}
 				}
 			}
-			if (GET_PLAYER(ePreviousAlly).isHuman())
+			else
 			{
+				GET_PLAYER(m_pPlayer->GetID()).setPriorityTurn(eCityOwner, -1);
+				GET_PLAYER(m_pPlayer->GetID()).setPriorityTime(eCityOwner, 0.f);
 				for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
 				{
-					GET_PLAYER(ePreviousAlly).setTurnCSWarAllowingMinor((PlayerTypes)iI, eCityOwner, -1);
-					GET_PLAYER(ePreviousAlly).setTimeCSWarAllowingMinor((PlayerTypes)iI, eCityOwner, 0.f);
+					if (pMinorCivAI->GetMajorPriority((PlayerTypes)iI) > pMinorCivAI->GetMajorPriority(m_pPlayer->GetID()))
+					{
+						pMinorCivAI->SetMajorPriority((PlayerTypes)iI, MAX_MAJOR_CIVS);
+						GET_PLAYER((PlayerTypes)iI).setPriorityTurn(eCityOwner, -1);
+						GET_PLAYER((PlayerTypes)iI).setPriorityTime(eCityOwner, 0.f);
+					}
 				}
+			}
+		}
+		else
+		{
+			for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+			{
+				pMinorCivAI->SetMajorPriority((PlayerTypes)iI, MAX_MAJOR_CIVS);
+				GET_PLAYER((PlayerTypes)iI).setPriorityTurn(eCityOwner, -1);
+				GET_PLAYER((PlayerTypes)iI).setPriorityTime(eCityOwner, 0.f);
 			}
 		}
 	}

@@ -498,6 +498,8 @@ CvPlayer::CvPlayer() :
 #ifdef CS_ALLYING_WAR_RESCTRICTION
 	, m_ppaaiTurnCSWarAllowing("CvPlayer::m_ppaaiTurnCSWarAllowing", m_syncArchive)
 	, m_ppaafTimeCSWarAllowing("CvPlayer::m_ppaafTimeCSWarAllowing", m_syncArchive)
+	, m_paiPriorityTurn("CvPlayer::m_paiPriorityTurn", m_syncArchive)
+	, m_piPriorityTime("CvPlayer::m_piPriorityTime", m_syncArchive)
 #endif
 #ifdef PENALTY_FOR_DELAYING_POLICIES
 	, m_bIsDelayedPolicy(false)
@@ -796,6 +798,8 @@ void CvPlayer::uninit()
 #ifdef CS_ALLYING_WAR_RESCTRICTION
 	m_ppaaiTurnCSWarAllowing.clear();
 	m_ppaafTimeCSWarAllowing.clear();
+	m_paiPriorityTurn.clear();
+	m_piPriorityTime.clear();
 #endif
 
 	m_pPlayerPolicies->Uninit();
@@ -1400,6 +1404,12 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		{
 			m_ppaafTimeCSWarAllowing.setAt(i, time);
 		}
+
+		m_paiPriorityTurn.clear();
+		m_paiPriorityTurn.resize(MAX_MAJOR_CIVS, -1);
+
+		m_piPriorityTime.clear();
+		m_piPriorityTime.resize(MAX_MAJOR_CIVS, 0.f);
 #endif
 
 		m_pEconomicAI->Init(GC.GetGameEconomicAIStrategies(), this);
@@ -6858,6 +6868,14 @@ bool CvPlayer::canReceiveGoody(CvPlot* pPlot, GoodyTypes eGoody, CvUnit* pUnit) 
 #endif
 	}
 
+#ifdef LEKMOD_NEW_ANCIENT_RUIN_REWARDS
+	// Religion Faith
+	if(kGoodyInfo.isReligionFaith())
+	{
+		return (GetReligions()->HasCreatedPantheon() && !GetReligions()->HasCreatedReligion());
+	}
+#endif
+
 	// Faith toward Great Prophet
 	if(kGoodyInfo.getProphetPercent() > 0)
 	{
@@ -8200,6 +8218,8 @@ bool CvPlayer::canGoodyImprovePlot(CvPlot* pPlot, BuildTypes eBuild) const
 		return false;
 	}
 
+	
+
 
 	CvBuildInfo* pkBuildInfo = GC.getBuildInfo(eBuild);
 	if (!pkBuildInfo)
@@ -8247,7 +8267,7 @@ bool CvPlayer::canGoodyImprovePlot(CvPlot* pPlot, BuildTypes eBuild) const
 		}
 	}
 
-	if (canBuild(pPlot, eBuild))
+	if (canBuildNoTech(pPlot, eBuild))
 	{
 		return true;
 	}
@@ -10617,6 +10637,81 @@ bool CvPlayer::canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra, b
 
 	return true;
 }
+
+#ifdef LEKMOD_NEW_ANCIENT_RUIN_REWARDS
+//	--------------------------------------------------------------------------------
+/// Can we eBuild on pPlot regardless of tech??
+bool CvPlayer::canBuildNoTech(const CvPlot* pPlot, BuildTypes eBuild, bool bTestVisible, bool bTestGold, bool bTestPlotOwner) const
+{
+	if (!(pPlot->canBuild(eBuild, GetID(), bTestVisible, bTestPlotOwner)))
+	{
+		return false;
+	}
+
+	// Is this an improvement that is only useable by a specific civ?
+	ImprovementTypes eImprovement = (ImprovementTypes)GC.getBuildInfo(eBuild)->getImprovement();
+	if (eImprovement != NO_IMPROVEMENT)
+	{
+		CvImprovementEntry* pkEntry = GC.getImprovementInfo(eImprovement);
+		if (pkEntry->IsSpecificCivRequired())
+		{
+			CivilizationTypes eCiv = pkEntry->GetRequiredCivilization();
+			if (eCiv != getCivilizationType())
+			{
+				return false;
+			}
+		}
+	}
+
+	if (!bTestVisible)
+	{
+		if (IsBuildBlockedByFeature(eBuild, pPlot->getFeatureType()))
+		{
+			return false;
+		}
+
+		if (bTestGold)
+		{
+			if (std::max(0, GetTreasury()->GetGold()) < getBuildCost(pPlot, eBuild))
+			{
+				return false;
+			}
+		}
+	}
+
+#ifdef LEKMOD_TRAIT_NO_BUILD_IMPROVEMENTS
+	// Is this an improvement that cannot be built by a specific civ?
+
+	if (eImprovement != NO_IMPROVEMENT)
+	{
+
+		//allow CivSpecific builds regardless of the NoBuild table, so civs can still have unique builds that lead to "removed" improvements
+		CvBuildInfo* pkBuildInfo = GC.getBuildInfo(eBuild);
+		if (pkBuildInfo->IsSpecificCivRequired())
+		{
+			CivilizationTypes eCiv = pkBuildInfo->GetRequiredCivilization();
+			if (eCiv != getCivilizationType())
+			{
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
+
+		//check if the player has the trait that blocks the improvement
+		if (GetPlayerTraits()->NoBuild(eImprovement))
+		{
+			return false;
+		}
+
+	}
+#endif
+
+		return true;
+	}
+#endif
 
 //	--------------------------------------------------------------------------------
 /// Are we prevented from eBuild-ing because of a Feature on this plot?
@@ -26900,6 +26995,8 @@ void CvPlayer::Read(FDataStream& kStream)
 #ifdef CS_ALLYING_WAR_RESCTRICTION
 	kStream >> m_ppaaiTurnCSWarAllowing;
 	kStream >> m_ppaafTimeCSWarAllowing;
+	kStream >> m_paiPriorityTurn;
+	kStream >> m_piPriorityTime;
 #endif
 
 	m_pPlayerPolicies->Read(kStream);
@@ -27460,6 +27557,8 @@ void CvPlayer::Write(FDataStream& kStream) const
 #ifdef CS_ALLYING_WAR_RESCTRICTION
 	kStream << m_ppaaiTurnCSWarAllowing;
 	kStream << m_ppaafTimeCSWarAllowing;
+	kStream << m_paiPriorityTurn;
+	kStream << m_piPriorityTime;
 #endif
 
 	m_pPlayerPolicies->Write(kStream);
@@ -29027,6 +29126,26 @@ void CvPlayer::setTimeCSWarAllowingMinor(PlayerTypes ePlayer, PlayerTypes eMinor
 	Firaxis::Array<float, MAX_MINOR_CIVS> time = m_ppaafTimeCSWarAllowing[ePlayer];
 	time[int(eMinor) - MAX_MAJOR_CIVS] = fValue;
 	m_ppaafTimeCSWarAllowing.setAt(ePlayer, time);
+}
+
+int CvPlayer::getPriorityTurn(PlayerTypes eMinor) const
+{
+	return m_paiPriorityTurn[eMinor];
+}
+
+void CvPlayer::setPriorityTurn(PlayerTypes eMinor, int iValue)
+{
+	m_paiPriorityTurn.setAt(eMinor, iValue);
+}
+
+float CvPlayer::getPriorityTime(PlayerTypes eMinor) const
+{
+	return m_piPriorityTime[eMinor];
+}
+
+void CvPlayer::setPriorityTime(PlayerTypes eMinor, float fValue)
+{
+	m_piPriorityTime.setAt(eMinor, fValue);
 }
 #endif
 

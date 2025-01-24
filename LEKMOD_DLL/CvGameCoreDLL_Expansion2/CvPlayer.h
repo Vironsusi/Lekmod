@@ -277,6 +277,11 @@ public:
 	int GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
 
 	bool canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra = false, bool bTestVisible = false, bool bTestGold = true, bool bTestPlotOwner = true) const;
+
+#ifdef LEKMOD_NEW_ANCIENT_RUIN_REWARDS
+	bool canBuildNoTech(const CvPlot* pPlot, BuildTypes eBuild, bool bTestVisible = false, bool bTestGold = true, bool bTestPlotOwner = true) const;
+#endif
+
 	bool IsBuildBlockedByFeature(BuildTypes eBuild, FeatureTypes eFeature) const;
 	int getBuildCost(const CvPlot* pPlot, BuildTypes eBuild) const;
 	RouteTypes getBestRoute(CvPlot* pPlot = NULL) const;
@@ -1710,6 +1715,11 @@ public:
 	float getTimeCSWarAllowing(PlayerTypes ePlayer);
 	float getTimeCSWarAllowingMinor(PlayerTypes ePlayer, PlayerTypes eMinor);
 	void setTimeCSWarAllowingMinor(PlayerTypes ePlayer, PlayerTypes eMinor, float fValue);
+
+	int getPriorityTurn(PlayerTypes eMinor) const;
+	void setPriorityTurn(PlayerTypes eMinor, int iValue);
+	float getPriorityTime(PlayerTypes eMinor) const;
+	void setPriorityTime(PlayerTypes eMinor, float fValue);
 #endif
 
 #ifdef PENALTY_FOR_DELAYING_POLICIES
@@ -2404,6 +2414,9 @@ protected:
 #ifdef CS_ALLYING_WAR_RESCTRICTION
 	FAutoVariable <std::vector< Firaxis::Array< int, MAX_MINOR_CIVS > >, CvPlayer> m_ppaaiTurnCSWarAllowing;
 	FAutoVariable <std::vector< Firaxis::Array< float, MAX_MINOR_CIVS > >, CvPlayer> m_ppaafTimeCSWarAllowing;
+
+	FAutoVariable<std::vector<int>, CvPlayer> m_paiPriorityTurn;
+	FAutoVariable<std::vector<float>, CvPlayer> m_piPriorityTime;
 #endif
 #ifdef PENALTY_FOR_DELAYING_POLICIES
 	bool m_bIsDelayedPolicy;

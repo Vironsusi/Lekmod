@@ -4178,6 +4178,7 @@ CvGoodyInfo::CvGoodyInfo() : CvBaseInfo()
 	, m_iFreePromotion(NO_PROMOTION)
 	, m_iExcludeUnitClass(NO_UNITCLASS)
 	, m_iCityStateInfluence(0)
+	, m_bReligionFaith(false)
 #endif
 {
 }
@@ -4357,6 +4358,10 @@ int CvGoodyInfo::getCityStateInfluence() const
 {
 	return m_iCityStateInfluence;
 }
+bool CvGoodyInfo::isReligionFaith() const
+{
+	return m_bReligionFaith;
+}
 #endif
 
 const char* CvGoodyInfo::getSound() const
@@ -4415,6 +4420,7 @@ bool CvGoodyInfo::CacheResults(Database::Results& results, CvDatabaseUtility& kU
 	m_bRevealUnknownResource = results.GetBool("RevealUnknownResource");
 	m_bUpgradeUnit = results.GetBool("UpgradeUnit");
 	m_bPantheonFaith = results.GetBool("PantheonFaith");
+	
 
 #ifdef LEKMOD_NEW_ANCIENT_RUIN_REWARDS
 	m_iFoodMin = results.GetInt("FoodMin");
@@ -4430,6 +4436,7 @@ bool CvGoodyInfo::CacheResults(Database::Results& results, CvDatabaseUtility& kU
 	m_iFreePromotion = GC.getInfoTypeForString(results.GetText("FreePromotion"), true);
 	m_iExcludeUnitClass = GC.getInfoTypeForString(results.GetText("ExcludeUnitClass"), true);
 	m_iCityStateInfluence = results.GetInt("CityStateInfluence");
+	m_bReligionFaith = results.GetBool("ReligionFaith");
 #endif
 
 	//TEMP TEMP TEMP TEMP

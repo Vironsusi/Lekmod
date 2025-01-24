@@ -1284,6 +1284,7 @@ public:
 	int getFreePromotion() const;
 	int getExcludeUnitClass() const;
 	int getCityStateInfluence() const;
+	bool isReligionFaith() const;
 #endif
 
 	const char* getSound() const;
@@ -1334,6 +1335,7 @@ protected:
 	int m_iFreePromotion;
 	int m_iExcludeUnitClass;
 	int m_iCityStateInfluence;
+	bool m_bReligionFaith;
 #endif
 
 	CvString m_strSound;

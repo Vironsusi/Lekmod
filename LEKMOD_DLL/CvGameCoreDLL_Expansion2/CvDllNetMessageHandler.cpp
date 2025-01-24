@@ -889,36 +889,42 @@ void CvDllNetMessageHandler::ResponseGiftUnit(PlayerTypes ePlayer, PlayerTypes e
 			float fGameTurnEnd = static_cast<float>(game.getMaxTurnLen());
 #endif
 			float fTimeElapsed = game.getTimeElapsed();
-			for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+			for (int jJ = MAX_MAJOR_CIVS; jJ < MAX_MINOR_CIVS; jJ++)
 			{
-				for (int jJ = 0; jJ < MAX_MAJOR_CIVS; jJ++)
+				PlayerTypes eLoopMinor = (PlayerTypes)jJ;
+				GET_PLAYER(eLoopMinor).GetMinorCivAI()->RecalculateMajorPriority();
+				for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
 				{
-					for (int kK = MAX_MAJOR_CIVS; kK < MAX_MINOR_CIVS; kK++)
+					if (game.getGameTurn() == GET_PLAYER((PlayerTypes)iI).getPriorityTurn(eLoopMinor))
 					{
-						PlayerTypes eLoopMinor = (PlayerTypes)kK;
-						if (game.getGameTurn() == GET_PLAYER((PlayerTypes)iI).getTurnCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor))
+						if (fTimeElapsed < GET_PLAYER((PlayerTypes)iI).getPriorityTime(eLoopMinor))
 						{
-							if (fTimeElapsed < GET_PLAYER((PlayerTypes)iI).getTimeCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor))
-							{
-								GET_PLAYER((PlayerTypes)iI).setTimeCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor, GET_PLAYER((PlayerTypes)iI).getTimeCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor) - fTimeElapsed);
-							}
-							else
-							{
-								GET_PLAYER((PlayerTypes)iI).setTurnCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor, -1);
-								GET_PLAYER((PlayerTypes)iI).setTimeCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor, 0.f);
-							}
+							GET_PLAYER((PlayerTypes)iI).setPriorityTime(eLoopMinor, GET_PLAYER((PlayerTypes)iI).getPriorityTime(eLoopMinor) - fTimeElapsed);
 						}
-						if (game.getGameTurn() < GET_PLAYER((PlayerTypes)iI).getTurnCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor))
+						else
 						{
-							GET_PLAYER((PlayerTypes)iI).setTurnCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor, game.getGameTurn());
-							GET_PLAYER((PlayerTypes)iI).setTimeCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor, GET_PLAYER((PlayerTypes)iI).getTimeCSWarAllowingMinor((PlayerTypes)jJ, eLoopMinor) + (fGameTurnEnd - fTimeElapsed));
+							GET_PLAYER((PlayerTypes)iI).setPriorityTurn(eLoopMinor, -1);
+							GET_PLAYER((PlayerTypes)iI).setPriorityTime(eLoopMinor, 0.f);
 						}
+					}
+					if (game.getGameTurn() < GET_PLAYER((PlayerTypes)iI).getPriorityTurn(eLoopMinor))
+					{
+						GET_PLAYER((PlayerTypes)iI).setPriorityTurn(eLoopMinor, game.getGameTurn());
+						GET_PLAYER((PlayerTypes)iI).setPriorityTime(eLoopMinor, GET_PLAYER((PlayerTypes)iI).getPriorityTime(eLoopMinor) + (fGameTurnEnd - fTimeElapsed));
 					}
 				}
 			}
 #endif
 			GC.getGame().resetTurnTimer(true);
 			DLLUI->AddMessage(0, CvPreGame::activePlayer(), true, GC.getEVENT_MESSAGE_TIME(), GetLocalizedText("TXT_KEY_MISC_TURN_TIMER_RESET", GET_PLAYER(ePlayer).getName()).GetCString());
+			ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
+			CvLuaArgsHandle args;
+			bool bResult;
+			if (pkScriptSystem)
+			{
+				args->Push(GC.getGame().m_bIsPaused);
+				LuaSupport::CallHook(pkScriptSystem, "EndTurnTimerReset", args.get(), bResult);
+			}
 		}
 	}
 	else
@@ -941,6 +947,14 @@ void CvDllNetMessageHandler::ResponseGiftUnit(PlayerTypes ePlayer, PlayerTypes e
 				GC.getGame().m_curTurnTimer.StartWithOffset(GC.getGame().getTimeElapsed());
 				GC.getGame().m_bIsPaused = false;
 				DLLUI->AddMessage(0, CvPreGame::activePlayer(), true, GC.getEVENT_MESSAGE_TIME(), GetLocalizedText("TXT_KEY_MISC_TURN_TIMER_UNPAUSE", GET_PLAYER(ePlayer).getName()).GetCString());
+			}
+			ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
+			CvLuaArgsHandle args;
+			bool bResult;
+			if (pkScriptSystem)
+			{
+				args->Push(GC.getGame().m_bIsPaused);
+				LuaSupport::CallHook(pkScriptSystem, "EndTurnTimerPause", args.get(), bResult);
 			}
 		}
 	}

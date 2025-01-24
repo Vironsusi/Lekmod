@@ -15648,7 +15648,9 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 
 				if (GetBaseCombatStrength(true/*bIgnoreEmbarked*/) > 0 && getDomainType() == DOMAIN_LAND)
 				{
+#ifndef FIX_POLICY_CULTURE_PER_GARRISONED_UNIT
 					pOldPlot->getPlotCity()->ChangeJONSCulturePerTurnFromPolicies(-(GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CULTURE_FROM_GARRISON)));
+#endif
 				}
 			}
 
@@ -15703,7 +15705,9 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 			
 			if (GetBaseCombatStrength(true/*bIgnoreEmbarked*/) > 0 && getDomainType() == DOMAIN_LAND)
 			{
+#ifndef FIX_POLICY_CULTURE_PER_GARRISONED_UNIT
 				pNewPlot->getPlotCity()->ChangeJONSCulturePerTurnFromPolicies((GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CULTURE_FROM_GARRISON)));
+#endif
 			}
 		}
 
