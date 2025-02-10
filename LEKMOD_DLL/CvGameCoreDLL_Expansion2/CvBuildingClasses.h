@@ -123,6 +123,9 @@ public:
 	bool RequiresGoldPurchase() const;
 #endif
 	int GetFaithCost() const;
+#ifdef TRAITIFY
+	bool IsCanNoBuy() const;
+#endif
 	int GetLeagueCost() const;
 	int GetNumCityCostMod() const;
 	int GetHurryCostModifier() const;
@@ -369,6 +372,9 @@ private:
 	bool m_bRequiresGoldPurchase;
 #endif
 	int m_iFaithCost;
+#ifdef TRAITIFY
+	int m_bCanNoBuy;
+#endif
 	int m_iLeagueCost;
 	int m_iNumCityCostMod;
 	int m_iHurryCostModifier;

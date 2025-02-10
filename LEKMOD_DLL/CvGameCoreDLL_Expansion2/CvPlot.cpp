@@ -7656,7 +7656,30 @@ int CvPlot::calculateNatureYield(YieldTypes eYield, TeamTypes eTeam, bool bIgnor
 			}
 		}
 	}
+#ifdef TRAITIFY // Trait Effect on Terrain and Resource Yields
+	if (pWorkingCity != NULL)
+	{
+		int iTraitTerrainChange = GET_PLAYER(pWorkingCity->getOwner()).GetPlayerTraits()->GetTerrainYieldChange(getTerrainType(), eYield);
+		if (iTraitTerrainChange != 0)
+		{
+			iYield += iTraitTerrainChange;
+		}
+		if (eTeam != NO_TEAM)
+		{
+			eResource = getResourceType(eTeam);
 
+			if (eResource != NO_RESOURCE)
+			{
+				int iTraitResourceChange = GET_PLAYER(pWorkingCity->getOwner()).GetPlayerTraits()->GetResourceYieldChange(eResource, eYield);
+				if (iTraitResourceChange != 0)
+				{
+					iYield += iTraitResourceChange;
+				}
+			}
+		}
+	}
+
+#endif
 	if(isRiver())
 	{
 		iYield += ((bIgnoreFeature || (getFeatureType() == NO_FEATURE)) ? GC.getTerrainInfo(getTerrainType())->getRiverYieldChange(eYield) : GC.getFeatureInfo(getFeatureType())->getRiverYieldChange(eYield));
@@ -7862,7 +7885,6 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 		for(iI = 0; iI < GC.getNumTechInfos(); ++iI)
 		{
 			iYield += pImprovement->GetTechYieldChanges(iI, eYield);
-
 			if(bIsFreshWater)
 			{
 				iYield += pImprovement->GetTechFreshWaterYieldChanges(iI, eYield);

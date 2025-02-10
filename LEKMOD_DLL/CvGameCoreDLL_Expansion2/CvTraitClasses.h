@@ -103,6 +103,58 @@ public:
 	int GetNaturalWonderFirstFinderGold() const;
 	int GetNaturalWonderSubsequentFinderGold() const;
 
+#ifdef TRAITIFY //Int and Bool Getters in CvTraitClasses.h
+	EraTypes GetPrereqEra() const;
+	EraTypes GetObsoleteEra() const;
+	PolicyBranchTypes GetRequiredIdeology() const;
+	bool IsAnyIdeology() const;
+
+	bool IsEnabledByEra(EraTypes eEra);
+	bool IsObsoleteByEra(EraTypes eEra);
+	bool IsEnabledByIdeology(CvPlayerPolicies* pPolicies);
+	bool IsObsoleteByIdeology(CvPlayerPolicies* pPolicies);
+
+	int GetGoldenAgeCultureModifier() const;
+	int GetGoldenAgePointBurstOnCapture() const;
+	int GetGreatEngineerRateModifier() const;
+	int GetCapitalDefenseBonus() const;
+	int GetCityDefenseBonus() const;
+	int GetGreatGeneralSiegeBonus() const;
+	int GetProductionDiscountForTradeUnits() const;
+	int GetMinorFriendshipMinimum() const;
+	int GetNumTradeRouteBonus() const;
+	int GetFaithCostModifier() const;
+	int GetNumExtraLeagueVotes() const;
+	int GetMinorBullyModifier() const;
+	int GetBuildingProductionModifier() const;
+	int GetCapitalBuildingProductionModifier() const;
+	int GetUnitProductionModifier() const;
+	int GetCapitalUnitProductionModifier() const;
+	int GetInternalTradeRouteYieldModifier() const;
+	int GetInternalTradeRouteGoldChange() const;
+	int GetCapitalGreatPersonRateModifier() const;
+	int GetWonderGoldReward() const;
+	int GetWeLoveTheKingDayCount() const;
+	int GetForeignReligiousPressure() const;
+	int GetGoldFromTradeGuards() const;
+	int GetXPFromTradeGuards() const;
+	bool IsNoBuyFaithBuilding() const;
+	bool IsNoBuyFaithUnit() const;
+	int GetNoBuyProductionPercent() const;
+	int GetIdeologyUnhappinessModifier() const;
+	int GetFreeIdeologicalTenets() const;
+	bool IsAutoConvertReligionOnFound() const;
+	bool IsFreeCourthouse() const;
+	int GetUnhappinessModifierForPuppets() const;
+	bool IsExpandedGoldenAge() const;
+	int GetExtendGoldenAgeOnPolicy() const;
+	int GetGivenGoldenAgePointsOnPolicy() const;
+	bool IsGiveFreshWaterAroundCities() const;
+	int GetExtraPopulationNewCities() const;
+	int GetExtraPopulationCityCount() const;
+	int GetGoldBurstOnFound() const;
+#endif
+
 	//EAP: Natural Wonder finder faith
 	int GetNaturalWonderFirstFinderFaith() const;
 	int GetNaturalWonderSubsequentFinderFaith() const;
@@ -196,6 +248,16 @@ public:
 	int GetPrereqTech() const;
 	int GetResourceQuantityModifier(int i) const;
 	int GetMovesChangeUnitCombat(const int unitCombatID) const;
+#ifdef TRAITIFY //Arrays
+	int GetYieldStealPerX(int i) const;
+	int GetBuildingClassProductionModifier(int i) const;
+	int GetBuildingClassHappiness(int i) const;
+	int GetTerrainYieldChange(int i, int j) const;
+	int GetResourceYieldChange(int i, int j) const;
+	int* GetTerrainYieldChangeArray(int i) const;
+	int GetBuildingClassYieldChanges(int i, int j) const;
+	int GetBuildingClassYieldModifiers(int i, int j) const;
+#endif
 	int GetMaintenanceModifierUnitCombat(const int unitCombatID) const;
 	int GetImprovementYieldChanges(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
 	int GetSpecialistYieldChanges(SpecialistTypes eIndex1, YieldTypes eIndex2) const;
@@ -271,6 +333,53 @@ protected:
 	int m_iFreeUnitClassType;
 	int m_iNaturalWonderFirstFinderGold;
 	int m_iNaturalWonderSubsequentFinderGold;
+
+#ifdef TRAITIFY //Int and Bool member variables in CvTraitClasses.h
+	EraTypes m_ePrereqEra;
+	EraTypes m_eObsoleteEra;
+	PolicyBranchTypes m_eRequiredIdeology;
+	bool m_bAnyIdeology;
+
+	int m_iGoldenAgeCultureModifier;
+	int m_iGoldenAgePointBurstOnCapture;
+	int m_iGreatEngineerRateModifier;
+	int m_iCapitalDefenseBonus;
+	int m_iCityDefenseBonus;
+	int m_iGreatGeneralSiegeBonus;
+	int m_iProductionDiscountForTradeUnits;
+	int m_iMinorFriendshipMinimum;
+	int m_iNumTradeRouteBonus;
+	int m_iFaithCostModifier;
+	int m_iNumExtraLeagueVotes;
+	int m_iMinorBullyModifier;
+	int m_iBuildingProductionModifier;
+	int m_iCapitalBuildingProductionModifier;
+	int m_iUnitProductionModifier;
+	int m_iCapitalUnitProductionModifier;
+	int m_iInternalTradeRouteYieldModifier;
+	int m_iInternalTradeRouteGoldChange;
+	int m_iCapitalGreatPersonRateModifier;
+	int m_iWonderGoldReward;
+	int m_iWeLoveTheKingDayCount;
+	int m_iForeignReligiousPressure;
+	int m_iGoldFromTradeGuards;
+	int m_iXPFromTradeGuards;
+	bool m_bNoBuyFaithBuilding;
+	bool m_bNoBuyFaithUnit;
+	int m_iNoBuyProductionPercent;
+	int m_iIdeologyUnhappinessModifier;
+	int m_iFreeIdeologicalTenets;
+	bool m_bAutoConvertReligionOnFound;
+	bool m_bFreeCourthouse;
+	int m_iUnhappinessModifierForPuppets;
+	bool m_bExpandedGoldenAge;
+	int m_iExtendGoldenAgeOnPolicy;
+	int m_fGivenGoldenAgePointsOnPolicy;
+	bool m_bGiveFreshWaterAroundCities;
+	int m_iExtraPopulationNewCities;
+	int m_iExtraPopulationCityCount;
+	int m_iGoldBurstOnFound;
+#endif
 
 	//EAP: Natural wonder faith for the finder
 	int m_iNaturalWonderFirstFinderFaith;
@@ -358,6 +467,15 @@ protected:
 	int* m_piResourceQuantityModifiers;
 	int* m_piMovesChangeUnitCombats;
 	int* m_piMaintenanceModifierUnitCombats;
+#ifdef TRAITIFY //Arrays
+	int* m_paiYieldStealPerX;
+	int* m_paiBuildingClassProductionModifiers;
+	int* m_paiBuildingClassHappiness;
+	int** m_ppaiTerrainYieldChange;
+	int** m_ppaiResourceYieldChange;
+	int** m_ppiBuildingClassYieldModifiers;
+	int** m_ppiBuildingClassYieldChanges;
+#endif
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
 	std::pair<int**, size_t> m_ppiImprovementYieldChanges;
 	std::pair<int**, size_t> m_ppiSpecialistYieldChanges;
@@ -622,6 +740,181 @@ public:
 	{
 		return m_iNaturalWonderSubsequentFinderGold;
 	};
+
+#ifdef TRAITIFY //Int and Bool Getters in CvTraitClasses.h
+	EraTypes GetPrereqEra() const
+	{
+		return m_ePrereqEra;
+	};
+	EraTypes GetObsoleteEra() const
+	{
+		return m_eObsoleteEra;
+	};
+	PolicyBranchTypes GetRequiredIdeology() const
+	{
+		return m_eRequiredIdeology;
+	};
+	bool IsAnyIdeology() const
+	{
+		return m_bAnyIdeology;
+	};
+	int GetGoldenAgeCultureModifier() const
+	{
+		return m_iGoldenAgeCultureModifier;
+	};
+	int GetGoldenAgePointBurstOnCapture() const
+	{
+		return m_iGoldenAgePointBurstOnCapture;
+	};
+	int GetGreatEngineerRateModifier() const
+	{
+		return m_iGreatEngineerRateModifier;
+	};
+	int GetCapitalDefenseBonus() const
+	{
+		return m_iCapitalDefenseBonus;
+	};
+	int GetCityDefenseBonus() const
+	{
+		return m_iCityDefenseBonus;
+	};
+	int GetGreatGeneralSiegeBonus() const
+	{
+		return m_iGreatGeneralSiegeBonus;
+	};
+	int GetProductionDiscountForTradeUnits() const
+	{
+		return m_iProductionDiscountForTradeUnits;
+	};
+	int GetMinorFriendshipMinimum() const
+	{
+		return m_iMinorFriendshipMinimum;
+	};
+	int GetNumTradeRouteBonus() const
+	{
+		return m_iNumTradeRouteBonus;
+	};
+	int GetFaithCostModifier() const
+	{
+		return m_iFaithCostModifier;
+	};
+	int GetNumExtraLeagueVotes() const
+	{
+		return m_iNumExtraLeagueVotes;
+	};
+	int GetMinorBullyModifier() const
+	{
+		return m_iMinorBullyModifier;
+	};
+	int GetBuildingProductionModifier() const
+	{
+		return m_iBuildingProductionModifier;
+	};
+	int GetCapitalBuildingProductionModifier() const
+	{
+		return m_iCapitalBuildingProductionModifier;
+	};
+	int GetUnitProductionModifier() const
+	{
+		return m_iUnitProductionModifier;
+	};
+	int GetCapitalUnitProductionModifier() const 
+	{ 
+		return m_iCapitalUnitProductionModifier; 
+	};
+	int GetInternalTradeRouteYieldModifier() const
+	{
+		return m_iInternalTradeRouteYieldModifier;
+	};
+	int GetInternalTradeRouteGoldChange() const
+	{
+		return m_iInternalTradeRouteGoldChange;
+	};
+	int GetCapitalGreatPersonRateModifier() const
+	{
+		return m_iCapitalGreatPersonRateModifier;
+	};
+	int GetWonderGoldReward() const
+	{
+		return m_iWonderGoldReward;
+	};
+	int GetWeLoveTheKingDayCount() const
+	{
+		return m_iWeLoveTheKingDayCount;
+	};
+	int GetForeignReligiousPressure() const
+	{
+		return m_iForeignReligiousPressure;
+	};
+	int GetGoldFromTradeGuards() const
+	{
+		return m_iGoldFromTradeGuards;
+	};
+	int GetXPFromTradeGuards() const
+	{
+		return m_iXPFromTradeGuards;
+	};
+	bool IsNoBuyFaithBuilding() const
+	{
+		return m_bNoBuyFaithBuilding;
+	};
+	bool IsNoBuyFaithUnit() const
+	{
+		return m_bNoBuyFaithUnit;
+	};
+	int GetNoBuyProductionPercent() const
+	{
+		return m_iNoBuyProductionPercent;
+	};
+	int GetIdeologyUnhappinessModifier() const
+	{
+		return m_iIdeologyUnhappinessModifier;
+	};
+	int GetFreeIdeologicalTenets() const
+	{
+		return m_iFreeIdeologicalTenets;
+	};
+	bool AutoConvertReligionOnFound() const
+	{
+		return m_bAutoConvertReligionOnFound;
+	};
+	bool IsFreeCourthouse() const
+	{
+		return m_bFreeCourthouse;
+	};
+	int GetUnhappinessModifierForPuppets() const
+	{
+		return m_iUnhappinessModifierForPuppets;
+	};
+	bool IsExpandedGoldenAge() const
+	{
+		return m_bExpandedGoldenAge;
+	};
+	int GetExtendGoldenAgeOnPolicy() const
+	{
+		return m_iExtendGoldenAgeOnPolicy;
+	};
+	int GetGivenGoldenAgePointsOnPolicy() const
+	{
+		return m_fGivenGoldenAgePointsOnPolicy;
+	};
+	bool IsGiveFreshWaterAroundCities() const
+	{
+		return m_bGiveFreshWaterAroundCities;
+	};
+	int GetExtraPopulationNewCities() const
+	{
+		return m_iExtraPopulationNewCities;
+	};
+	int GetExtraPopulationCityCount() const
+	{
+		return m_iExtraPopulationCityCount;
+	};
+	int GetGoldBurstOnFound() const
+	{
+		return m_iGoldBurstOnFound;
+	};
+#endif
 
 	//EAP Faith for the natural wonder finder
 
@@ -901,6 +1194,12 @@ public:
 	{
 		return m_iYieldRateModifier[(int)eYield];
 	};
+#ifdef TRAITIFY 
+	int GetYieldStealPerX(YieldTypes eYield) const
+	{
+		return m_iYieldStealPerX[(int)eYield];
+	};
+#endif
 	int GetStrategicResourceQuantityModifier(TerrainTypes eTerrain) const
 	{
 		return m_iStrategicResourceQuantityModifier[(int)eTerrain];
@@ -925,7 +1224,14 @@ public:
 	void AddUniqueLuxuries(CvCity *pCity);
 	bool CheckForBarbarianConversion(CvPlot* pPlot);
 	int GetCapitalBuildingDiscount(BuildingTypes eBuilding);
-	
+#ifdef TRAITIFY
+	int GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
+	int GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYieldType);
+	int GetResourceYieldChange(ResourceTypes eResource, YieldTypes eYieldType);
+	int GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
+	int GetBuildingClassProductionModifier(BuildingClassTypes eBuildingClass);
+	int GetBuildingClassHappiness(BuildingClassTypes eBuildingClass);
+#endif
 	// Inserted Table Entries from CMP DLL ~EAP
 	TechTypes GetFreeBuildingPrereqTech() const;
 	TechTypes GetCapitalFreeBuildingPrereqTech() const;
@@ -1034,7 +1340,52 @@ private:
 	int m_iNaturalWonderFirstFinderGold;
 	int m_iNaturalWonderSubsequentFinderGold;
 	int m_iNaturalWonderYieldModifier;
+#ifdef TRAITIFY //Cached data about this player's traits in CvTraitClasses.h
+	EraTypes m_ePrereqEra;
+	EraTypes m_eObsoleteEra;
+	PolicyBranchTypes m_eRequiredIdeology;
+	bool m_bAnyIdeology;
 
+	int m_iGoldenAgeCultureModifier;
+	int m_iGoldenAgePointBurstOnCapture;
+	int m_iGreatEngineerRateModifier;
+	int m_iCapitalDefenseBonus;
+	int m_iCityDefenseBonus;
+	int m_iGreatGeneralSiegeBonus;
+	int m_iProductionDiscountForTradeUnits;
+	int m_iMinorFriendshipMinimum;
+	int m_iNumTradeRouteBonus;
+	int m_iFaithCostModifier;
+	int m_iNumExtraLeagueVotes;
+	int m_iMinorBullyModifier;
+	int m_iBuildingProductionModifier;
+	int m_iCapitalBuildingProductionModifier;
+	int m_iUnitProductionModifier;
+	int m_iCapitalUnitProductionModifier;
+	int m_iInternalTradeRouteYieldModifier;
+	int m_iInternalTradeRouteGoldChange;
+	int m_iCapitalGreatPersonRateModifier;
+	int m_iWonderGoldReward;
+	int m_iWeLoveTheKingDayCount;
+	int m_iForeignReligiousPressure;
+	int m_iGoldFromTradeGuards;
+	int m_iXPFromTradeGuards;
+	bool m_bNoBuyFaithBuilding;
+	bool m_bNoBuyFaithUnit;
+	int m_iNoBuyProductionPercent;
+	int m_iIdeologyUnhappinessModifier;
+	int m_iFreeIdeologicalTenets;
+	bool m_bAutoConvertReligionOnFound;
+	bool m_bFreeCourthouse;
+	int m_iUnhappinessModifierForPuppets;
+	bool m_bExpandedGoldenAge;
+	int m_iExtendGoldenAgeOnPolicy;
+	int m_fGivenGoldenAgePointsOnPolicy;
+	bool m_bGiveFreshWaterAroundCities;
+	int m_iExtraPopulationNewCities;
+	int m_iExtraPopulationCityCount;
+	int m_iGoldBurstOnFound;
+#endif
 	//EAP: Natural wonder faith for the finder
 	int m_iNaturalWonderFirstFinderFaith;
 	int m_iNaturalWonderSubsequentFinderFaith;
@@ -1119,6 +1470,9 @@ private:
 	int m_iYieldChangePerTradePartner[NUM_YIELD_TYPES];
 	int m_iYieldChangeIncomingTradeRoute[NUM_YIELD_TYPES];
 	int m_iYieldRateModifier[NUM_YIELD_TYPES];
+#ifdef TRAITIFY //Arrays
+	int m_iYieldStealPerX[NUM_YIELD_TYPES];
+#endif
 	int m_iStrategicResourceQuantityModifier[NUM_TERRAIN_TYPES];
 	std::vector<int> m_aiResourceQuantityModifier;
 	std::vector<bool> m_abNoTrain;

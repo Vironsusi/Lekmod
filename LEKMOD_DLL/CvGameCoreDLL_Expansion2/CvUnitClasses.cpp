@@ -71,6 +71,9 @@ CvUnitEntry::CvUnitEntry(void) :
 	m_iPrereqAndTech(NO_TECH),
 	m_iObsoleteTech(NO_TECH),
 	m_iPolicyType(NO_POLICY),
+#ifdef UNIT_IDEOLOGY_UNLOCK
+	m_bAnyIdeology(false),
+#endif
 	m_iGoodyHutUpgradeUnitClass(NO_UNITCLASS),
 	m_iGroupSize(0),
 	m_iGroupDefinitions(0),
@@ -234,6 +237,9 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	m_bCaptureWhileEmbarked = kResults.GetBool("CaptureWhileEmbarked");
 	m_bRangeAttackOnlyInDomain = kResults.GetBool("RangeAttackOnlyInDomain");
 	m_bTrade = kResults.GetBool("Trade");
+#ifdef UNIT_IDEOLOGY_UNLOCK
+	m_bAnyIdeology = kResults.GetBool("AnyIdeology");
+#endif
 	m_iNumExoticGoods = kResults.GetInt("NumExoticGoods");
 
 	m_strUnitArtInfoTag = kResults.GetText("UnitArtInfo");
@@ -790,6 +796,13 @@ int CvUnitEntry::GetEra() const
 
 	return -1;
 }
+#ifdef UNIT_IDEOLOGY_UNLOCK	
+/// Can be built with any ideology?
+bool CvUnitEntry::IsAnyIdeology() const
+{
+	return m_bAnyIdeology;
+}
+#endif
 
 /// Policy required for this unit
 int CvUnitEntry::GetPolicyType() const

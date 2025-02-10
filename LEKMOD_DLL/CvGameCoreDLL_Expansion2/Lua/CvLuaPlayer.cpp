@@ -388,6 +388,9 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetNumPolicies);
 	Method(GetNumPoliciesInBranch);
 	Method(HasPolicy);
+#ifdef TRAITIFY
+	Method(HasTrait);
+#endif
 #ifdef LEKMOD_NEW_LUA_METHODS
 	Method(HasPolicyBranch);
 #endif
@@ -4988,6 +4991,19 @@ int CvLuaPlayer::lHasPolicy(lua_State* L)
 	lua_pushboolean(L, bResult);
 	return 1;
 }
+#ifdef TRAITIFY
+//------------------------------------------------------------------------------
+//bool hasTrait(TraitTypes  iIndex);
+int CvLuaPlayer::lHasTrait(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const TraitTypes iIndex = (TraitTypes)lua_tointeger(L, 2);
+	const bool bResult
+		= pkPlayer->GetPlayerTraits()->HasTrait(iIndex);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+#endif
 #ifdef LEKMOD_NEW_LUA_METHODS
 //------------------------------------------------------------------------------
 //bool hasPolicyBranch(PolicyBranchTypes  iIndex);

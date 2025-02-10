@@ -3662,7 +3662,11 @@ void CvPlayerCulture::DoPublicOpinion()
 				m_eOpinion = PUBLIC_OPINION_REVOLUTIONARY_WAVE;
 			}
 #ifdef NQ_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER_FROM_POLICIES
+#ifndef TRAITIFY // IdeoUnhappinessModTrait
 			int iUnhappinessModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER);
+#else
+			int iUnhappinessModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER) + m_pPlayer->GetPlayerTraits()->GetIdeologyUnhappinessModifier();
+#endif
 			m_iOpinionUnhappiness = ComputePublicOpinionUnhappiness(iDissatisfaction, iPerCityUnhappy, iUnhappyPerXPop, iUnhappinessModifier);
 #else
 			m_iOpinionUnhappiness = ComputePublicOpinionUnhappiness(iDissatisfaction, iPerCityUnhappy, iUnhappyPerXPop);
@@ -3759,7 +3763,11 @@ void CvPlayerCulture::DoPublicOpinion()
 			m_strOpinionUnhappinessTooltip += locText.toUTF8();
 
 #ifdef NQ_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER_FROM_POLICIES
+#ifndef TRAITIFY // IdeoUnhappinessModTrait
 			int iUnhappinessModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER);
+#else
+			int iUnhappinessModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER) + m_pPlayer->GetPlayerTraits()->GetIdeologyUnhappinessModifier();
+#endif
 			locText = Localization::Lookup("TXT_KEY_CO_OPINION_TT_UNHAPPINESS_LINE5");
 			locText << -iUnhappinessModifier;
 			m_strOpinionUnhappinessTooltip += locText.toUTF8();
@@ -3872,7 +3880,11 @@ int CvPlayerCulture::ComputeHypotheticalPublicOpinionUnhappiness(PolicyBranchTyp
 	else
 	{
 #ifdef NQ_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER_FROM_POLICIES
+#ifndef TRAITIFY // IdeoUnhappinessModTrait
 		int iUnhappinessModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER);
+#else
+		int iUnhappinessModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_IDEOLOGY_PRESSURE_UNHAPPINESS_MODIFIER) + m_pPlayer->GetPlayerTraits()->GetIdeologyUnhappinessModifier();
+#endif
 		return ComputePublicOpinionUnhappiness(iDissatisfaction, iPerCityUnhappy, iUnhappyPerXPop, iUnhappinessModifier);
 #else
 		return ComputePublicOpinionUnhappiness(iDissatisfaction, iPerCityUnhappy, iUnhappyPerXPop);

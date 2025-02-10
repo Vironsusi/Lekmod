@@ -3272,6 +3272,9 @@ bool CityStrategyAIHelpers::IsTestCityStrategy_GoodGPCity(CvCity* pCity)
 					}
 					else if((UnitClassTypes)pkSpecialistInfo->getGreatPeopleUnitClass() == GC.getInfoTypeForString("UNITCLASS_ENGINEER"))
 					{
+#ifdef TRAITIFY // GetGreatEngineerRateModifier
+						iMod += pCity->GetPlayer()->GetPlayerTraits()->GetGreatEngineerRateModifier();
+#endif
 						iMod += pCity->GetPlayer()->getGreatEngineerRateModifier();
 					}
 

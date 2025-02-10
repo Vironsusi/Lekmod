@@ -2967,7 +2967,29 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 			// NQMP GJS - Silk Road begin
 			if (eYield == YIELD_GOLD)
 			{
+#ifndef TRAITIFY //Internal Trade Route Gold Change
 				iValue = GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_INTERNAL_TRADE_GOLD_CHANGE);
+#else
+				iValue = 0;
+				int iValueFromPolicies = GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_INTERNAL_TRADE_GOLD_CHANGE);
+				if (iValueFromPolicies != 0)
+				{
+					iValue = iValueFromPolicies;
+				}
+				else
+				{
+					iValue += 0;
+				}
+				int iValueFromTraits = GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerTraits()->GetInternalTradeRouteGoldChange() * 100;
+				if (iValueFromTraits != 0)
+				{
+					iValue += iValueFromTraits;
+				}
+				else
+				{
+					iValue += 0;
+				}
+#endif
 			}
 			// NQMP GJS - Silk Road end
 			switch (kTradeConnection.m_eConnectionType)
@@ -2989,6 +3011,9 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					iModifier += iDomainModifier;
 #endif
 					iModifier += GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_INTERNAL_TRADE_MODIFIER);
+#ifdef TRAITIFY //Internal Trade Route Food Change
+					iModifier += GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerTraits()->GetInternalTradeRouteYieldModifier();
+#endif
 					iValue *= iModifier;
 					iValue /= 100;
 #ifdef FRUITY_TRADITION_LANDED_ELITE
@@ -3021,6 +3046,9 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					iModifier += iDomainModifier;
 #endif
 					iModifier += GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_INTERNAL_TRADE_MODIFIER);
+#ifdef TRAITIFY //Internal Trade Route Production Change
+					iModifier += GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerTraits()->GetInternalTradeRouteYieldModifier();
+#endif
 					iValue *= iModifier;
 					iValue /= 100;
 #ifdef NQ_INTERNAL_TRADE_ROUTE_PRODUCTION_YIELD_CHANGE_FROM_POLICIES
@@ -4237,6 +4265,10 @@ uint CvPlayerTrade::GetNumTradeRoutesPossible (void)
 			}
 		}
 	}
+#ifdef TRAITIFY //NumTradeRoutesBonus
+	int iNumRoutesBonus = m_pPlayer->GetPlayerTraits()->GetNumTradeRouteBonus();
+	iNumRoutes += iNumRoutesBonus;
+#endif
 
 	int iModifier = 100 + m_pPlayer->GetPlayerTraits()->GetNumTradeRoutesModifier();
 	iNumRoutes *= iModifier;

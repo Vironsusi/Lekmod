@@ -3646,6 +3646,10 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 		int iWonderVotes = GET_PLAYER(ePlayer).GetExtraLeagueVotes();
 		iVotes += iWonderVotes;
 
+#ifdef TRAITIFY //League Votes from Traits
+		int iTraitVotes = GET_PLAYER(ePlayer).GetPlayerTraits()->GetNumExtraLeagueVotes();
+#endif
+
 		// World Religion
 		int iWorldReligionVotes = GetExtraVotesForFollowingReligion(ePlayer);
 		iVotes += iWorldReligionVotes;
@@ -3694,6 +3698,12 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 			{
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_WONDER_VOTES");
 				sTemp << iWonderVotes;
+				pMember->sVoteSources += sTemp.toUTF8();
+			}
+			if (iTraitVotes > 0)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TRAIT_VOTES");
+				sTemp << iTraitVotes;
 				pMember->sVoteSources += sTemp.toUTF8();
 			}
 			if (iWorldReligionVotes > 0)

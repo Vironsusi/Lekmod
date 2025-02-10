@@ -4330,8 +4330,11 @@ void CvPlayerPolicies::DoSwitchIdeologies(PolicyBranchTypes eNewBranchType)
 	CvAssertMsg (eOldBranchType != eNewBranchType && eNewBranchType != NO_POLICY_BRANCH_TYPE && eOldBranchType != NO_POLICY_BRANCH_TYPE, "Illegal time for Ideology change");
 
 	int iOldBranchTenets = GetNumPoliciesOwnedInBranch(eOldBranchType);
+#ifndef TRAITIFY
 	int iNewBranchTenets = max(0, iOldBranchTenets - GC.getSWITCH_POLICY_BRANCHES_TENETS_LOST());
-
+#else
+	int iNewBranchTenets = max(0, iOldBranchTenets - GC.getSWITCH_POLICY_BRANCHES_TENETS_LOST() - m_pPlayer->GetPlayerTraits()->GetFreeIdeologicalTenets());
+#endif
 	ClearPolicyBranch(eOldBranchType);
 	SetPolicyBranchUnlocked(eOldBranchType, false, false);
 
@@ -5136,6 +5139,7 @@ int PolicyHelpers::GetNumFreePolicies(PolicyBranchTypes eBranch)
 		if (pkEntry->GetEraPrereq() >= GC.getGame().getStartEra())
 		{
 			int iNumPreviousUnlockers = PolicyHelpers::GetNumPlayersWithBranchUnlocked(eBranch);
+#ifndef TRAITIFY
 			if (iNumPreviousUnlockers == 0)
 			{
 				iFreePolicies = pkEntry->GetFirstAdopterFreePolicies();
@@ -5144,6 +5148,22 @@ int PolicyHelpers::GetNumFreePolicies(PolicyBranchTypes eBranch)
 			{
 				iFreePolicies = pkEntry->GetSecondAdopterFreePolicies();
 			}
+#else
+			if (iNumPreviousUnlockers == 0)
+			{
+				iFreePolicies = pkEntry->GetFirstAdopterFreePolicies();
+			}
+			else if (iNumPreviousUnlockers == 1)
+			{
+				iFreePolicies = pkEntry->GetSecondAdopterFreePolicies();
+			}
+			
+			if (eBranch == GC.getPOLICY_BRANCH_FREEDOM() || eBranch == GC.getPOLICY_BRANCH_ORDER() || eBranch == GC.getPOLICY_BRANCH_AUTOCRACY())
+			{
+				CvPlayer& kPlayer = GET_PLAYER(GC.getGame().getActivePlayer());
+				iFreePolicies += kPlayer.GetPlayerTraits()->GetFreeIdeologicalTenets();
+			}
+#endif
 		}
 	}
 

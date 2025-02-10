@@ -170,6 +170,9 @@ public:
 #endif
 	void doTurnUnits();
 	void SetAllUnitsUnprocessed();
+#ifdef TRAITIFY
+	void DoTradeGuards();
+#endif
 	void DoUnitReset();
 	void DoUnitAttrition();
 	void RespositionInvalidUnits();
@@ -874,7 +877,9 @@ public:
 #ifdef LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
 	void DoReformationNotification();
 #endif
-
+#ifdef TRAITIFY
+	void ApplyFreshWaterToCityPlots(CvCity* pCity, bool bGrantFreshWater);
+#endif
 	void doUpdateBarbarianCampVisibility();
 
 	int getFeatureProductionModifier() const;
@@ -1722,6 +1727,10 @@ public:
 	void setPriorityTime(PlayerTypes eMinor, float fValue);
 #endif
 
+#ifdef TRAITIFY // Push notifications for trait changes
+	void SendTraitChangeNotification();
+#endif
+
 #ifdef PENALTY_FOR_DELAYING_POLICIES
 	bool IsDelayedPolicy() const;
 	void setIsDelayedPolicy(bool bValue);
@@ -2221,6 +2230,9 @@ protected:
 	FAutoVariable<std::vector<int>, CvPlayer> m_aiIncomingUnitTypes;
 	FAutoVariable<std::vector<int>, CvPlayer> m_aiIncomingUnitCountdowns;
 	FAutoVariable<std::vector<int>, CvPlayer> m_aiMinorFriendshipAnchors; // DEPRECATED
+#ifdef TRAITIFY
+	int m_aiStolenYieldBonus[NUM_YIELD_TYPES]; // Tracks current turn's stolen yield bonus
+#endif
 	std::vector<int> m_aiSiphonLuxuryCount;
 	std::vector<int> m_aiGreatWorkYieldChange;
 

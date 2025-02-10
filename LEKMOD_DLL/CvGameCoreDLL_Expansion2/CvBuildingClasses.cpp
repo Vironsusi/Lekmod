@@ -55,6 +55,9 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_bRequiresGoldPurchase(false),
 #endif
 	m_iFaithCost(0),
+#ifdef TRAITIFY
+	m_bCanNoBuy(false),
+#endif
 	m_iLeagueCost(0),
 	m_iNumCityCostMod(0),
 	m_iHurryCostModifier(0),
@@ -334,6 +337,9 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_bRequiresGoldPurchase = kResults.GetBool("RequiresGoldPurchase");
 #endif
 	m_iFaithCost = kResults.GetInt("FaithCost");
+#ifdef TRAITIFY // New Tag for Georgia
+	m_bCanNoBuy = kResults.GetBool("CanNoBuy");
+#endif 
 	m_iLeagueCost = kResults.GetInt("LeagueCost");
 	m_bUnlockedByBelief = kResults.GetBool("UnlockedByBelief");
 	m_bUnlockedByLeague = kResults.GetBool("UnlockedByLeague");
@@ -1105,6 +1111,13 @@ int CvBuildingEntry::GetFaithCost() const
 	return m_iFaithCost;
 }
 
+#ifdef TRAITIFY // For Georgia
+/// Is is this building allowed to be made instend of bought?
+bool CvBuildingEntry::IsCanNoBuy() const
+{
+	return m_bCanNoBuy;
+}
+#endif
 /// Production value per League member to construct the building
 int CvBuildingEntry::GetLeagueCost() const
 {

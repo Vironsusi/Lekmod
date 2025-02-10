@@ -924,6 +924,21 @@ void CvGameReligions::FoundReligion(PlayerTypes ePlayer, ReligionTypes eReligion
 	// Found it
 	m_CurrentReligions.push_back(kReligion);
 
+#ifdef TRAITIFY // Aksum all cities get the religion
+	if (kPlayer.GetPlayerTraits()->AutoConvertReligionOnFound())
+	{
+		int iNumCities = kPlayer.getNumCities();
+		for (int i = 0; i < iNumCities; i++)
+		{
+			CvCity* pCity = kPlayer.getCity(i);
+			if (pCity)
+			{
+				pCity->GetCityReligions()->AdoptReligionFully(eReligion);
+			}
+		}
+	}
+#endif
+
 	// Inform the holy city
 	pkHolyCity->GetCityReligions()->DoReligionFounded(kReligion.m_eReligion);
 
@@ -2282,6 +2297,14 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 		}
 		else
 		{
+#ifdef TRAITIFY // Trait-based religious pressure
+			int iTraitReligiousPressure = kPlayer.GetPlayerTraits()->GetForeignReligiousPressure();
+			if (iTraitReligiousPressure != 0)
+			{
+				iPressure *= (100 + iTraitReligiousPressure);
+				iPressure /= 100;
+			}
+#endif
 			iOwnedCityModifier = pReligion->m_Beliefs.GetSpreadModifierUnownedCities();
 			iOwnedCityModifierPolicy = kPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_SPREAD_MODIFIER_OTHER_CITIES);
 		}
@@ -4499,7 +4522,7 @@ void CvCityReligions::CityConvertsReligion(ReligionTypes eMajority, ReligionType
 		GET_PLAYER(pOldReligion->m_eFounder).doSelfConsistencyCheckAllCities();
 #endif
 	}
-
+#ifndef TRAITIFY // Vatican Courthouse Flip
 	if(eMajority > RELIGION_PANTHEON)
 	{
 		const CvReligion* pNewReligion = pReligions->GetReligion(eMajority, NO_PLAYER);
@@ -4528,7 +4551,67 @@ void CvCityReligions::CityConvertsReligion(ReligionTypes eMajority, ReligionType
 				}
 			}
 		}
+#else
+	if (eMajority > RELIGION_PANTHEON)
+	{
+		const CvReligion* pNewReligion = pReligions->GetReligion(eMajority, NO_PLAYER);
+		GET_PLAYER(pNewReligion->m_eFounder).UpdateReligion();
+#ifdef AUI_CITIZENS_MID_TURN_ASSIGN_RUNS_SELF_CONSISTENCY
+		GET_PLAYER(pNewReligion->m_eFounder).doSelfConsistencyCheckAllCities();
+#endif
 
+		// Pay adoption bonuses (if any)
+		if (!m_bHasPaidAdoptionBonus)
+		{
+			int iGoldBonus = pNewReligion->m_Beliefs.GetGoldWhenCityAdopts();
+			iGoldBonus *= GC.getGame().getGameSpeedInfo().getTrainPercent();;
+			iGoldBonus /= 100;
+
+			if (iGoldBonus > 0)
+			{
+				GET_PLAYER(pNewReligion->m_eFounder).GetTreasury()->ChangeGold(iGoldBonus);
+				SetPaidAdoptionBonus(true);
+
+				if (pNewReligion->m_eFounder == GC.getGame().getActivePlayer())
+				{
+					char text[256] = { 0 };
+					sprintf_s(text, "[COLOR_YELLOW]+%d[ENDCOLOR][ICON_GOLD]", iGoldBonus);
+					GC.GetEngineUserInterface()->AddPopupText(m_pCity->getX(), m_pCity->getY(), text, 0.5f);
+				}
+			}
+		}
+
+		// Check if the city owner has the free courthouse trait
+		CvPlayer& kOwner = GET_PLAYER(m_pCity->getOwner());
+		if (kOwner.GetPlayerTraits()->IsFreeCourthouse())
+		{
+			ReligionTypes eFoundedReligion = kOwner.GetReligions()->GetReligionCreatedByPlayer();
+
+			// Ensure the city's new majority religion is the owner's founded religion
+			if (eFoundedReligion != NO_RELIGION && eFoundedReligion == eMajority)
+			{
+				// Ensure the city is occupied or puppet
+				if (m_pCity->IsOccupied() || m_pCity->IsPuppet())
+				{
+					// Get the civilization's unique courthouse
+					BuildingTypes eCourthouse = (BuildingTypes)kOwner.getCivilizationInfo().getCivilizationBuildings(GC.getInfoTypeForString("BUILDINGCLASS_COURTHOUSE"));
+
+					// If no unique courthouse, fall back to the default courthouse
+					if (eCourthouse == NO_BUILDING)
+					{
+						eCourthouse = (BuildingTypes)GC.getInfoTypeForString("BUILDING_COURTHOUSE");
+					}
+
+					// Apply the courthouse
+					if (eCourthouse != NO_BUILDING)
+					{
+						m_pCity->GetCityBuildings()->SetNumRealBuilding(eCourthouse, 1);
+					}
+				}
+			}
+		}
+	
+#endif
 		// Notification if the player's city was converted to a religion they didn't found
 		PlayerTypes eOwnerPlayer = m_pCity->getOwner();
 		CvPlayerAI& kOwnerPlayer = GET_PLAYER(eOwnerPlayer);

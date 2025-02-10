@@ -549,7 +549,83 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 	changePopulation(GC.getINITIAL_CITY_POPULATION() + GC.getGame().getStartEraInfo().getFreePopulation());
 	// Free population from things (e.g. Policies)
 	changePopulation(GET_PLAYER(getOwner()).GetNewCityExtraPopulation());
+#ifdef TRAITIFY // Palmyra FreshWater & Extra Population Handling
+	if (bInitialFounding)
+	{
+		CvPlayer& kPlayer = GET_PLAYER(eOwner);
+		int iExtraPopulation = kPlayer.GetPlayerTraits()->GetExtraPopulationNewCities();
+		int iCityLimit = kPlayer.GetPlayerTraits()->GetExtraPopulationCityCount();
+		int iGoldBurst = kPlayer.GetPlayerTraits()->GetGoldBurstOnFound();
+		bool bPopulationIncreased = false;
+		bool bGoldGranted = false;
 
+		// 🚨 If there is a city limit, ensure the first city founded (capital) NEVER gets extra population 🚨
+		if (iCityLimit > 0 && kPlayer.getNumCities() == 1)
+		{
+			// This is the first city (capital), so skip the population increase
+		}
+		else if (iExtraPopulation > 0)
+		{
+			// Count number of non-capital cities
+			int iNonCapitalCityCount = 0;
+			int iLoop;
+			for (CvCity* pLoopCity = kPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iLoop))
+			{
+				if (!pLoopCity->isCapital() && pLoopCity != this) // Exclude capital and this new city from count
+				{
+					iNonCapitalCityCount++;
+				}
+			}
+
+			// If there's a city limit defined, apply only to the first X non-capital cities
+			if (iCityLimit > 0)
+			{
+				if (iNonCapitalCityCount < iCityLimit)
+				{
+					changePopulation(iExtraPopulation);
+					bPopulationIncreased = true;
+				}
+			}
+			else // If no limit, apply to all new cities and trigger GoldBurstOnFound
+			{
+				changePopulation(iExtraPopulation);
+				kPlayer.GetTreasury()->ChangeGold(iGoldBurst);
+				bPopulationIncreased = true;
+				bGoldGranted = true;
+			}
+		}
+
+		// Apply Fresh Water to City if the Trait is enabled
+		if (kPlayer.GetPlayerTraits()->IsGiveFreshWaterAroundCities())
+		{
+			kPlayer.ApplyFreshWaterToCityPlots(this, true);
+		}
+
+		// Show floating text over the city
+		if (bPopulationIncreased || bGoldGranted)
+		{
+			char text[256];
+
+			// Format based on whether gold is also granted
+			if (bGoldGranted)
+			{
+				sprintf_s(text, sizeof(text), "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_CITIZEN] [COLOR_YELLOW]+%d[ENDCOLOR] [ICON_GOLD]",
+					iExtraPopulation, iGoldBurst);
+			}
+			else
+			{
+				sprintf_s(text, sizeof(text), "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_CITIZEN]", iExtraPopulation);
+			}
+
+			// Ensure city is visible before displaying floating text
+			if (plot()->GetActiveFogOfWarMode() == FOGOFWARMODE_OFF)
+			{
+				float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
+				GC.GetEngineUserInterface()->AddPopupText(getX(), getY(), text, fDelay);
+			}
+		}
+	}
+#endif
 	// Free food from things (e.g. Policies)
 	int iFreeFood = growthThreshold() * GET_PLAYER(getOwner()).GetFreeFoodBox();
 	changeFoodTimes100(iFreeFood);
@@ -2976,6 +3052,26 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
+#ifdef TRAITIFY // Relgious Maj building Req
+	// Religious Majority requirement
+	if (pkBuildingInfo->IsCanNoBuy())
+	{
+		if (GET_PLAYER(getOwner()).GetPlayerTraits()->IsNoBuyFaithBuilding())
+		{
+			ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+			if (eMajority <= RELIGION_PANTHEON)
+			{
+				return false;
+			}
+			const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+			if (pReligion == NULL || !pReligion->m_Beliefs.IsBuildingClassEnabled((BuildingClassTypes)pkBuildingInfo->GetBuildingClassType()))
+			{
+				return false;
+			}
+			return true;
+		}
+	}
+#endif
 
 	CvCivilizationInfo& thisCivInfo = *GC.getCivilizationInfo(getCivilizationType());
 	int iNumBuildingClassInfos = GC.getNumBuildingClassInfos();
@@ -5450,7 +5546,11 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 
 		if (pkUnitInfo->IsSpreadReligion() || pkUnitInfo->IsRemoveHeresy())
 		{
+#ifndef TRAITIFY //FaithCostModifier Units
 			iMultiplier = (100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER));
+#else
+			iMultiplier = (100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER) + GET_PLAYER(getOwner()).GetPlayerTraits()->GetFaithCostModifier());
+#endif
 			iCost = iCost * iMultiplier / 100;
 		}
 	}
@@ -5593,7 +5693,11 @@ int CvCity::GetFaithPurchaseCost(BuildingTypes eBuilding)
 	EraTypes eEra = GET_TEAM(GET_PLAYER(getOwner()).getTeam()).GetCurrentEra();
 	int iMultiplier = GC.getEraInfo(eEra)->getFaithCostMultiplier();
 	iCost = iCost * iMultiplier / 100;
+#ifndef TRAITIFY //FaithCostModifier Buildings
 	iMultiplier = (100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER));
+#else
+	iMultiplier = (100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER) + GET_PLAYER(getOwner()).GetPlayerTraits()->GetFaithCostModifier());
+#endif
 	iCost = iCost * iMultiplier / 100;
 
 	// Adjust for game speed
@@ -5871,6 +5975,28 @@ int CvCity::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) const
 
 	int iTempMod;
 
+#ifdef TRAITIFY // IsMilitary UnitProdMod and CapitalUnitProdMod
+	if (pkUnitInfo->IsMilitaryProduction())
+	{
+		iTempMod = thisPlayer.GetPlayerTraits()->GetUnitProductionModifier();
+		iMultiplier += iTempMod;
+		if (toolTipSink && iTempMod)
+		{
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_TRAIT", iTempMod);
+		}
+	}
+
+	if (isCapital() && pkUnitInfo->IsMilitaryProduction())
+	{
+		iTempMod = thisPlayer.GetPlayerTraits()->GetCapitalUnitProductionModifier();
+		iMultiplier += iTempMod;
+		if (toolTipSink && iTempMod)
+		{
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_CAPITAL_TRAIT", iTempMod);
+		}
+	}
+#endif
+
 	// Capital Settler bonus
 	if(isCapital() && pkUnitInfo->IsFound())
 	{
@@ -6067,6 +6193,32 @@ int CvCity::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSink
 	}
 
 	// From traits
+#ifdef TRAITIFY // GeneralBuildingProductionModifier in ALL cities
+	iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingProductionModifier();
+	iMultiplier += iTempMod;
+	if (toolTipSink && iTempMod)
+	{
+		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_TRAIT", iTempMod);
+	}
+	// Production bonus for buildings in the capital ONLY 
+	if (isCapital())
+	{
+		iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetCapitalBuildingProductionModifier();
+		iMultiplier += iTempMod;
+		if (toolTipSink && iTempMod)
+		{
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_CAPITAL_TRAIT", iTempMod);
+		}
+	}
+	// For a Specific BuildingClass
+	iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassProductionModifier((BuildingClassTypes)kBuildingClassInfo.GetID());
+	iMultiplier += iTempMod;
+	if (toolTipSink && iTempMod)
+	{
+		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_TRAIT", iTempMod);
+	}
+#endif
+	// Production bonus for buildings that exist in the Capital in non capital cities
 	iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetCapitalBuildingDiscount(eBuilding);
 	if(iTempMod != 0)
 	{
@@ -6696,7 +6848,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 	if(pBuildingInfo == NULL)
 		return;
 
-	BuildingClassTypes eBuildingClass = (BuildingClassTypes) pBuildingInfo->GetBuildingClassType();
+	BuildingClassTypes eBuildingClass = (BuildingClassTypes)pBuildingInfo->GetBuildingClassType();
 
 	CvPlayer& owningPlayer = GET_PLAYER(getOwner());
 	CvTeam& owningTeam = GET_TEAM(getTeam());
@@ -6707,6 +6859,39 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		// One-shot items
 		if(bFirst && iChange > 0)
 		{
+#ifdef TRAITIFY //UAE Bonus
+			if(owningPlayer.GetPlayerTraits()->GetWonderGoldReward() || owningPlayer.GetPlayerTraits()->GetWeLoveTheKingDayCount() > 0)
+			{
+				CvBuildingClassInfo* pBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+				if (pBuildingClassInfo && pBuildingClassInfo->getMaxGlobalInstances() == 1)
+				{
+					int iBaseGoldReward = owningPlayer.GetPlayerTraits()->GetWonderGoldReward();
+					int iBaseWLTKDBonus = owningPlayer.GetPlayerTraits()->GetWeLoveTheKingDayCount();
+					int iGameSpeedModifier = GC.getGame().getGameSpeedInfo().getGoldPercent();
+					int iScaledGoldReward = (iBaseGoldReward * iGameSpeedModifier) / 100;
+					int iScaledWLTKDBonus = (iBaseWLTKDBonus * iGameSpeedModifier) / 100 + 3;
+					if (iScaledGoldReward > 0)
+					{
+						owningPlayer.GetTreasury()->ChangeGold(iScaledGoldReward);
+					}
+					if (iScaledWLTKDBonus > 0)
+					{
+						ChangeWeLoveTheKingDayCounter(iScaledWLTKDBonus);
+					}
+					if ((iScaledGoldReward > 0 || iScaledWLTKDBonus > 0) && owningPlayer.isHuman())
+					{
+						Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_WONDER_COMPLETED_SUMMARY");
+						Localization::String strMessage = Localization::Lookup("TXT_KEY_TRAIT_UAE_WONDER_BUILT");
+						strMessage << getName() << iScaledGoldReward << iScaledWLTKDBonus;
+						CvNotifications* pNotifications = owningPlayer.GetNotifications();
+						if (pNotifications)
+						{
+							pNotifications->Add(NOTIFICATION_WONDER_COMPLETED_ACTIVE_PLAYER, strMessage.toUTF8(), strSummary.toUTF8(), getX(), getY(), -1);
+						}
+					}
+				}
+			}
+#endif	
 			// Capital
 			if(pBuildingInfo->IsCapital())
 				owningPlayer.setCapitalCity(this);
@@ -7423,7 +7608,23 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			CvPlayerPolicies* pPolicies = GET_PLAYER(getOwner()).GetPlayerPolicies();
 			changeYieldRateModifier(eYield, pPolicies->GetBuildingClassYieldModifier(eBuildingClass, eYield) * iChange);
 			ChangeBaseYieldRateFromBuildings(eYield, pPolicies->GetBuildingClassYieldChange(eBuildingClass, eYield) * iChange);
-
+#ifdef TRAITIFY // Trait Yieldmod and Yieldchange on buildings
+			CvPlayerTraits* pTraits = GET_PLAYER(getOwner()).GetPlayerTraits();
+			if (eYield == YIELD_CULTURE) // For Culture
+			{
+				ChangeJONSCulturePerTurnFromBuildings(pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield)* iChange);
+				changeCultureRateModifier(pTraits->GetBuildingClassYieldModifier(eBuildingClass, eYield) * iChange);
+			}
+			else if (eYield == YIELD_FAITH) // For Faith
+			{
+				ChangeFaithPerTurnFromBuildings(pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield)* iChange);
+			}
+			else // For Food, Production, Gold, Science... why did firaxis do this?
+			{
+				changeYieldRateModifier(eYield, pTraits->GetBuildingClassYieldModifier(eBuildingClass, eYield)* iChange);
+				ChangeBaseYieldRateFromBuildings(eYield, pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield)* iChange);
+			}
+#endif
 #ifdef AUI_WARNING_FIXES
 			for (uint iJ = 0; iJ < GC.getNumResourceInfos(); iJ++)
 #else
@@ -8737,7 +8938,7 @@ int CvCity::getTotalGreatPeopleRateModifier() const
 	int iModifier;
 
 	iModifier = getGreatPeopleRateModifier();
-
+	
 	iModifier += GET_PLAYER(getOwner()).getGreatPeopleRateModifier();
 
 	if(GET_PLAYER(getOwner()).isGoldenAge())
@@ -8762,7 +8963,14 @@ void CvCity::changeBaseGreatPeopleRate(int iChange)
 int CvCity::getGreatPeopleRateModifier() const
 {
 	VALIDATE_OBJECT
-	return m_iGreatPeopleRateModifier;
+		if (isCapital())
+		{
+			return (m_iGreatPeopleRateModifier + GET_PLAYER(getOwner()).GetPlayerTraits()->GetCapitalGreatPersonRateModifier());
+		}
+		else
+		{
+			return m_iGreatPeopleRateModifier;
+		}
 }
 
 
@@ -10297,7 +10505,42 @@ int CvCity::GetLocalHappiness() const
 			}
 		}
 	}
+#ifdef TRAITIFY
+	int iSpecialTraitBuildingHappiness = 0;
 
+	for (int iTraitLoop = 0; iTraitLoop < GC.getNumTraitInfos(); iTraitLoop++)
+	{
+		TraitTypes eTrait = (TraitTypes)iTraitLoop;
+		CvTraitEntry* pkTraitInfo = GC.getTraitInfo(eTrait);
+		if (pkTraitInfo)
+		{
+			if (kPlayer.GetPlayerTraits()->HasTrait(eTrait))
+			{
+				for (iBuildingClassLoop = 0; iBuildingClassLoop < GC.getNumBuildingClassInfos(); iBuildingClassLoop++)
+				{
+					eBuildingClass = (BuildingClassTypes)iBuildingClassLoop;
+
+					CvBuildingClassInfo* pkBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+					if (!pkBuildingClassInfo)
+					{
+						continue;
+					}
+					BuildingTypes eBuilding = (BuildingTypes)kPlayer.getCivilizationInfo().getCivilizationBuildings(eBuildingClass);
+					if (eBuilding != NO_BUILDING && GetCityBuildings()->GetNumBuilding(eBuilding) > 0) // slewis - added the NO_BUILDING check for the ConquestDLX scenario which has civ specific wonders
+					{
+						if (pkTraitInfo->GetBuildingClassHappiness(eBuildingClass) != 0)
+						{
+							iSpecialTraitBuildingHappiness += pkTraitInfo->GetBuildingClassHappiness(eBuildingClass);
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	iLocalHappiness += iSpecialTraitBuildingHappiness;
+#endif
 	iLocalHappiness += iSpecialPolicyBuildingHappiness;
 	int iLocalHappinessCap = getPopulation();
 
@@ -12205,6 +12448,16 @@ void CvCity::updateStrengthValue()
 	AI_PERF_FORMAT("City-AI-perf.csv", ("CvCity::updateStrengthValue, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), GetPlayer()->getCivilizationShortDescription(), getName().c_str()) );
 	// Default Strength
 	int iStrengthValue = /*600*/ GC.getCITY_STRENGTH_DEFAULT();
+
+#ifdef TRAITIFY // Capital and General Strength Bonuses
+	CvPlayerTraits* pTraits = GET_PLAYER(getOwner()).GetPlayerTraits();
+	if (isCapital())
+	{
+		iStrengthValue += pTraits->GetCapitalDefenseBonus();
+	}
+
+	iStrengthValue += pTraits->GetCityDefenseBonus();
+#endif
 
 	// Population mod
 	iStrengthValue += getPopulation() * /*25*/ GC.getCITY_STRENGTH_POPULATION_CHANGE();
@@ -14976,6 +15229,11 @@ bool CvCity::IsCanPurchase(bool bTestPurchaseCost, bool bTestTrainable, UnitType
 				}
 
 				if (GetCityBuildings()->GetNumBuilding(eBuildingType) > 0)
+				{
+					return false;
+				}
+
+				if (pkBuildingInfo->IsCanNoBuy() && GET_PLAYER(getOwner()).GetPlayerTraits()->IsNoBuyFaithBuilding())
 				{
 					return false;
 				}

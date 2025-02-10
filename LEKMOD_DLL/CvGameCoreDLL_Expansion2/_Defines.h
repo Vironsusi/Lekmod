@@ -997,8 +997,159 @@
 //#define LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
 
 
+#define TRAITIFY
+// -------------------------------------------------------------------------------------
+// This define is for adding to the Trait Effects all currently dummied traits
+// -------------------------------------------------------------------------------------
+/* DUMMY TRAITS
+England: Trait_BuildingClassProductionModifier + Trait_BuildingClassHappiness
+Ireland: Trait_BuildingClassProductionModifier + Trait_BuildingClassHappiness
+Scotland: Trait_BuildingClassYieldChange + CapitalGreatPersonRateModifier
+Wales: Trait_ResourceYieldChange
+France: Trait_BuildingClassYieldChange
+Romania: GoldenAgeCultureBonus + GoldenAgePointBurstOnCapture
+Germany: GreatEngineerRateModifier + Trait_BuildingClassYieldChange
+Turkey: Trait_BuildingClassProductionModifier + Trait_BuildingClassYieldChange
+Great Zimbabwe: CapitalUnitProductionModifier + CapitalBuildingProductionModifier
+Armenia: Trait_FeatureYieldChange
+Georgia: Trait_BuildingClassYieldChange + FaithBuildingNoBuy + NoBuyProductionPercent
+Madagascar: FaithCostModifier
+Venice: NumTradeRouteBonus, BUGFIX: Traits giving Caravans and Cargo Ships doesn't work correctly [CvPlayer::addFreeUnit]
+Tonga: MinorFriendshipMinimum
+Timurids: Trait_BuildingClassYieldModifier + CapitalDefenseBonus
+Normandy: AllCityDefenseBonus
+Bulgaria: Trait_BuildingClassYieldChange
+Norway: Trait_TerrianYieldChange
+Korea: Trait_BuildingClassYieldChange
+Vatican: NumExtraLeagueVotes + FreeBuildingClassInOccupiedCities
+Yugoslavia: UnitProductionModifier + Trait_CityYieldChanges + NumFreeIdeologyTenets + FreeTenetOnSwap + TraitGainedOnIdeology/TraitLostOnIdeology
+Golden Horde: MinorBullyModifier + Trait_YieldModifiersForPuppetedCities + UnhappinessModifierForPuppetedCities
+Akkad: Trait_YieldsFromConqueredCities + GreatGeneralSiegeBonus
+Mongolia: Trait_ResourceYieldChange + UncoverNewResource
+Aksum: ForeignReligiousPressure + SetCityReligionOnFound
+United Arab Emirates: GoldFromWorldWonders + StartWLTKDOnWorldWonder + GoldFromTradeGuards + XPForTradeGuards
+Bolivia: LastGreatPersonUsed + ImprovementYieldChange based on LastGreatPersonUsed
+Moors: GeneralBuildingProductionModifier + PreqreqEra + ObsoleteEra
+Cuba: CultureInCapitalPerXCultureInForiegnCapital + IdeologyPressureUnhappinessModifier + TraitUnitUnlock + TraitFreeUnitCount + TraitOnIdeology
+Italy: (ExtendGoldenAgeOnPolicy + GivenGoldenAgePointsOnPolicy) -> DoExtendedGAOnPolicy
+Kilwa: Trait_InternationalTradeRouteYieldModifier + InternalTradeRouteGoldChange
+Prussia: InternalTradeRouteYieldModifier
+Maori: Might do fancy stuff. Probably not though.
+Nabatea: Trait_TechFreshWaterImprovementYieldChange
+New Zealand: Trait_YieldFromMeets + (ReportYieldFromMeets)
+Ottomans: Trait_YieldFromPromotions
+Palmrya: FreshWaterAdjacentToCities + Trait_BuildingClassRemoveRequiredTerrian 
+Phillipines: ExtraPopFromSettledCities + CityCount + Trait_ExtraMovementInTerritory
+Phoenicia: ExtraPopFromSettledCities + GoldFromSettles
+Tibet: Tibet UA is handled but the growing Yield per Era on the building is not.
+Mysore: SpecialistUnhappiness
+Denmark: Trait_ResourceYieldChange
+Ukraine: Trait_ResourceYieldChange
+Portual: ProductionDiscountForTradeUnits 
+Franks: Trait_RouteMovementChanges
+	is -5 for Roads and -10 for Railroads
+     
+END LIST*/
+
+/*int, strings and boolean list of trait effects
+GoldenAgeCultureModifier INT
+GoldenAgePointBurstOnCapture INT
+GreatEngineerPointsModifier INT
+CapitalDefenseBonus INT
+CityDefenseBonus INT
+GreatGeneralSiegeBonus INT
+ProductionDiscountForTradeUnits INT
+MinorFriendshipMinimum INT
+NumTradeRouteBonus INT
+FaithCostModifier INT
+NumExtraLeagueVotes INT
+	TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TRAIT_VOTES
+MinorBullyModifier INT
+	TXT_KEY_POP_CSTATE_BULLY_FACTOR_TRAIT_MODIFIER
+CapitalBuildingProductionModifier INT
+	TXT_KEY_PRODMOD_BUILDING_CAPITAL_TRAIT
+BuildingProductionModifier INT
+CapitalUnitProductionModifier INT
+	TXT_KEY_PRODMOD_UNIT_CAPITAL_TRAIT
+UnitProductionModifier INT
+InternalTradeRouteYieldModifier INT
+InternalTradeRouteGoldChange INT
+CapitalGreatPersonRateModifier INT
+WonderGoldReward INT
+WeLoveTheKingDayCount INT
+ForeignReligiousPressure INT
+IdeologyPressureUnhappinessModifier INT
+DoTradeGuards BOOL
+GoldFromTradeGuards INT
+XPForTradeGuards INT
+NoBuyFaithBuilding BOOL
+	NewLineInBuildingxml "CanNoBuy"
+FreeIdeologicalTenets INT
+AutoConvertReligionOnFound BOOL
+NoBuyProductionPercent INT
+FreeCourthouse BOOL
+UnhappinessModifierForPuppetedCities INT
+IsExpandedGoldenAge BOOL
+ExtendGoldenAgeOnPolicy INT
+GivenGoldenAgePointsOnPolicy INT
+FreshWaterAdjacentToCities BOOL
+ExtraPop INT
+CityCount INT
+GoldFromSettles INT
+
+PreqreqEra STRING
+ObsoleteEra STRING
+AnyIdeology BOOL
+RequiredIdeology STRING
+
+Arrays
+Trait_RouteMovementChanges TRAIT, ROUTETYPE, INT
+Trait_BuildingClassYieldChange TRAIT, BUILDINGCLASS, YIELDCHANGE
+Trait_BuildingClassYieldModifier TRAIT, BUILDINGCLASS, YIELDMOD
+Trait_BuildingClassHappiness TRAIT, BUILDINGCLASS, HAPPINESS
+Trait_BuildingClassProductionModifier TRAIT, BUILDINGCLASS, PRODMOD
+Trait_ResourceYieldChange TRAIT, RESOURCE, YIELD
+	need to EUI it
+Trait_TerrainYieldChanges TRAIT, TERRIAN, YIELD
+	need to EUI it
+// -------------------------------- ^ Finished ^ -------------------------------- \\
+UncoverNewResource BOOL
+NewResourceType STRING
+	This should be Expanded into is own function that can be called by Buildings, Traits and Policies.
+	Currently resides in a Building only method. might Extract since it currently is very clunky for only being used to give a Horse.
+
+NoBuyFaithUnit BOOL - More of an extension of NoBuyFaithBuilding but not currently used. Also not that useful.
 
 
+NEW TRAIT GIVE METHODS
+LostOnCapitalCapture BOOL
+
+Arrays
+
+Improvement_TraitFreshWaterImprovementYieldChange Trait, Tech, Improvement, YieldChange
+
+Trait_StealCapitalYieldsPerXYield TRAIT, YIELD, YIELDPERX fucking annoying. Might simplify to an integer.
+Trait_SpecialistHappinessChanges TRAIT, SPECIALIST, INT
+Trait_UnitClassExtraMovementInTerritory TRAIT, UNITCLASS, INT
+Trait_CityYieldModifiers STRING, STRING, INT
+	Conditional BOOLs	OnlyCapital, and OnlyPuppet
+Trait_BuildingClassRemoveRequiredTerrian TRAIT, BUILDING, TERRIAN
+Trait_CityYieldChanges STRING, STRING, INT
+Trait_YieldFromMeets STRING, STRING, INT
+Trait_YieldFromPromotions STRING, STRING, INT
+Trait_InternationalTradeRouteYieldModifier STRING, STRING, INT
+END LIST*/
+#define UNIT_IDEOLOGY_UNLOCK
+// new boolean that allows a unit to be unlocked by adopting ANY ideology.
+#define BUILDING_FREE_BUILDING_ALL_CITIES
+// new string that allows a building to give a free buildingclass in all cities. GREAT WALL
+// Or might do a few ints that give Global HP change and Global Defense change
+#define POLICY_TRADE_ROUTES
+// new integer that allows policies to give a static amount of trade routes. GRAND BAZAAR
+#define POLICY_OLD_TOA
+// new effect that allows a policy to give the Old Temple of Artemis effect without the dummy Encampment building.
+#define BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+// New Array that allows buildings to give a yield to the city they are in if the city is the origin of a trade route, Like Colossus. MINAA and ROCKCUT TOMBS
 
 ////////////////////////
 //Benched or not working

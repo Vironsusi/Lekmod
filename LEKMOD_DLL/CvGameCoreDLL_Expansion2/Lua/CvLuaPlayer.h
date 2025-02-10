@@ -369,6 +369,9 @@ protected:
 	static int lGetNumPolicies(lua_State* L);
 	static int lGetNumPoliciesInBranch(lua_State* L);
 	static int lHasPolicy(lua_State* L);
+#ifdef TRAITIFY
+	static int lHasTrait(lua_State* L);
+#endif
 #ifdef LEKMOD_NEW_LUA_METHODS
 	static int lHasPolicyBranch(lua_State* L);
 #endif

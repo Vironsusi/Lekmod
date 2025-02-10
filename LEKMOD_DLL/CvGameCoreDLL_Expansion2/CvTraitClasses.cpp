@@ -72,6 +72,52 @@ CvTraitEntry::CvTraitEntry() :
 	m_iNaturalWonderFirstFinderGold(0),
 	m_iNaturalWonderSubsequentFinderGold(0),
 
+#ifdef TRAITIFY //Constructor in CvTraitClasses.cpp
+	m_ePrereqEra(NO_ERA),
+	m_eObsoleteEra(NO_ERA),
+	m_eRequiredIdeology(NO_POLICY_BRANCH_TYPE),
+	m_bAnyIdeology(false),
+
+	m_iGoldenAgeCultureModifier(0),
+	m_iGoldenAgePointBurstOnCapture(0),
+	m_iGreatEngineerRateModifier(0),
+	m_iCapitalDefenseBonus(0),
+	m_iCityDefenseBonus(0),
+	m_iGreatGeneralSiegeBonus(0),
+	m_iProductionDiscountForTradeUnits(0),
+	m_iMinorFriendshipMinimum(0),
+	m_iNumTradeRouteBonus(0),
+	m_iFaithCostModifier(0),
+	m_iNumExtraLeagueVotes(0),
+	m_iMinorBullyModifier(0),
+	m_iBuildingProductionModifier(0),
+	m_iUnitProductionModifier(0),
+	m_iCapitalUnitProductionModifier(0),
+	m_iInternalTradeRouteYieldModifier(0),
+	m_iInternalTradeRouteGoldChange(0),
+	m_iCapitalGreatPersonRateModifier(0),
+	m_iWonderGoldReward(0),
+	m_iWeLoveTheKingDayCount(0),
+	m_iForeignReligiousPressure(0),
+	m_iGoldFromTradeGuards(0),
+	m_iXPFromTradeGuards(0),
+	m_bNoBuyFaithBuilding(false),
+	m_bNoBuyFaithUnit(false),
+	m_iNoBuyProductionPercent(0),
+	m_iIdeologyUnhappinessModifier(0),
+	m_iFreeIdeologicalTenets(0),
+	m_bAutoConvertReligionOnFound(false),
+	m_bFreeCourthouse(false),
+	m_iUnhappinessModifierForPuppets(0),
+	m_bExpandedGoldenAge(false),
+	m_iExtendGoldenAgeOnPolicy(0),
+	m_fGivenGoldenAgePointsOnPolicy(0),
+	m_bGiveFreshWaterAroundCities(false),
+	m_iExtraPopulationNewCities(0),
+	m_iExtraPopulationCityCount(0),
+	m_iGoldBurstOnFound(0),
+#endif
+
 	//EAP: Natural wonder faith for the finder
 	m_iNaturalWonderFirstFinderFaith(0),
 	m_iNaturalWonderSubsequentFinderFaith(0),
@@ -165,6 +211,12 @@ CvTraitEntry::CvTraitEntry() :
 #else
 	m_ppiImprovementYieldChanges(NULL),
 	m_ppiSpecialistYieldChanges(NULL),
+#ifdef TRAITIFY
+	m_ppaiTerrainYieldChange(NULL),
+	m_ppaiResourceYieldChange(NULL),
+	m_paiBuildingClassProductionModifiers(NULL),
+	m_paiBuildingClassHappiness(NULL),
+#endif
 #ifdef LEK_TRAIT_SPECIALIST_YIELD_MAX_ONE
 	m_ppiAnySpecificSpecialistYieldChanges(NULL),
 #endif
@@ -183,6 +235,12 @@ CvTraitEntry::~CvTraitEntry()
 #else
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldChanges);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiSpecialistYieldChanges);
+#ifdef TRAITIFY //SafeDeleteArray
+	CvDatabaseUtility::SafeDelete2DArray(m_ppaiTerrainYieldChange);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppaiResourceYieldChange);
+	SAFE_DELETE_ARRAY(m_paiBuildingClassProductionModifiers);
+	SAFE_DELETE_ARRAY(m_paiBuildingClassHappiness);
+#endif
 #ifdef LEK_TRAIT_SPECIALIST_YIELD_MAX_ONE
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiAnySpecificSpecialistYieldChanges);
 #endif
@@ -468,6 +526,266 @@ int CvTraitEntry::GetNaturalWonderSubsequentFinderGold() const
 {
 	return m_iNaturalWonderSubsequentFinderGold;
 }
+
+#ifdef TRAITIFY //Cached data about this player's traits in CvTraitClasses.cpp
+/// Accessor:: Era that activates this trait
+EraTypes CvTraitEntry::GetPrereqEra() const
+{
+	return m_ePrereqEra;
+}
+
+/// Accessor:: Era that makes this trait obsolete
+EraTypes CvTraitEntry::GetObsoleteEra() const
+{
+	return m_eObsoleteEra;
+}
+
+/// Accessor:: Policy that is required for this trait
+PolicyBranchTypes CvTraitEntry::GetRequiredIdeology() const
+{
+	return m_eRequiredIdeology;
+}
+
+/// Accessor:: Does this trait require any ideology?
+bool CvTraitEntry::IsAnyIdeology() const
+{
+	return m_bAnyIdeology;
+}
+
+/// Accessor:: Enhanced Culture Modifier during Golden Ages
+int CvTraitEntry::GetGoldenAgeCultureModifier() const
+{
+	return m_iGoldenAgeCultureModifier;
+}
+
+/// Accessor:: Golden Age Point Burst on Capture
+int CvTraitEntry::GetGoldenAgePointBurstOnCapture() const
+{
+	return m_iGoldenAgePointBurstOnCapture;
+}
+
+/// Accessor:: Great Engineer Points Modifier
+int CvTraitEntry::GetGreatEngineerRateModifier() const
+{
+	return m_iGreatEngineerRateModifier;
+}
+
+/// Accessor:: Capital Defense Bonus
+int CvTraitEntry::GetCapitalDefenseBonus() const
+{
+	return m_iCapitalDefenseBonus;
+}
+
+/// Accessor:: City Defense Bonus
+int CvTraitEntry::GetCityDefenseBonus() const
+{
+	return m_iCityDefenseBonus;
+}
+
+/// Accessor:: Great General Siege Bonus
+int CvTraitEntry::GetGreatGeneralSiegeBonus() const
+{
+	return m_iGreatGeneralSiegeBonus;
+}
+
+/// Accessor:: Production Discount for Trade Units
+int CvTraitEntry::GetProductionDiscountForTradeUnits() const
+{
+	return m_iProductionDiscountForTradeUnits;
+}
+
+/// Accessor:: Minimum Friendship with Minor Civs
+int CvTraitEntry::GetMinorFriendshipMinimum() const
+{
+	return m_iMinorFriendshipMinimum;
+}
+
+/// Accessor:: Number of bonus trade routes
+int CvTraitEntry::GetNumTradeRouteBonus() const
+{
+	return m_iNumTradeRouteBonus;
+}
+
+/// Accessor:: Faith Cost Modifier
+int CvTraitEntry::GetFaithCostModifier() const
+{
+	return m_iFaithCostModifier;
+}
+
+/// Accessor:: Number of extra league votes
+int CvTraitEntry::GetNumExtraLeagueVotes() const
+{
+	return m_iNumExtraLeagueVotes;
+}
+
+/// Accessor:: How much more effective is this player at bullying minors?
+int CvTraitEntry::GetMinorBullyModifier() const
+{
+	return m_iMinorBullyModifier;
+}
+
+/// Accessor:: Production Modifier for Buildings in all cities
+int CvTraitEntry::GetBuildingProductionModifier() const
+{
+	return m_iBuildingProductionModifier;
+}
+
+/// Accessor:: Production Modifier for Buildings in the Capital
+int CvTraitEntry::GetCapitalBuildingProductionModifier() const
+{
+	return m_iCapitalBuildingProductionModifier;
+}
+
+/// Accessor:: Production Modifier for Units in all cities
+int CvTraitEntry::GetUnitProductionModifier() const
+{
+	return m_iUnitProductionModifier;
+}
+
+/// Accessor:: Production Modifier for units in the Capital
+int CvTraitEntry::GetCapitalUnitProductionModifier() const
+{
+	return m_iCapitalUnitProductionModifier;
+}
+
+/// Accessor:: Yield Modifier for Internal Trade Routes
+int CvTraitEntry::GetInternalTradeRouteYieldModifier() const
+{
+	return m_iInternalTradeRouteYieldModifier;
+}
+
+/// Accessor:: Gold Change for Internal Trade Routes
+int CvTraitEntry::GetInternalTradeRouteGoldChange() const
+{
+	return m_iInternalTradeRouteGoldChange;
+}
+
+/// Accessor:: Great Person Rate Modifier in the Capital
+int CvTraitEntry::GetCapitalGreatPersonRateModifier() const
+{
+	return m_iCapitalGreatPersonRateModifier;
+}
+
+/// Accessor:: Gold Reward for Completing a World Wonder
+int CvTraitEntry::GetWonderGoldReward() const
+{
+	return m_iWonderGoldReward;
+}
+
+/// Accessor:: Number of turns for We Love the King Day for Completing a World Wonder
+int CvTraitEntry::GetWeLoveTheKingDayCount() const
+{
+	return m_iWeLoveTheKingDayCount;
+}
+
+/// Accessor:: Foreign Religious Pressure
+int CvTraitEntry::GetForeignReligiousPressure() const
+{
+	return m_iForeignReligiousPressure;
+}
+
+/// Accessor:: Gold from Military Units on Trade Routes
+int CvTraitEntry::GetGoldFromTradeGuards() const
+{
+	return m_iGoldFromTradeGuards;
+}
+
+/// Accessor:: XP from Military Units on Trade Routes
+int CvTraitEntry::GetXPFromTradeGuards() const
+{
+	return m_iXPFromTradeGuards;
+}
+
+/// Accessor:: Can't buy Faith Buildings
+bool CvTraitEntry::IsNoBuyFaithBuilding() const
+{
+	return m_bNoBuyFaithBuilding;
+}
+
+/// Accessor:: Can't buy Faith Units
+bool CvTraitEntry::IsNoBuyFaithUnit() const
+{
+	return m_bNoBuyFaithUnit;
+}
+
+/// Accessor:: Percent of the Faith cost as Production for Faith NoBuys 
+int CvTraitEntry::GetNoBuyProductionPercent() const
+{
+	return m_iNoBuyProductionPercent;
+}
+
+/// Accessor:: Unhappiness% from Ideologies
+int CvTraitEntry::GetIdeologyUnhappinessModifier() const
+{
+	return m_iIdeologyUnhappinessModifier;
+}
+
+/// Accessor:: Free Ideological Tenets from Traits on Adopt and Switch
+int CvTraitEntry::GetFreeIdeologicalTenets() const
+{
+	return m_iFreeIdeologicalTenets;
+}
+
+/// Accessor:: Automatically convert all cities to the players religion on founding a religion
+bool CvTraitEntry::IsAutoConvertReligionOnFound() const
+{
+	return m_bAutoConvertReligionOnFound;
+}
+
+/// Accessor:: Free Courthouse in Occupied Cities following your Religion
+bool CvTraitEntry::IsFreeCourthouse() const
+{
+	return m_bFreeCourthouse;
+}
+
+/// Accessor:: Unhappiness from Puppets
+int CvTraitEntry::GetUnhappinessModifierForPuppets() const
+{
+	return m_iUnhappinessModifierForPuppets;
+}
+
+/// Accessor:: Perform Italian UA?
+bool CvTraitEntry::IsExpandedGoldenAge() const
+{
+	return m_bExpandedGoldenAge;
+}
+
+/// Accessor:: Turns added to Golden Ages from Policies
+int CvTraitEntry::GetExtendGoldenAgeOnPolicy() const
+{
+	return m_iExtendGoldenAgeOnPolicy;
+}
+
+/// Accessor:: Golden Age Points from Policies
+int CvTraitEntry::GetGivenGoldenAgePointsOnPolicy() const
+{
+	return m_fGivenGoldenAgePointsOnPolicy;
+}
+
+/// Accessor:: Fresh Water around Cities
+bool CvTraitEntry::IsGiveFreshWaterAroundCities() const
+{
+	return m_bGiveFreshWaterAroundCities;
+}
+
+/// Accessor:: Extra Population in New Cities
+int CvTraitEntry::GetExtraPopulationNewCities() const
+{
+	return m_iExtraPopulationNewCities;
+}
+
+/// Accessor:: Extra Population in New Cities to a limit
+int CvTraitEntry::GetExtraPopulationCityCount() const
+{
+	return m_iExtraPopulationCityCount;
+}
+
+/// Accessor:: Gold Burst on Founding a City
+int CvTraitEntry::GetGoldBurstOnFound() const
+{
+	return m_iGoldBurstOnFound;
+}
+#endif
 
 ///////////////////
 //EAP: Faith for finding a Natural Wonder
@@ -918,7 +1236,55 @@ int CvTraitEntry::GetResourceQuantityModifier(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piResourceQuantityModifiers ? m_piResourceQuantityModifiers[i] : -1;
 }
+#ifdef TRAITIFY // Getters for Arrays
+/// Change to Terrain yield by type
+int CvTraitEntry::GetTerrainYieldChange(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumTerrainInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppaiTerrainYieldChange ? m_ppaiTerrainYieldChange[i][j] : -1;
+}
+/// Change to Resource yield by type
+int CvTraitEntry::GetResourceYieldChange(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppaiResourceYieldChange ? m_ppaiResourceYieldChange[i][j] : -1;
+}
+int CvTraitEntry::GetBuildingClassProductionModifier(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiBuildingClassProductionModifiers[i];
+}
+int CvTraitEntry::GetBuildingClassHappiness(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiBuildingClassHappiness ? m_paiBuildingClassHappiness[i] : -1;
+}
 
+int CvTraitEntry::GetBuildingClassYieldChanges(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiBuildingClassYieldModifiers[i][j];
+}
+int CvTraitEntry::GetBuildingClassYieldModifiers(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiBuildingClassYieldModifiers[i][j];
+}
+#endif
 /// Accessor:: Extra yield from an improvement
 int CvTraitEntry::GetImprovementYieldChanges(ImprovementTypes eIndex1, YieldTypes eIndex2) const
 {
@@ -983,6 +1349,12 @@ int CvTraitEntry::GetMovesChangeUnitCombat(const int unitCombatID) const
 
 	return m_piMovesChangeUnitCombats[unitCombatID];
 }
+#ifdef TRAITIFY // Getters for Arrays
+int CvTraitEntry::GetYieldStealPerX(int i) const
+{
+	return m_paiYieldStealPerX ? m_paiYieldStealPerX[i] : 0;
+}
+#endif
 
 /// Accessor:: Maintenance Modifier for a class of combat unit
 int CvTraitEntry::GetMaintenanceModifierUnitCombat(const int unitCombatID) const
@@ -1063,6 +1435,97 @@ bool CvTraitEntry::IsEnabledByTech(TeamTypes eTeam)
 	return true;
 }
 
+#ifdef TRAITIFY // New Trait prereqs and obsoletes
+/// Has this trait become obsolete by Era?
+bool CvTraitEntry::IsObsoleteByEra(EraTypes eEra)
+{
+	if (m_eObsoleteEra != NO_ERA)
+	{
+		if (eEra >= m_eObsoleteEra)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+/// Is this Trait enabled by Era?
+bool CvTraitEntry::IsEnabledByEra(EraTypes eEra)
+{
+	if (m_ePrereqEra != NO_ERA)
+	{
+		if (eEra >= m_ePrereqEra)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+/// Is this Trait enabled by Ideology?
+bool CvTraitEntry::IsEnabledByIdeology(CvPlayerPolicies* pPolicies)
+{
+	if (!pPolicies)
+	{
+		return false;
+	}
+
+	// Get player's active ideology using GetLateGamePolicyTree()
+	PolicyBranchTypes ePlayerIdeology = pPolicies->GetLateGamePolicyTree();
+
+	// If the trait is enabled by ANY ideology, ensure the player has one
+	if (IsAnyIdeology())
+	{
+		return (ePlayerIdeology == GC.getPOLICY_BRANCH_FREEDOM() ||
+				ePlayerIdeology == GC.getPOLICY_BRANCH_ORDER() ||
+				ePlayerIdeology == GC.getPOLICY_BRANCH_AUTOCRACY());
+	}
+
+	// If a specific ideology is required, check if the player's ideology matches
+	if (m_eRequiredIdeology != NO_POLICY_BRANCH_TYPE)
+	{
+		return (ePlayerIdeology == m_eRequiredIdeology);
+	}
+
+	// If no ideology is required, enable the trait by default
+	return true;
+}
+/// Is this Trait Removed by Ideology?
+bool CvTraitEntry::IsObsoleteByIdeology(CvPlayerPolicies* pPolicies)
+{
+	if (!pPolicies)
+	{
+		return false;
+	}
+
+	// Get player's active ideology
+	PolicyBranchTypes ePlayerIdeology = pPolicies->GetLateGamePolicyTree();
+
+	// If no ideology is required, this trait can never be obsolete
+	if (m_eRequiredIdeology == NO_POLICY_BRANCH_TYPE)
+	{
+		return false;
+	}
+
+	// If the player has no ideology, the trait is obsolete
+	if (ePlayerIdeology == NO_POLICY_BRANCH_TYPE)
+	{
+		return true;
+	}
+
+	// If the player's ideology is different from the required one, disable the trait
+	if (m_eRequiredIdeology == GC.getPOLICY_BRANCH_FREEDOM() ||
+		m_eRequiredIdeology == GC.getPOLICY_BRANCH_ORDER() ||
+		m_eRequiredIdeology == GC.getPOLICY_BRANCH_AUTOCRACY())
+	{
+		return (ePlayerIdeology != m_eRequiredIdeology);
+	}
+
+	return false; // Default: Not obsolete
+}
+#endif
 bool CvTraitEntry::NoTrain(UnitClassTypes eUnitClass)
 {
 	if (eUnitClass != NO_UNITCLASS)
@@ -1147,6 +1610,50 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iNaturalWonderFirstFinderGold         = kResults.GetInt("NaturalWonderFirstFinderGold");
 	m_iNaturalWonderSubsequentFinderGold    = kResults.GetInt("NaturalWonderSubsequentFinderGold");
 
+#ifdef TRAITIFY //CacheResults for new traits
+	m_bAnyIdeology							= kResults.GetBool("AnyIdeology");
+
+	m_iGoldenAgeCultureModifier				= kResults.GetInt("GoldenAgeCultureModifier");
+	m_iGoldenAgePointBurstOnCapture			= kResults.GetInt("GoldenAgePointBurstOnCapture");
+	m_iGreatEngineerRateModifier			= kResults.GetInt("GreatEngineerRateModifier");
+	m_iCapitalDefenseBonus					= kResults.GetInt("CapitalDefenseBonus");
+	m_iCityDefenseBonus						= kResults.GetInt("CityDefenseBonus");
+	m_iGreatGeneralSiegeBonus				= kResults.GetInt("GreatGeneralSiegeBonus");
+	m_iProductionDiscountForTradeUnits		= kResults.GetInt("ProductionDiscountForTradeUnits");
+	m_iMinorFriendshipMinimum				= kResults.GetInt("MinorFriendshipMinimum");
+	m_iNumTradeRouteBonus					= kResults.GetInt("NumTradeRouteBonus");
+	m_iFaithCostModifier					= kResults.GetInt("FaithCostModifier");
+	m_iNumExtraLeagueVotes					= kResults.GetInt("NumExtraLeagueVotes");
+	m_iMinorBullyModifier					= kResults.GetInt("MinorBullyModifier");
+	m_iBuildingProductionModifier			= kResults.GetInt("BuildingProductionModifier");
+	m_iCapitalBuildingProductionModifier	= kResults.GetInt("CapitalBuildingProductionModifier");
+	m_iUnitProductionModifier				= kResults.GetInt("UnitProductionModifier");
+	m_iCapitalUnitProductionModifier		= kResults.GetInt("CapitalUnitProductionModifier");
+	m_iInternalTradeRouteYieldModifier		= kResults.GetInt("InternalTradeRouteYieldModifier");
+	m_iInternalTradeRouteGoldChange			= kResults.GetInt("InternalTradeRouteGoldChange");
+	m_iCapitalGreatPersonRateModifier		= kResults.GetInt("CapitalGreatPersonRateModifier");
+	m_iWonderGoldReward						= kResults.GetInt("WonderGoldReward");
+	m_iWeLoveTheKingDayCount				= kResults.GetInt("WeLoveTheKingDayCount");
+	m_iForeignReligiousPressure				= kResults.GetInt("ForeignReligiousPressure");
+	m_iGoldFromTradeGuards					= kResults.GetInt("GoldFromTradeGuards");
+	m_iXPFromTradeGuards					= kResults.GetInt("XPFromTradeGuards");
+	m_bNoBuyFaithBuilding					= kResults.GetBool("NoBuyFaithBuilding");
+	m_bNoBuyFaithUnit						= kResults.GetBool("NoBuyFaithUnit");
+	m_iNoBuyProductionPercent				= kResults.GetInt("NoBuyProductionPercent");
+	m_iIdeologyUnhappinessModifier			= kResults.GetInt("IdeologyUnhappinessModifier");
+	m_iFreeIdeologicalTenets				= kResults.GetInt("FreeIdeologicalTenets");
+	m_bAutoConvertReligionOnFound			= kResults.GetBool("AutoConvertReligionOnFound");
+	m_bFreeCourthouse						= kResults.GetBool("FreeCourthouse");
+	m_iUnhappinessModifierForPuppets		= kResults.GetInt("UnhappinessModifierForPuppets");
+	m_bExpandedGoldenAge					= kResults.GetBool("ExpandedGoldenAge");
+	m_fGivenGoldenAgePointsOnPolicy			= kResults.GetFloat("GivenGoldenAgePointsOnPolicy");
+	m_iExtendGoldenAgeOnPolicy				= kResults.GetInt("ExtendGoldenAgeOnPolicy");
+	m_bGiveFreshWaterAroundCities			= kResults.GetBool("GiveFreshWaterAroundCities");
+	m_iExtraPopulationNewCities				= kResults.GetInt("ExtraPopulationNewCities");
+	m_iExtraPopulationCityCount				= kResults.GetInt("ExtraPopulationCityCount");
+	m_iGoldBurstOnFound						= kResults.GetInt("GoldBurstOnFound");
+#endif
+
 	//EAP: Faith for the Natural wonder findor
 	m_iNaturalWonderFirstFinderFaith         = kResults.GetInt("NaturalWonderFirstFinderFaith");
 	m_iNaturalWonderSubsequentFinderFaith    = kResults.GetInt("NaturalWonderSubsequentFinderFaith");
@@ -1180,6 +1687,23 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iTradeBuildingModifier				= kResults.GetInt("TradeBuildingModifier");
 
 	const char* szTextVal = NULL;
+#ifdef TRAITIFY //CacheResults for new traits STRINGS
+	szTextVal = kResults.GetText("PrereqEra");
+	if (szTextVal)
+	{
+		m_ePrereqEra = (EraTypes)GC.getInfoTypeForString(szTextVal, true);
+	}
+	szTextVal = kResults.GetText("ObsoleteEra");
+	if (szTextVal)
+	{
+		m_eObsoleteEra = (EraTypes)GC.getInfoTypeForString(szTextVal, true);
+	}
+	szTextVal = kResults.GetText("RequiredIdeology");
+	if (szTextVal)
+	{
+		m_eRequiredIdeology = (PolicyBranchTypes)GC.getInfoTypeForString(szTextVal, true);
+	}
+#endif
 	szTextVal = kResults.GetText("FreeUnit");
 	if(szTextVal)
 	{
@@ -1279,6 +1803,107 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	kUtility.SetYields(m_paiYieldChangePerTradePartner, "Trait_YieldChangesPerTradePartner", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiYieldChangeIncomingTradeRoute, "Trait_YieldChangesIncomingTradeRoute", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiYieldModifier, "Trait_YieldModifiers", "TraitType", szTraitType);
+#ifdef TRAITIFY // Arrays for new traits
+	kUtility.SetYields(m_paiYieldStealPerX, "Trait_YieldStealPerX", "TraitType", szTraitType);
+	//Populate By Value
+	kUtility.PopulateArrayByValue(m_paiBuildingClassHappiness, "BuildingClasses", "Trait_BuildingClassHappiness", "BuildingClassType", "TraitType", szTraitType, "Happiness");
+	kUtility.PopulateArrayByValue(m_paiBuildingClassProductionModifiers, "BuildingClasses", "Trait_BuildingClassProductionModifiers", "BuildingClassType", "TraitType", szTraitType, "ProductionModifier");
+	//Custom Arrays
+	//Trait_ResourceYieldChanges
+	{
+		kUtility.Initialize2DArray(m_ppaiResourceYieldChange, "Resources", "Yields");
+
+		std::string strKey("Trait_ResourceYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Resources.ID as ResourceID, Yields.ID as YieldID, Yield from Trait_ResourceYieldChanges\
+ inner join Resources on Resources.Type = ResourceType inner join Yields on Yields.Type = YieldType where TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int ResourceID = pResults->GetInt(0);
+			const int YieldID = pResults->GetInt(1);
+			const int yield = pResults->GetInt(2);
+
+			m_ppaiResourceYieldChange[ResourceID][YieldID] = yield;
+		}
+	}
+	//Trait_TerrainYieldChanges
+	{
+		kUtility.Initialize2DArray(m_ppaiTerrainYieldChange, "Terrains", "Yields");
+
+		std::string strKey("Trait_TerrainYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Terrains.ID as TerrainID, Yields.ID as YieldID, Yield from Trait_TerrainYieldChanges\
+ inner join Terrains on Terrains.Type = TerrainType inner join Yields on Yields.Type = YieldType where TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int TerrainID = pResults->GetInt(0);
+			const int YieldID = pResults->GetInt(1);
+			const int yield = pResults->GetInt(2);
+
+			m_ppaiTerrainYieldChange[TerrainID][YieldID] = yield;
+		}
+	}
+	{
+		//BuildingYieldModifiers
+		kUtility.Initialize2DArray(m_ppiBuildingClassYieldModifiers, "BuildingClasses", "Yields");
+
+		std::string strKey("Trait_BuildingClassYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, 
+				"select BuildingClasses.ID as BuildingClassID, Yields.ID as YieldID, YieldMod from Trait_BuildingClassYieldModifiers \
+inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner join Yields on Yields.Type = YieldType where TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int BuildingClassID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iYieldMod = pResults->GetInt(2);
+
+			m_ppiBuildingClassYieldModifiers[BuildingClassID][iYieldID] = iYieldMod;
+		}
+	}
+	{
+		//BuildingYieldChanges
+		kUtility.Initialize2DArray(m_ppiBuildingClassYieldChanges, "BuildingClasses", "Yields");
+
+		std::string strKey("Trait_BuildingClassYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, 
+			"select BuildingClasses.ID as BuildingClassID, Yields.ID as YieldID, YieldChange from Trait_BuildingClassYieldChanges \
+inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner join Yields on Yields.Type = YieldType where TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int BuildingClassID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iYieldChange = pResults->GetInt(2);
+
+			m_ppiBuildingClassYieldChanges[BuildingClassID][iYieldID] = iYieldChange;
+		}
+	}
+#endif //TRAITIFY ARRAYS
 
 	const int iNumTerrains = GC.getNumTerrainInfos();
 
@@ -1429,8 +2054,8 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 		kUtility.Initialize2DArray(m_ppiSpecialistYieldChanges, "Specialists", "Yields");
 #endif
 
-
-		std::string strKey("Building_SpecialistYieldChanges");
+		// strKey Was building_specialistyieldchanges so I changed it to Trait_SpecialistYieldChanges.
+		std::string strKey("Trait_SpecialistYieldChanges");
 		Database::Results* pResults = kUtility.GetResults(strKey);
 		if(pResults == NULL)
 		{
@@ -1769,6 +2394,50 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iExtraEmbarkMoves += trait->GetExtraEmbarkMoves();
 			m_iNaturalWonderFirstFinderGold += trait->GetNaturalWonderFirstFinderGold();
 			m_iNaturalWonderSubsequentFinderGold += trait->GetNaturalWonderSubsequentFinderGold();
+
+#ifdef TRAITIFY // CvPlayerTraits::InitPlayerTraits
+			if (trait->IsAnyIdeology()) {m_bAnyIdeology = true;}
+			if (trait->IsNoBuyFaithBuilding()) { m_bNoBuyFaithBuilding = true; }
+			if (trait->IsNoBuyFaithUnit()) { m_bNoBuyFaithUnit = true; }
+			if (trait->IsAutoConvertReligionOnFound()) { m_bAutoConvertReligionOnFound = true; }
+			if (trait->IsFreeCourthouse()) { m_bFreeCourthouse = true; }
+			if (trait->IsExpandedGoldenAge()) { m_bExpandedGoldenAge = true; }
+			if (trait->IsGiveFreshWaterAroundCities()) { m_bGiveFreshWaterAroundCities = true; }
+
+			m_iGoldenAgeCultureModifier += trait->GetGoldenAgeCultureModifier();
+			m_iGoldenAgePointBurstOnCapture += trait->GetGoldenAgePointBurstOnCapture();
+			m_iGreatEngineerRateModifier += trait->GetGreatEngineerRateModifier();
+			m_iCapitalDefenseBonus += trait->GetCapitalDefenseBonus();
+			m_iCityDefenseBonus += trait->GetCityDefenseBonus();
+			m_iGreatGeneralSiegeBonus += trait->GetGreatGeneralSiegeBonus();
+			m_iProductionDiscountForTradeUnits += trait->GetProductionDiscountForTradeUnits();
+			m_iMinorFriendshipMinimum += trait->GetMinorFriendshipMinimum();
+			m_iNumTradeRouteBonus += trait->GetNumTradeRouteBonus();
+			m_iFaithCostModifier += trait->GetFaithCostModifier();
+			m_iNumExtraLeagueVotes += trait->GetNumExtraLeagueVotes();
+			m_iMinorBullyModifier += trait->GetMinorBullyModifier();
+			m_iBuildingProductionModifier += trait->GetBuildingProductionModifier();
+			m_iCapitalBuildingProductionModifier += trait->GetCapitalBuildingProductionModifier();
+			m_iUnitProductionModifier += trait->GetUnitProductionModifier();
+			m_iCapitalUnitProductionModifier += trait->GetCapitalUnitProductionModifier();
+			m_iInternalTradeRouteYieldModifier += trait->GetInternalTradeRouteYieldModifier();
+			m_iInternalTradeRouteGoldChange += trait->GetInternalTradeRouteGoldChange();
+			m_iCapitalGreatPersonRateModifier += trait->GetCapitalGreatPersonRateModifier();
+			m_iWonderGoldReward += trait->GetWonderGoldReward();
+			m_iWeLoveTheKingDayCount += trait->GetWeLoveTheKingDayCount();
+			m_iForeignReligiousPressure += trait->GetForeignReligiousPressure();
+			m_iGoldFromTradeGuards += trait->GetGoldFromTradeGuards();
+			m_iXPFromTradeGuards += trait->GetXPFromTradeGuards();
+			m_iNoBuyProductionPercent += trait->GetNoBuyProductionPercent();
+			m_iIdeologyUnhappinessModifier += trait->GetIdeologyUnhappinessModifier();
+			m_iFreeIdeologicalTenets += trait->GetFreeIdeologicalTenets();
+			m_iUnhappinessModifierForPuppets += trait->GetUnhappinessModifierForPuppets();
+			m_iExtendGoldenAgeOnPolicy += trait->GetExtendGoldenAgeOnPolicy();
+			m_fGivenGoldenAgePointsOnPolicy += trait->GetGivenGoldenAgePointsOnPolicy();
+			m_iExtraPopulationNewCities += trait->GetExtraPopulationNewCities();
+			m_iExtraPopulationCityCount += trait->GetExtraPopulationCityCount();
+			m_iGoldBurstOnFound += trait->GetGoldBurstOnFound();
+#endif
 		
 			//EAP: Natural wonder faith for the finder
 			m_iNaturalWonderFirstFinderFaith += trait->GetNaturalWonderFirstFinderFaith();
@@ -1907,6 +2576,9 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_iYieldChangePerTradePartner[iYield] = trait->GetYieldChangePerTradePartner(iYield);
 				m_iYieldChangeIncomingTradeRoute[iYield] = trait->GetYieldChangeIncomingTradeRoute(iYield);
 				m_iYieldRateModifier[iYield] = trait->GetYieldModifier(iYield);
+#ifdef TRAITIFY //Array Init
+				m_iYieldStealPerX[iYield] = trait->GetYieldStealPerX(iYield);
+#endif
 
 #ifdef AUI_WARNING_FIXES
 				for (uint iFeatureLoop = 0; iFeatureLoop < GC.getNumFeatureInfos(); iFeatureLoop++)
@@ -2125,6 +2797,50 @@ void CvPlayerTraits::Reset()
 	m_iNaturalWonderFirstFinderGold = 0;
 	m_iNaturalWonderSubsequentFinderGold = 0;
 
+#ifdef TRAITIFY //CvPlayerTraits Reset
+	m_bAnyIdeology = false;
+
+	m_iGoldenAgeCultureModifier = 0;
+	m_iGoldenAgePointBurstOnCapture = 0;
+	m_iGreatEngineerRateModifier = 0;
+	m_iCapitalDefenseBonus = 0;
+	m_iCityDefenseBonus = 0;
+	m_iGreatGeneralSiegeBonus = 0;
+	m_iProductionDiscountForTradeUnits = 0;
+	m_iMinorFriendshipMinimum = 0;
+	m_iNumTradeRouteBonus = 0;
+	m_iFaithCostModifier = 0;
+	m_iNumExtraLeagueVotes = 0;
+	m_iMinorBullyModifier = 0;
+	m_iBuildingProductionModifier = 0;
+	m_iCapitalBuildingProductionModifier = 0;
+	m_iUnitProductionModifier = 0;
+	m_iCapitalUnitProductionModifier = 0;
+	m_iInternalTradeRouteYieldModifier = 0;
+	m_iInternalTradeRouteGoldChange = 0;
+	m_iCapitalGreatPersonRateModifier = 0;
+	m_iWonderGoldReward = 0;
+	m_iWeLoveTheKingDayCount = 0;
+	m_iForeignReligiousPressure = 0;
+	m_iGoldFromTradeGuards = 0;
+	m_iXPFromTradeGuards = 0;
+	m_bNoBuyFaithBuilding = false;
+	m_bNoBuyFaithUnit = false;
+	m_iNoBuyProductionPercent = 0;
+	m_iIdeologyUnhappinessModifier = 0;
+	m_iFreeIdeologicalTenets = 0;
+	m_bAutoConvertReligionOnFound = false;
+	m_bFreeCourthouse = false;
+	m_iUnhappinessModifierForPuppets = 0;
+	m_iExtendGoldenAgeOnPolicy = 0;
+	m_fGivenGoldenAgePointsOnPolicy = 0;
+	m_bExpandedGoldenAge = false;
+	m_bGiveFreshWaterAroundCities = false;
+	m_iExtraPopulationNewCities = 0;
+	m_iExtraPopulationCityCount = 0;
+	m_iGoldBurstOnFound = 0;
+#endif
+
 	//EAP: Natural wonder faith for the finder
 	m_iNaturalWonderFirstFinderFaith = 0;
 	m_iNaturalWonderSubsequentFinderFaith = 0;
@@ -2221,6 +2937,9 @@ void CvPlayerTraits::Reset()
 		m_iYieldChangePerTradePartner[iYield] = 0;
 		m_iYieldChangeIncomingTradeRoute[iYield] = 0;
 		m_iYieldRateModifier[iYield] = 0;
+#ifdef TRAITIFY //Array Init
+		m_iYieldStealPerX[iYield] = 0;
+#endif
 
 #ifdef AUI_WARNING_FIXES
 		for (uint iImprovement = 0; iImprovement < GC.getNumImprovementInfos(); iImprovement++)
@@ -2336,6 +3055,7 @@ void CvPlayerTraits::Reset()
 }
 
 /// Does this player possess a specific trait?
+#ifndef TRAITIFY // CvPlayerTraits::HasTrait
 bool CvPlayerTraits::HasTrait(TraitTypes eTrait) const
 {
 	CvAssert(m_pPlayer);
@@ -2351,6 +3071,36 @@ bool CvPlayerTraits::HasTrait(TraitTypes eTrait) const
 		return false;
 	}
 }
+#else
+bool CvPlayerTraits::HasTrait(TraitTypes eTrait) const
+{
+	CvAssert(m_pPlayer);
+
+	if (m_pPlayer != NULL)
+	{
+		CvAssertMsg((m_pPlayer->getLeaderType() >= 0), "getLeaderType() is less than zero");
+		CvAssertMsg((eTrait >= 0), "eTrait is less than zero");
+
+		CvTraitEntry* pTraitEntry = m_pTraits->GetEntry(eTrait);
+		if (!pTraitEntry)
+		{
+			return false;
+		}
+		TeamTypes eTeam = m_pPlayer->getTeam();
+		EraTypes eEra = m_pPlayer->GetCurrentEra();
+		CvPlayerPolicies* eIdeology = m_pPlayer->GetPlayerPolicies();
+
+		bool bHasTrait = m_pPlayer->getLeaderInfo().hasTrait(eTrait) &&
+			!pTraitEntry->IsObsoleteByTech(eTeam) &&	pTraitEntry->IsEnabledByTech(eTeam) &&
+			!pTraitEntry->IsObsoleteByEra(eEra) && pTraitEntry->IsEnabledByEra(eEra) &&
+			!pTraitEntry->IsObsoleteByIdeology(eIdeology) && pTraitEntry->IsEnabledByIdeology(eIdeology);
+
+		return bHasTrait;
+	}
+
+	return false;
+}
+#endif
 
 /// Will settling a city in this new area unlock a unique luxury?
 bool CvPlayerTraits::WillGetUniqueLuxury(CvArea *pArea) const
@@ -2419,6 +3169,91 @@ bool CvPlayerTraits::WillGetUniqueLuxury(CvArea *pArea) const
 
 	return false;
 }
+#ifdef TRAITIFY //GetBuildingClassProductionModifier
+int CvPlayerTraits::GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetTerrainYieldChange(eTerrain, eYieldType);
+		}
+	}
+	return rtnValue;
+}
+int CvPlayerTraits::GetResourceYieldChange(ResourceTypes eResource, YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetResourceYieldChange(eResource, eYieldType);
+		}
+	}
+	return rtnValue;
+}
+int CvPlayerTraits::GetBuildingClassProductionModifier(BuildingClassTypes eBuildingClass)
+{
+	int rtnValue = 0;
+
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassProductionModifier(eBuildingClass);
+		}
+	}
+
+	return rtnValue;
+}
+int CvPlayerTraits::GetBuildingClassHappiness(BuildingClassTypes eBuildingClass)
+{
+	int rtnValue = 0;
+
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassHappiness(eBuildingClass);
+		}
+	}
+
+	return rtnValue;
+}
+/// Get Yield Modifier from Traits for a specific building class
+int CvPlayerTraits::GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassYieldChanges(eBuildingClass, eYieldType);
+		}
+	}
+
+	return rtnValue;
+}
+
+///Get Yield Change from Trait for a specific building class
+int CvPlayerTraits::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassYieldModifiers(eBuildingClass, eYieldType);
+		}
+	}
+
+	return rtnValue;
+}
+#endif
 
 /// Bonus movement for this combat class
 int CvPlayerTraits::GetMovesChangeUnitCombat(const int unitCombatID) const
@@ -3279,6 +4114,47 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
 
+#ifdef TRAITIFY //Read
+	kStream >> m_iGoldenAgeCultureModifier;
+	kStream >> m_iGoldenAgePointBurstOnCapture;
+	kStream >> m_iGreatEngineerRateModifier;
+	kStream >> m_iCapitalThemingBonusModifier;
+	kStream >> m_iCityDefenseBonus;
+	kStream >> m_iGreatGeneralSiegeBonus;
+	kStream >> m_iProductionDiscountForTradeUnits;
+	kStream >> m_iMinorFriendshipMinimum;
+	kStream >> m_iNumTradeRouteBonus;
+	kStream >> m_iFaithCostModifier;
+	kStream >> m_iNumExtraLeagueVotes;
+	kStream >> m_iMinorBullyModifier;
+	kStream >> m_iBuildingProductionModifier;
+	kStream >> m_iCapitalBuildingProductionModifier;
+	kStream >> m_iUnitProductionModifier;
+	kStream >> m_iCapitalUnitProductionModifier;
+	kStream >> m_iInternalTradeRouteYieldModifier;
+	kStream >> m_iInternalTradeRouteGoldChange;
+	kStream >> m_iCapitalGreatPersonRateModifier;
+	kStream >> m_iWonderGoldReward;
+	kStream >> m_iWeLoveTheKingDayCount;
+	kStream >> m_iForeignReligiousPressure;
+	kStream >> m_iGoldFromTradeGuards;
+	kStream >> m_iXPFromTradeGuards;
+	kStream >> m_bNoBuyFaithBuilding;
+	kStream >> m_bNoBuyFaithUnit;
+	kStream >> m_iNoBuyProductionPercent;
+	kStream >> m_iIdeologyUnhappinessModifier;
+	kStream >> m_iFreeIdeologicalTenets;
+	kStream >> m_bAutoConvertReligionOnFound;
+	kStream >> m_bFreeCourthouse;
+	kStream >> m_iUnhappinessModifierForPuppets;
+	kStream >> m_bExpandedGoldenAge;
+	kStream >> m_fGivenGoldenAgePointsOnPolicy;
+	kStream >> m_iExtendGoldenAgeOnPolicy;
+	kStream >> m_bGiveFreshWaterAroundCities;
+	kStream >> m_iExtraPopulationNewCities;
+	kStream >> m_iExtraPopulationCityCount;
+	kStream >> m_iGoldBurstOnFound;
+#endif
 
 	//EAP: Natural wonder faith for the finder:
 
@@ -3515,6 +4391,11 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	ArrayWrapper<int> kYieldRateModifierWrapper(NUM_YIELD_TYPES, m_iYieldRateModifier);
 	kStream >> kYieldRateModifierWrapper;
 
+#ifdef TRAITIFY //Read
+	ArrayWrapper<int> kYieldStealWrapper(NUM_YIELD_TYPES, m_iYieldStealPerX);
+	kStream >> kYieldStealWrapper;
+#endif
+
 	ArrayWrapper<int> kYieldChangeNaturalWonderWrapper(NUM_YIELD_TYPES, m_iYieldChangeNaturalWonder);
 	kStream >> kYieldChangeNaturalWonderWrapper;
 
@@ -3675,7 +4556,48 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iExtraEmbarkMoves;
 	kStream << m_iNaturalWonderFirstFinderGold;
 	kStream << m_iNaturalWonderSubsequentFinderGold;
-	
+
+#ifdef TRAITIFY //Write
+	kStream << m_iGoldenAgeCultureModifier;
+	kStream << m_iGoldenAgePointBurstOnCapture;
+	kStream << m_iGreatEngineerRateModifier;
+	kStream << m_iCapitalDefenseBonus;
+	kStream << m_iCityDefenseBonus;
+	kStream << m_iGreatGeneralSiegeBonus;
+	kStream << m_iProductionDiscountForTradeUnits;
+	kStream << m_iMinorFriendshipMinimum;
+	kStream << m_iNumTradeRouteBonus;
+	kStream << m_iFaithCostModifier;
+	kStream << m_iNumExtraLeagueVotes;
+	kStream << m_iMinorBullyModifier;
+	kStream << m_iBuildingProductionModifier;
+	kStream << m_iCapitalBuildingProductionModifier;
+	kStream << m_iUnitProductionModifier;
+	kStream << m_iCapitalUnitProductionModifier;
+	kStream << m_iInternalTradeRouteYieldModifier;
+	kStream << m_iInternalTradeRouteGoldChange;
+	kStream << m_iCapitalGreatPersonRateModifier;
+	kStream << m_iWonderGoldReward;
+	kStream << m_iWeLoveTheKingDayCount;
+	kStream << m_iForeignReligiousPressure;
+	kStream << m_iGoldFromTradeGuards;
+	kStream << m_iXPFromTradeGuards;
+	kStream << m_bNoBuyFaithBuilding;
+	kStream << m_bNoBuyFaithUnit;
+	kStream << m_iNoBuyProductionPercent;
+	kStream << m_iIdeologyUnhappinessModifier;
+	kStream << m_iFreeIdeologicalTenets;
+	kStream << m_bAutoConvertReligionOnFound;
+	kStream << m_bFreeCourthouse;
+	kStream << m_iUnhappinessModifierForPuppets;
+	kStream << m_bExpandedGoldenAge;
+	kStream << m_fGivenGoldenAgePointsOnPolicy;
+	kStream << m_iExtendGoldenAgeOnPolicy;
+	kStream << m_bGiveFreshWaterAroundCities;
+	kStream << m_iExtraPopulationNewCities;
+	kStream << m_iExtraPopulationCityCount;
+	kStream << m_iGoldBurstOnFound;
+#endif
 	//EAP: Natural wonder faith for the finder
 	
 	kStream << m_iNaturalWonderFirstFinderFaith;
@@ -3766,6 +4688,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeStrategicResources);
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeLuxuryResources); // NQMP GJS - New Netherlands UA
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldRateModifier);
+#ifdef TRAITIFY //Write ArrayWrapper
+	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldStealPerX);
+#endif
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeNaturalWonder);
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangePerTradePartner);
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeIncomingTradeRoute);

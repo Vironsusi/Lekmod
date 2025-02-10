@@ -4327,6 +4327,9 @@ CvRouteInfo::CvRouteInfo() :
 	m_bIndustrial(false),
 	m_piYieldChange(NULL),
 	m_piTechMovementChange(NULL),
+#ifdef TRAITIFY // Trait based Route Movement Changes
+	m_piTraitMovementChange(NULL),
+#endif
 	m_piResourceQuantityRequirements(NULL)
 {
 }
@@ -4335,6 +4338,9 @@ CvRouteInfo::~CvRouteInfo()
 {
 	SAFE_DELETE_ARRAY(m_piYieldChange);
 	SAFE_DELETE_ARRAY(m_piTechMovementChange);
+#ifdef TRAITIFY // Trait based Route Movement Changes	
+	SAFE_DELETE_ARRAY(m_piTraitMovementChange);
+#endif
 	SAFE_DELETE_ARRAY(m_piResourceQuantityRequirements);
 }
 //------------------------------------------------------------------------------
@@ -4382,6 +4388,15 @@ int CvRouteInfo::getTechMovementChange(int i) const
 	return m_piTechMovementChange ? m_piTechMovementChange[i] : -1;
 }
 //------------------------------------------------------------------------------
+#ifdef TRAITIFY // Trait based Route Movement Changes
+int CvRouteInfo::getTraitMovementChange(int i) const
+{
+	CvAssertMsg(i < GC.getNumTraitInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piTraitMovementChange ? m_piTraitMovementChange[i] : -1;
+}
+#endif
+//------------------------------------------------------------------------------
 int CvRouteInfo::getResourceQuantityRequirement(int i) const
 {
 	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
@@ -4407,6 +4422,9 @@ bool CvRouteInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	kUtility.SetYields(m_piYieldChange, "Route_Yields", "RouteType", szRouteType);
 
 	kUtility.PopulateArrayByValue(m_piTechMovementChange, "Technologies", "Route_TechMovementChanges", "TechType", "RouteType", szRouteType, "MovementChange");
+#ifdef TRAITIFY // Trait based Route Movement Changes
+	kUtility.PopulateArrayByValue(m_piTraitMovementChange, "Traits", "Route_TraitMovementChanges", "TraitType", "RouteType", szRouteType, "MovementChange");
+#endif
 	kUtility.PopulateArrayByValue(m_piResourceQuantityRequirements, "Resources", "Route_ResourceQuantityRequirements", "ResourceType", "RouteType", szRouteType, "Cost");
 
 	return true;

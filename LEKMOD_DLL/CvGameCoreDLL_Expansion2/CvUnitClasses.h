@@ -90,6 +90,9 @@ public:
 	int GetObsoleteTech() const;
 	int GetEra() const;
 	int GetPolicyType() const;
+#ifdef UNIT_IDEOLOGY_UNLOCK
+	bool IsAnyIdeology() const;
+#endif
 	int GetGoodyHutUpgradeUnitClass() const;
 	int GetGroupSize() const;			// the initial number of individuals in the unit group
 	int GetGroupDefinitions() const;	// the number of UnitMeshGroups for this unit
@@ -224,6 +227,9 @@ private:
 	int m_iPrereqPillageTech;
 	int m_iPrereqAndTech;
 	int m_iObsoleteTech;
+#ifdef UNIT_IDEOLOGY_UNLOCK
+	bool m_bAnyIdeology;
+#endif
 	int m_iPolicyType;
 	int m_iGoodyHutUpgradeUnitClass;
 	int m_iGroupSize;

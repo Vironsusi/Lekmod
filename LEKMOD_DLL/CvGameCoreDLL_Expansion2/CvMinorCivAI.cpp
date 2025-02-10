@@ -5556,6 +5556,10 @@ int CvMinorCivAI::GetFriendshipAnchorWithMajor(PlayerTypes eMajor)
 	// Social Policies
 	iAnchor += pMajor->GetMinorFriendshipAnchorMod();
 
+#ifdef TRAITIFY // MinorFriendshipMinimum from Traits
+	iAnchor += pMajor->GetPlayerTraits()->GetMinorFriendshipMinimum();
+#endif
+
 	// Religion
 	CvPlayerReligions* pMajorReligions = pMajor->GetReligions();
 	CvAssertMsg(pMajorReligions, "MINOR CIV AI: pMajorReligions not expected to be NULL.  Please send Anton your save file and version.");
@@ -8386,6 +8390,28 @@ int CvMinorCivAI::CalculateBullyMetric(PlayerTypes eBullyPlayer, bool bForUnit, 
 	}
 	iScore += iPoliciesScore;
 
+// **************************
+#ifdef TRAITIFY //Trait Modifiers to Bullying
+// Modifier to positive scores
+// **************************
+	int iTraitScore = 0;
+	int iTraitMod = GET_PLAYER(eBullyPlayer).GetPlayerTraits()->GetMinorBullyModifier();
+	if (iTraitMod != 0)
+	{
+		iTraitScore += iGlobalMilitaryScore;
+		iTraitScore += iLocalPowerScore;
+		iTraitScore *= iTraitMod;
+		iTraitScore /= 100;
+	}
+	if (sTooltipSink && iTraitScore != 0)
+	{
+		Localization::String strPositiveFactor = Localization::Lookup("TXT_KEY_POP_CSTATE_BULLY_FACTOR_POSITIVE");
+		strPositiveFactor << iTraitScore;
+		strPositiveFactor << "TXT_KEY_POP_CSTATE_BULLY_FACTOR_TRAIT_MODIFIER";
+		sFactors += strPositiveFactor.toUTF8();
+	}
+	iScore += iTraitScore;
+#endif
 	// **************************
 	// Base Reluctance
 	//

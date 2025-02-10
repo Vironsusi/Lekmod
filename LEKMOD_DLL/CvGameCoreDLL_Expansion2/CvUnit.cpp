@@ -12411,6 +12411,14 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 			iTempModifier = cityAttackModifier();
 			iModifier += iTempModifier;
 
+#ifdef TRAITIFY // GreatGeneral Bonus vs Cities
+			if (IsNearGreatGeneral() && !IsIgnoreGreatGeneralBenefit())
+			{
+				iTempModifier = GET_PLAYER(getOwner()).GetPlayerTraits()->GetGreatGeneralSiegeBonus();
+				iModifier += iTempModifier;
+			}
+#endif
+
 			// Nearby unit sapping this city
 			if(IsNearSapper(pToPlot->getPlotCity()))
 			{
