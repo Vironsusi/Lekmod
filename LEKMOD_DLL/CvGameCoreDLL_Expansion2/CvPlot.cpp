@@ -7543,7 +7543,13 @@ int CvPlot::calculateNatureYield(YieldTypes eYield, TeamTypes eTeam, bool bIgnor
 			{
 				iYieldChange +=  GET_PLAYER((PlayerTypes)m_eOwner).GetPlayerTraits()->GetUnimprovedFeatureYieldChange(getFeatureType(), eYield);
 			}
-
+#ifdef TRAITIFY // All Feature Trait
+			// Player Trait All Features
+			if (m_eOwner != NO_PLAYER)
+			{
+				iYieldChange += GET_PLAYER((PlayerTypes)m_eOwner).GetPlayerTraits()->GetFeatureYieldChange(getFeatureType(), eYield);
+			}
+#endif
 			// Leagues
 			if(pWorkingCity != NULL)
 			{
@@ -7911,7 +7917,30 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 		CvTeam& kTeam = GET_TEAM(kPlayer.getTeam());
 
 		iYield += kPlayer.getImprovementYieldChange(eImprovement, eYield);
+#ifndef TRAITIFY // Trait Effect on Improvement Yields, New Bools for effecting FreshWater and NonFreshWater Improvements
 		iYield += kPlayer.GetPlayerTraits()->GetImprovementYieldChange(eImprovement, eYield);
+#else
+		if (kPlayer.GetPlayerTraits()->IsFreshWaterOnlyImprovementChange())
+		{
+			if (bIsFreshWater)
+			{
+				iYield += kPlayer.GetPlayerTraits()->GetImprovementYieldChange(eImprovement, eYield);
+			}
+		}
+		else if (kPlayer.GetPlayerTraits()->IsNonFreshWaterOnlyImprovementChange())
+		{
+			if (!bIsFreshWater)
+			{
+				iYield += kPlayer.GetPlayerTraits()->GetImprovementYieldChange(eImprovement, eYield);
+			}
+		}
+		else
+		{
+			//Standard Application
+			iYield += kPlayer.GetPlayerTraits()->GetImprovementYieldChange(eImprovement, eYield);
+		}
+
+#endif
 		iYield += kTeam.getImprovementYieldChange(eImprovement, eYield);
 
 		if(bIsFreshWater)
@@ -8277,7 +8306,10 @@ int CvPlot::calculateYield(YieldTypes eYield, bool bDisplay)
 #ifndef AUI_PLOT_FIX_CITY_YIELD_CHANGE_RELOCATED
 		// Mod for Player; used for Policies and such
 		int iTemp = GET_PLAYER(getOwner()).GetCityYieldChange(eYield);	// In hundreds - will be added to capitalYieldChange below
-
+#ifdef TRAITIFY // Trait Effect on City Plot Yield
+		// Trait effect on city yield times 100
+		iTemp += (GET_PLAYER(getOwner()).GetPlayerTraits()->GetCityYieldChange(eYield) * 100);
+#endif
 		// Coastal City Mod
 		if(pCity->isCoastal())
 		{
@@ -11258,7 +11290,10 @@ int CvPlot::getYieldWithBuild(BuildTypes eBuild, YieldTypes eYield, bool bWithUp
 
 		// Mod for Player; used for Policies and such
 		int iTemp = GET_PLAYER(getOwner()).GetCityYieldChange(eYield);	// In hundreds - will be added to capitalYieldChange below
-
+#ifdef TRAITIFY // Trait effect on city yield times 100
+		// Trait effect on city yield tines 100
+		iTemp += (GET_PLAYER(getOwner()).GetPlayerTraits()->GetCityYieldChange(eYield) * 100);
+#endif
 		// Coastal City Mod
 		if(pCity->isCoastal())
 		{

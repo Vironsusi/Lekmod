@@ -2963,7 +2963,7 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 			}
 		}
 		else
-		{
+		{	
 			// NQMP GJS - Silk Road begin
 			if (eYield == YIELD_GOLD)
 			{
@@ -2983,7 +2983,7 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 				int iValueFromTraits = GET_PLAYER(kTradeConnection.m_eDestOwner).GetPlayerTraits()->GetInternalTradeRouteGoldChange() * 100;
 				if (iValueFromTraits != 0)
 				{
-					iValue += iValueFromTraits;
+				iValue += iValueFromTraits;
 				}
 				else
 				{
@@ -2997,7 +2997,11 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 			case TRADE_CONNECTION_FOOD:
 				if (eYield == YIELD_FOOD)
 				{
+#ifndef GLOBAL_INTERNAL_BASE_VALUE
 					iValue = 300;
+#else
+					iValue = GC.getINTERNAL_TRADE_FOOD_BASE_TIMES100();
+#endif
 					iValue += GC.getEraInfo(GET_PLAYER(kTradeConnection.m_eDestOwner).GetCurrentEra())->getTradeRouteFoodBonusTimes100();
 					iValue *= GC.getEraInfo(GC.getGame().getStartEra())->getGrowthPercent();
 					iValue /= 100;
@@ -3032,7 +3036,11 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 			case TRADE_CONNECTION_PRODUCTION:
 				if (eYield == YIELD_PRODUCTION)
 				{
+#ifndef GLOBAL_INTERNAL_BASE_VALUE
 					iValue = 300;
+#else
+					iValue = GC.getINTERNAL_TRADE_PRODUCTION_BASE_TIMES100();
+#endif
 					iValue += GC.getEraInfo(GET_PLAYER(kTradeConnection.m_eDestOwner).GetCurrentEra())->getTradeRouteProductionBonusTimes100();
 					iValue *= (GC.getEraInfo(GC.getGame().getStartEra())->getConstructPercent() + GC.getEraInfo(GC.getGame().getStartEra())->getTrainPercent()) / 2;
 					iValue /= 100;
@@ -4265,11 +4273,18 @@ uint CvPlayerTrade::GetNumTradeRoutesPossible (void)
 			}
 		}
 	}
+	
 #ifdef TRAITIFY //NumTradeRoutesBonus
-	int iNumRoutesBonus = m_pPlayer->GetPlayerTraits()->GetNumTradeRouteBonus();
-	iNumRoutes += iNumRoutesBonus;
+	// Static Modifier to Trade Route Capacity
+	int iTraitNumRoutesBonus = m_pPlayer->GetPlayerTraits()->GetNumTradeRouteBonus();
+	iNumRoutes += iTraitNumRoutesBonus;
 #endif
-
+#ifdef POLICY_TRADE_ROUTES // Retire the Grand Bazaar
+	// Static Modifier to Trade Route Capacity
+	int iPolicyNumRoutesBonus = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_NUM_TRADE_ROUTES_BONUS);
+	iNumRoutes += iPolicyNumRoutesBonus;
+#endif
+	// Percent Modifier to Trade Route Capacity
 	int iModifier = 100 + m_pPlayer->GetPlayerTraits()->GetNumTradeRoutesModifier();
 	iNumRoutes *= iModifier;
 	iNumRoutes /= 100;

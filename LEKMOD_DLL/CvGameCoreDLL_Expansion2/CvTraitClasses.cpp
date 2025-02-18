@@ -116,6 +116,12 @@ CvTraitEntry::CvTraitEntry() :
 	m_iExtraPopulationNewCities(0),
 	m_iExtraPopulationCityCount(0),
 	m_iGoldBurstOnFound(0),
+	m_bFreshWaterOnlyImprovementChange(false),
+	m_bNonFreshWaterOnlyImprovementChange(false),
+	m_iPuppetGoldModifier(0),
+	m_iPuppetScienceModifier(0),
+	m_iPuppetProductionModifier(0),
+	m_iInternationalRouteGrowthModifier(0),
 #endif
 
 	//EAP: Natural wonder faith for the finder
@@ -211,11 +217,15 @@ CvTraitEntry::CvTraitEntry() :
 #else
 	m_ppiImprovementYieldChanges(NULL),
 	m_ppiSpecialistYieldChanges(NULL),
-#ifdef TRAITIFY
+#ifdef TRAITIFY //Array init
+	m_piCityYieldChange(NULL),
+	m_piGreatWorkYieldChange(NULL),
+	m_ppaiBuildingClassRequiredTerrainRemoval(NULL),
 	m_ppaiTerrainYieldChange(NULL),
 	m_ppaiResourceYieldChange(NULL),
 	m_paiBuildingClassProductionModifiers(NULL),
 	m_paiBuildingClassHappiness(NULL),
+	m_ppiFeatureYieldChanges(NULL),
 #endif
 #ifdef LEK_TRAIT_SPECIALIST_YIELD_MAX_ONE
 	m_ppiAnySpecificSpecialistYieldChanges(NULL),
@@ -236,10 +246,14 @@ CvTraitEntry::~CvTraitEntry()
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldChanges);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiSpecialistYieldChanges);
 #ifdef TRAITIFY //SafeDeleteArray
+	SAFE_DELETE_ARRAY(m_piCityYieldChange);
+	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
+	SAFE_DELETE_ARRAY(m_ppaiBuildingClassRequiredTerrainRemoval);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiTerrainYieldChange);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiResourceYieldChange);
 	SAFE_DELETE_ARRAY(m_paiBuildingClassProductionModifiers);
 	SAFE_DELETE_ARRAY(m_paiBuildingClassHappiness);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiFeatureYieldChanges);
 #endif
 #ifdef LEK_TRAIT_SPECIALIST_YIELD_MAX_ONE
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiAnySpecificSpecialistYieldChanges);
@@ -785,6 +799,42 @@ int CvTraitEntry::GetGoldBurstOnFound() const
 {
 	return m_iGoldBurstOnFound;
 }
+
+/// Accessor:: Fresh Water Only Improvement Change
+bool CvTraitEntry::IsFreshWaterOnlyImprovementChange() const
+{
+	return m_bFreshWaterOnlyImprovementChange;
+}
+
+/// Accessor:: Non-Fresh Water Only Improvement Change
+bool CvTraitEntry::IsNonFreshWaterOnlyImprovementChange() const
+{
+	return m_bNonFreshWaterOnlyImprovementChange;
+}
+
+/// Accessor:: Puppet Gold Modifier
+int CvTraitEntry::GetPuppetGoldModifier() const
+{
+	return m_iPuppetGoldModifier;
+}
+
+/// Accessor:: Puppet Science Modifier
+int CvTraitEntry::GetPuppetScienceModifier() const
+{
+	return m_iPuppetScienceModifier;
+}
+
+/// Accessor:: Puppet Production Modifier
+int CvTraitEntry::GetPuppetProductionModifier() const
+{
+	return m_iPuppetProductionModifier;
+}
+
+/// Accessor:: International Trade Route Growth Modifier
+int CvTraitEntry::GetInternationalRouteGrowthModifier() const
+{
+	return m_iInternationalRouteGrowthModifier;
+}
 #endif
 
 ///////////////////
@@ -1237,6 +1287,35 @@ int CvTraitEntry::GetResourceQuantityModifier(int i) const
 	return m_piResourceQuantityModifiers ? m_piResourceQuantityModifiers[i] : -1;
 }
 #ifdef TRAITIFY // Getters for Arrays
+int CvTraitEntry::GetFeatureYieldChanges(FeatureTypes eIndex1, YieldTypes eIndex2) const
+{
+	CvAssertMsg(eIndex1 < GC.getNumFeatureInfos(), "Index out of bounds");
+	CvAssertMsg(eIndex1 > -1, "Index out of bounds");
+	CvAssertMsg(eIndex2 < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(eIndex2 > -1, "Index out of bounds");
+
+	return m_ppiFeatureYieldChanges ? m_ppiFeatureYieldChanges[eIndex1][eIndex2] : 0;
+
+}
+// City Plot Yield Change
+int CvTraitEntry::GetCityYieldChange(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piCityYieldChange ? m_piCityYieldChange[i] : -1;
+}
+// Great Work Yield Change from Traits
+int CvTraitEntry::GetGreatWorkYieldChange(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piGreatWorkYieldChange ? m_piGreatWorkYieldChange[i] : -1;
+}
+// Remove Terrain Requirement
+bool CvTraitEntry::IsBuildingClassTerrainRemoval(int iTrait, int iBuildingClass) const
+{
+	return (m_ppaiBuildingClassRequiredTerrainRemoval != NULL && m_ppaiBuildingClassRequiredTerrainRemoval[iTrait][iBuildingClass] == 1);
+}
 /// Change to Terrain yield by type
 int CvTraitEntry::GetTerrainYieldChange(int i, int j) const
 {
@@ -1349,12 +1428,6 @@ int CvTraitEntry::GetMovesChangeUnitCombat(const int unitCombatID) const
 
 	return m_piMovesChangeUnitCombats[unitCombatID];
 }
-#ifdef TRAITIFY // Getters for Arrays
-int CvTraitEntry::GetYieldStealPerX(int i) const
-{
-	return m_paiYieldStealPerX ? m_paiYieldStealPerX[i] : 0;
-}
-#endif
 
 /// Accessor:: Maintenance Modifier for a class of combat unit
 int CvTraitEntry::GetMaintenanceModifierUnitCombat(const int unitCombatID) const
@@ -1623,7 +1696,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iMinorFriendshipMinimum				= kResults.GetInt("MinorFriendshipMinimum");
 	m_iNumTradeRouteBonus					= kResults.GetInt("NumTradeRouteBonus");
 	m_iFaithCostModifier					= kResults.GetInt("FaithCostModifier");
-	m_iNumExtraLeagueVotes					= kResults.GetInt("NumExtraLeagueVotes");
+	m_iNumExtraLeagueVotes					= kResults.GetInt("ExtraLeagueVotes");
 	m_iMinorBullyModifier					= kResults.GetInt("MinorBullyModifier");
 	m_iBuildingProductionModifier			= kResults.GetInt("BuildingProductionModifier");
 	m_iCapitalBuildingProductionModifier	= kResults.GetInt("CapitalBuildingProductionModifier");
@@ -1652,6 +1725,12 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iExtraPopulationNewCities				= kResults.GetInt("ExtraPopulationNewCities");
 	m_iExtraPopulationCityCount				= kResults.GetInt("ExtraPopulationCityCount");
 	m_iGoldBurstOnFound						= kResults.GetInt("GoldBurstOnFound");
+	m_bFreshWaterOnlyImprovementChange		= kResults.GetBool("FreshWaterOnlyImprovementChange");
+	m_bNonFreshWaterOnlyImprovementChange	= kResults.GetBool("NonFreshWaterOnlyImprovementChange");
+	m_iPuppetGoldModifier					= kResults.GetInt("PuppetGoldModifier");
+	m_iPuppetProductionModifier				= kResults.GetInt("PuppetProductionModifier");
+	m_iPuppetScienceModifier				= kResults.GetInt("PuppetScienceModifier");
+	m_iInternationalRouteGrowthModifier		= kResults.GetInt("InternationalRouteGrowthModifier");
 #endif
 
 	//EAP: Faith for the Natural wonder findor
@@ -1804,11 +1883,64 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	kUtility.SetYields(m_paiYieldChangeIncomingTradeRoute, "Trait_YieldChangesIncomingTradeRoute", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiYieldModifier, "Trait_YieldModifiers", "TraitType", szTraitType);
 #ifdef TRAITIFY // Arrays for new traits
-	kUtility.SetYields(m_paiYieldStealPerX, "Trait_YieldStealPerX", "TraitType", szTraitType);
+	kUtility.SetYields(m_piCityYieldChange, "Trait_CityYieldChanges", "TraitType", szTraitType);
+	kUtility.SetYields(m_piGreatWorkYieldChange, "Trait_GreatWorkYieldChanges", "TraitType", szTraitType);
 	//Populate By Value
 	kUtility.PopulateArrayByValue(m_paiBuildingClassHappiness, "BuildingClasses", "Trait_BuildingClassHappiness", "BuildingClassType", "TraitType", szTraitType, "Happiness");
 	kUtility.PopulateArrayByValue(m_paiBuildingClassProductionModifiers, "BuildingClasses", "Trait_BuildingClassProductionModifiers", "BuildingClassType", "TraitType", szTraitType, "ProductionModifier");
 	//Custom Arrays
+		//UnimprovedFeatureYieldChanges
+	{
+
+		kUtility.Initialize2DArray(m_ppiFeatureYieldChanges, "Features", "Yields");
+
+
+		std::string strKey("Trait_FeatureYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Features.ID as FeatureID, Yields.ID as YieldID, Yield from Trait_FeatureYieldChanges inner join Features on Features.Type = FeatureType inner join Yields on Yields.Type = YieldType where TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int FeatureID = pResults->GetInt(0);
+			const int YieldID = pResults->GetInt(1);
+			const int yield = pResults->GetInt(2);
+
+			m_ppiFeatureYieldChanges[FeatureID][YieldID] = yield;
+
+		}
+	}
+// Trait_BuildingClassRequiredTerrainRemoval
+	{
+		kUtility.Initialize2DArray(m_ppaiBuildingClassRequiredTerrainRemoval, "Traits", "BuildingClasses");
+
+		std::string strKey("Trait_BuildingClassRequiredTerrainRemoval");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Traits.ID as TraitID, BuildingClasses.ID as BuildingClassID FROM Trait_BuildingClassRequiredTerrainRemoval \
+             INNER JOIN Traits ON Traits.Type = TraitType \
+             INNER JOIN BuildingClasses ON BuildingClasses.Type = BuildingClassType");
+		}
+
+		while (pResults->Step())
+		{
+			const int TraitID = pResults->GetInt(0);
+			const int BuildingClassID = pResults->GetInt(1);
+
+			CvAssert(TraitID >= 0);
+			CvAssert(BuildingClassID >= 0);
+
+			m_ppaiBuildingClassRequiredTerrainRemoval[TraitID][BuildingClassID] = 1; // Mark as allowed
+		}
+
+		pResults->Reset();
+	}
 	//Trait_ResourceYieldChanges
 	{
 		kUtility.Initialize2DArray(m_ppaiResourceYieldChange, "Resources", "Yields");
@@ -2403,6 +2535,8 @@ void CvPlayerTraits::InitPlayerTraits()
 			if (trait->IsFreeCourthouse()) { m_bFreeCourthouse = true; }
 			if (trait->IsExpandedGoldenAge()) { m_bExpandedGoldenAge = true; }
 			if (trait->IsGiveFreshWaterAroundCities()) { m_bGiveFreshWaterAroundCities = true; }
+			if (trait->IsFreshWaterOnlyImprovementChange()) { m_bFreshWaterOnlyImprovementChange = true; }
+			if (trait->IsNonFreshWaterOnlyImprovementChange()) { m_bNonFreshWaterOnlyImprovementChange = true; }
 
 			m_iGoldenAgeCultureModifier += trait->GetGoldenAgeCultureModifier();
 			m_iGoldenAgePointBurstOnCapture += trait->GetGoldenAgePointBurstOnCapture();
@@ -2437,6 +2571,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iExtraPopulationNewCities += trait->GetExtraPopulationNewCities();
 			m_iExtraPopulationCityCount += trait->GetExtraPopulationCityCount();
 			m_iGoldBurstOnFound += trait->GetGoldBurstOnFound();
+			m_iPuppetGoldModifier += trait->GetPuppetGoldModifier();
+			m_iPuppetProductionModifier += trait->GetPuppetProductionModifier();
+			m_iPuppetScienceModifier += trait->GetPuppetScienceModifier();
+			m_iInternationalRouteGrowthModifier += trait->GetInternationalRouteGrowthModifier();
 #endif
 		
 			//EAP: Natural wonder faith for the finder
@@ -2577,7 +2715,16 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_iYieldChangeIncomingTradeRoute[iYield] = trait->GetYieldChangeIncomingTradeRoute(iYield);
 				m_iYieldRateModifier[iYield] = trait->GetYieldModifier(iYield);
 #ifdef TRAITIFY //Array Init
-				m_iYieldStealPerX[iYield] = trait->GetYieldStealPerX(iYield);
+				for (int iFeatureLoop = 0; iFeatureLoop < GC.getNumFeatureInfos(); iFeatureLoop++)
+				{
+					int iChange = trait->GetFeatureYieldChanges((FeatureTypes)iFeatureLoop, (YieldTypes)iYield);
+					if (iChange > 0)
+					{
+						Firaxis::Array<int, NUM_YIELD_TYPES> yields = m_ppaaiFeatureYieldChange[iFeatureLoop];
+						yields[iYield] = (m_ppaaiFeatureYieldChange[iFeatureLoop][iYield] + iChange);
+						m_ppaaiFeatureYieldChange[iFeatureLoop] = yields;
+					}
+				}
 #endif
 
 #ifdef AUI_WARNING_FIXES
@@ -2736,6 +2883,9 @@ void CvPlayerTraits::Uninit()
 #endif
 
 	m_ppaaiUnimprovedFeatureYieldChange.clear();
+#ifdef TRAITIFY //CvPlayerTraits Uninit
+	m_ppaaiFeatureYieldChange.clear();
+#endif
 	m_aFreeResourceXCities.clear();
 }
 
@@ -2839,6 +2989,12 @@ void CvPlayerTraits::Reset()
 	m_iExtraPopulationNewCities = 0;
 	m_iExtraPopulationCityCount = 0;
 	m_iGoldBurstOnFound = 0;
+	m_iPuppetGoldModifier = 0;
+	m_iPuppetProductionModifier = 0;
+	m_iPuppetScienceModifier = 0;
+	m_bFreshWaterOnlyImprovementChange = false;
+	m_bNonFreshWaterOnlyImprovementChange = false;
+	m_iInternationalRouteGrowthModifier = 0;
 #endif
 
 	//EAP: Natural wonder faith for the finder
@@ -2920,6 +3076,10 @@ void CvPlayerTraits::Reset()
 
 	m_ppaaiUnimprovedFeatureYieldChange.clear();
 	m_ppaaiUnimprovedFeatureYieldChange.resize(GC.getNumFeatureInfos());
+#ifdef TRAITIFY
+	m_ppaaiFeatureYieldChange.clear();
+	m_ppaaiFeatureYieldChange.resize(GC.getNumFeatureInfos());
+#endif
 
 	Firaxis::Array< int, NUM_YIELD_TYPES > yield;
 	for(unsigned int j = 0; j < NUM_YIELD_TYPES; ++j)
@@ -2938,7 +3098,10 @@ void CvPlayerTraits::Reset()
 		m_iYieldChangeIncomingTradeRoute[iYield] = 0;
 		m_iYieldRateModifier[iYield] = 0;
 #ifdef TRAITIFY //Array Init
-		m_iYieldStealPerX[iYield] = 0;
+		for (int iFeature = 0; iFeature < GC.getNumFeatureInfos(); iFeature++)
+		{
+			m_ppaaiFeatureYieldChange[iFeature] = yield;
+		}
 #endif
 
 #ifdef AUI_WARNING_FIXES
@@ -3170,6 +3333,62 @@ bool CvPlayerTraits::WillGetUniqueLuxury(CvArea *pArea) const
 	return false;
 }
 #ifdef TRAITIFY //GetBuildingClassProductionModifier
+// City Yield Changes
+int CvPlayerTraits::GetCityYieldChange(YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetCityYieldChange(eYieldType);
+		}
+	}
+	return rtnValue;
+}
+// Great Work Yield Changes
+int CvPlayerTraits::GetGreatWorkYieldChange(YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetGreatWorkYieldChange(eYieldType);
+		}
+	}
+	return rtnValue;
+}
+
+// Remove Terrain Prerequisites
+bool CvPlayerTraits::IsBuildingClassRequiredTerrainRemoval(BuildingClassTypes eBuildingClass)
+{
+	bool rtnValue = false;
+
+	// Loop through all traits the player has
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		TraitTypes eTrait = (TraitTypes)i;
+
+		if (HasTrait(eTrait)) // Check if the player has this trait
+		{
+			CvTraitEntry* pTrait = GC.getTraitInfo(eTrait);
+			if (pTrait)
+			{
+				// Call the function with both parameters: TraitType and BuildingClassType
+				if (pTrait->IsBuildingClassTerrainRemoval(eTrait, eBuildingClass))
+				{
+					rtnValue = true;
+					break; // Stop checking once we find a match
+				}
+			}
+		}
+	}
+	return rtnValue;
+}
+
+
+// Terrain Yield Changes
 int CvPlayerTraits::GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYieldType)
 {
 	int rtnValue = 0;
@@ -3182,6 +3401,7 @@ int CvPlayerTraits::GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYie
 	}
 	return rtnValue;
 }
+// Resource Yield Changes
 int CvPlayerTraits::GetResourceYieldChange(ResourceTypes eResource, YieldTypes eYieldType)
 {
 	int rtnValue = 0;
@@ -3194,6 +3414,7 @@ int CvPlayerTraits::GetResourceYieldChange(ResourceTypes eResource, YieldTypes e
 	}
 	return rtnValue;
 }
+// Building Class Production Modifier
 int CvPlayerTraits::GetBuildingClassProductionModifier(BuildingClassTypes eBuildingClass)
 {
 	int rtnValue = 0;
@@ -3208,6 +3429,7 @@ int CvPlayerTraits::GetBuildingClassProductionModifier(BuildingClassTypes eBuild
 
 	return rtnValue;
 }
+// Building Class Happiness
 int CvPlayerTraits::GetBuildingClassHappiness(BuildingClassTypes eBuildingClass)
 {
 	int rtnValue = 0;
@@ -3237,7 +3459,6 @@ int CvPlayerTraits::GetBuildingClassYieldModifier(BuildingClassTypes eBuildingCl
 
 	return rtnValue;
 }
-
 ///Get Yield Change from Trait for a specific building class
 int CvPlayerTraits::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType)
 {
@@ -3252,6 +3473,19 @@ int CvPlayerTraits::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClas
 	}
 
 	return rtnValue;
+}
+/// All Features Yield Changes
+int CvPlayerTraits::GetFeatureYieldChange(FeatureTypes eFeature, YieldTypes eYield) const
+{
+	CvAssertMsg(eFeature < GC.getNumFeatureInfos(), "Invalid eImprovement parameter in call to CvPlayerTraits::GetFeatureYieldChange()");
+	CvAssertMsg(eYield < NUM_YIELD_TYPES, "Invalid eYield parameter in call to CvPlayerTraits::GetFeatureYieldChange()");
+
+	if (eFeature == NO_FEATURE)
+	{
+		return 0;
+	}
+
+	return m_ppaaiFeatureYieldChange[(int)eFeature][(int)eYield];
 }
 #endif
 
@@ -4154,6 +4388,12 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iExtraPopulationNewCities;
 	kStream >> m_iExtraPopulationCityCount;
 	kStream >> m_iGoldBurstOnFound;
+	kStream >> m_bFreshWaterOnlyImprovementChange;
+	kStream >> m_bNonFreshWaterOnlyImprovementChange;
+	kStream >> m_iPuppetGoldModifier;
+	kStream >> m_iPuppetProductionModifier;
+	kStream >> m_iPuppetScienceModifier;
+	kStream >> m_iInternationalRouteGrowthModifier;
 #endif
 
 	//EAP: Natural wonder faith for the finder:
@@ -4391,10 +4631,6 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	ArrayWrapper<int> kYieldRateModifierWrapper(NUM_YIELD_TYPES, m_iYieldRateModifier);
 	kStream >> kYieldRateModifierWrapper;
 
-#ifdef TRAITIFY //Read
-	ArrayWrapper<int> kYieldStealWrapper(NUM_YIELD_TYPES, m_iYieldStealPerX);
-	kStream >> kYieldStealWrapper;
-#endif
 
 	ArrayWrapper<int> kYieldChangeNaturalWonderWrapper(NUM_YIELD_TYPES, m_iYieldChangeNaturalWonder);
 	kStream >> kYieldChangeNaturalWonderWrapper;
@@ -4479,6 +4715,9 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_ppaaiAnySpecificSpecialistYieldChange;
 #endif
 	kStream >> m_ppaaiUnimprovedFeatureYieldChange;
+#ifdef TRAITIFY //Read
+	kStream >> m_ppaaiFeatureYieldChange;
+#endif
 
 	if (uiVersion >= 11)
 	{
@@ -4597,6 +4836,12 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iExtraPopulationNewCities;
 	kStream << m_iExtraPopulationCityCount;
 	kStream << m_iGoldBurstOnFound;
+	kStream << m_bFreshWaterOnlyImprovementChange;
+	kStream << m_bNonFreshWaterOnlyImprovementChange;
+	kStream << m_iPuppetGoldModifier;
+	kStream << m_iPuppetProductionModifier;
+	kStream << m_iPuppetScienceModifier;
+	kStream << m_iInternationalRouteGrowthModifier;
 #endif
 	//EAP: Natural wonder faith for the finder
 	
@@ -4688,9 +4933,6 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeStrategicResources);
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeLuxuryResources); // NQMP GJS - New Netherlands UA
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldRateModifier);
-#ifdef TRAITIFY //Write ArrayWrapper
-	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldStealPerX);
-#endif
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeNaturalWonder);
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangePerTradePartner);
 	kStream << ArrayWrapper<int>(NUM_YIELD_TYPES, m_iYieldChangeIncomingTradeRoute);
@@ -4736,6 +4978,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_ppaaiAnySpecificSpecialistYieldChange;
 #endif
 	kStream << m_ppaaiUnimprovedFeatureYieldChange;
+#ifdef TRAITIFY //Write
+	kStream << m_ppaaiFeatureYieldChange;
+#endif
 
 	kStream << (int)m_aUniqueLuxuryAreas.size();
 	for (unsigned int iI = 0; iI < m_aUniqueLuxuryAreas.size(); iI++)

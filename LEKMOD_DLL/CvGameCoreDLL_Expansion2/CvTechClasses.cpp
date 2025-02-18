@@ -44,6 +44,9 @@ CvTechEntry::CvTechEntry(void):
 
 	//EAP: Civilian Embark
 	m_bAllowsEmbarkingCivilian(false),
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+	m_iExtraLeagueVotes(0),
+#endif
 
 	m_bAllowsDefensiveEmbarking(false),
 	m_bEmbarkedAllWaterPassage(false),
@@ -116,6 +119,10 @@ bool CvTechEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 
 	//EAP: Civilian Embark
 	m_bAllowsEmbarkingCivilian = kResults.GetBool("AllowsEmbarkingCivilian");
+
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+	m_iExtraLeagueVotes = kResults.GetInt("ExtraLeagueVotes");
+#endif
 
 	m_bAllowsDefensiveEmbarking = kResults.GetBool("AllowsDefensiveEmbarking");
 	m_bEmbarkedAllWaterPassage = kResults.GetBool("EmbarkedAllWaterPassage");
@@ -344,6 +351,13 @@ bool CvTechEntry::IsAllowsEmbarkingCivilian() const
 {
 	return m_bAllowsEmbarkingCivilian;
 }
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+/// Extra votes in the World Congress
+int CvTechEntry::GetExtraLeagueVotes() const
+{
+	return m_iExtraLeagueVotes;
+}
+#endif
 
 /// Allows embarked units to defend themselves
 bool CvTechEntry::IsAllowsDefensiveEmbarking() const

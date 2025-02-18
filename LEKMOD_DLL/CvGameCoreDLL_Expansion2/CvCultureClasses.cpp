@@ -4542,7 +4542,7 @@ int CvCityCulture::GetBaseTourismBeforeModifiers()
 			iBase += m_pCity->GetCityBuildings()->GetNumBuildingsFromFaith() * iFaithBuildingTourism;
 		}
 
-		// Buildings
+		// Buildings - From Religion
 #ifdef AUI_WARNING_FIXES
 		for (uint jJ = 0; jJ < GC.getNumBuildingClassInfos(); jJ++)
 #else
@@ -4569,6 +4569,39 @@ int CvCityCulture::GetBaseTourismBeforeModifiers()
 			}
 		}
 	}
+#ifdef SWISS_MOUNTAINS
+	// Buildings - Without Religion
+	{
+		int iMountainCount = m_pCity->GetNumMountainsNearCity();
+		for (int jJ = 0; jJ < GC.getNumBuildingClassInfos(); jJ++)
+		{
+			BuildingClassTypes eBuildingClass = (BuildingClassTypes)jJ;
+			CvBuildingClassInfo* pkBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+			if (!pkBuildingClassInfo)
+			{
+				continue;
+			}
+
+			CvCivilizationInfo& playerCivilizationInfo = GET_PLAYER(m_pCity->getOwner()).getCivilizationInfo();
+			BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
+
+			if (eBuilding != NO_BUILDING)
+			{
+				CvBuildingEntry* pkEntry = GC.getBuildingInfo(eBuilding);
+				if (pkEntry && m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
+				{
+					int iTourismPerMountain = pkEntry->GetMountainTourism();
+					if (iTourismPerMountain > 0)
+					{
+						int iTotalMountainTourism = iMountainCount * iTourismPerMountain;
+
+						iBase += iTotalMountainTourism;
+					}
+				}
+			}
+		}
+	}
+#endif
 
 	// Tech enhanced Tourism
 #ifdef AUI_WARNING_FIXES

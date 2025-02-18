@@ -171,6 +171,9 @@ CvCity::CvCity() :
 	, m_iPopulation("CvCity::m_iPopulation", m_syncArchive)
 	, m_iHighestPopulation("CvCity::m_iHighestPopulation", m_syncArchive)
 	, m_iExtraHitPoints(0)
+#ifdef GREAT_WALL_DELUA
+	, m_iGlobalHitPoints(0)
+#endif
 	, m_iNumGreatPeople("CvCity::m_iNumGreatPeople", m_syncArchive)
 	, m_iBaseGreatPeopleRate("CvCity::m_iBaseGreatPeopleRate", m_syncArchive)
 	, m_iGreatPeopleRateModifier("CvCity::m_iGreatPeopleRateModifier", m_syncArchive)
@@ -245,6 +248,9 @@ CvCity::CvCity() :
 	, m_eOriginalOwner("CvCity::m_eOriginalOwner", m_syncArchive)
 	, m_ePlayersReligion("CvCity::m_ePlayersReligion", m_syncArchive)
 	, m_aiSeaPlotYield("CvCity::m_aiSeaPlotYield", m_syncArchive)
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	, m_iPreviousTradeRouteCount (0)
+#endif
 	, m_iMountainScienceYield("CvCity::m_iMountainScienceYield", m_syncArchive) // NQMP GJS - mountain science yield
 	, m_aiRiverPlotYield("CvCity::m_aiRiverPlotYield", m_syncArchive)
 	, m_aiLakePlotYield("CvCity::m_aiLakePlotYield", m_syncArchive)
@@ -982,6 +988,9 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_iPopulation = 0;
 	m_iHighestPopulation = 0;
 	m_iExtraHitPoints = 0;
+#ifdef GREAT_WALL_DELUA
+	m_iGlobalHitPoints = 0;
+#endif
 	m_iNumGreatPeople = 0;
 	m_iBaseGreatPeopleRate = 0;
 	m_iGreatPeopleRateModifier = 0;
@@ -1967,7 +1976,9 @@ void CvCity::doTurn()
 		}
 #endif
 		bool bAllowNoProduction = !doCheckProduction();
-
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+		UpdateOriginCityTradeRouteYields();
+#endif
 		doGrowth();
 
 		DoUpdateIndustrialRouteToCapital();
@@ -3035,12 +3046,26 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
-
+#ifndef TRAITIFY
 	if(!isValidBuildingLocation(eBuilding))
 	{
 		return false;
 	}
+#else
+	// Check if the building normally has terrain restrictions
+	if (!isValidBuildingLocation(eBuilding))
+	{
+		// Get the player's traits
+		CvPlayerTraits* pPlayerTraits = GET_PLAYER(getOwner()).GetPlayerTraits();
+		BuildingClassTypes eBuildingClass = (BuildingClassTypes)GC.getBuildingInfo(eBuilding)->GetBuildingClassType();
 
+		// If the player's trait allows bypassing terrain restrictions, SKIP this check
+		if (!pPlayerTraits->IsBuildingClassRequiredTerrainRemoval(eBuildingClass))
+		{
+			return false;
+		}
+	}
+#endif
 	// Local Resource requirements met?
 	if(!IsBuildingLocalResourceValid(eBuilding, bTestVisible, toolTipSink))
 	{
@@ -7422,6 +7447,20 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		changeNukeModifier(pBuildingInfo->GetNukeModifier() * iChange);
 		changeHealRate(pBuildingInfo->GetHealRateChange() * iChange);
 		ChangeExtraHitPoints(pBuildingInfo->GetExtraCityHitPoints() * iChange);
+#ifdef GREAT_WALL_DELUA
+		int iGlobalHitPointChange = pBuildingInfo->GetGlobalCityHitPointChange() * iChange;
+
+		if (iGlobalHitPointChange != 0)
+		{
+			// Apply hit points to all cities
+			int iLoop;
+			CvCity* pLoopCity;
+			for (pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
+			{
+				pLoopCity->ChangeExtraHitPoints(iGlobalHitPointChange);
+			}
+		}
+#endif
 
 		ChangeNoOccupiedUnhappinessCount(pBuildingInfo->IsNoOccupiedUnhappiness() * iChange);
 
@@ -7687,7 +7726,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 					}
 				}
 			}
-
+			
 			int iBuildingClassBonus = owningPlayer.GetBuildingClassYieldChange(eBuildingClass, eYield);
 			if(iBuildingClassBonus > 0)
 			{
@@ -7760,7 +7799,6 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 #ifdef NQ_BUILDING_DEFENSE_FROM_CITIZENS
 		m_pCityBuildings->ChangeBuildingDefensePerCitizen(pBuildingInfo->GetDefensePerCitizen() * iChange);
 #endif
-
 		owningTeam.changeBuildingClassCount(eBuildingClass, iChange);
 		owningPlayer.changeBuildingClassCount(eBuildingClass, iChange);
 	}
@@ -8288,6 +8326,17 @@ int CvCity::foodDifferenceTimes100(bool bBottom, CvString* toolTipSink) const
 			iTotalMod += iMod;
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_FOODMOD_WLTKD", iMod);
 		}
+#ifdef TRAITIFY // Kilwa International Route Food Mod
+		// Trait Growth Mod per International Trade Route
+		int iTradeRouteGrowthMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetInternationalRouteGrowthModifier();
+		int iNumInternationalTradeRoutes = GC.getGame().GetGameTrade()->GetNumTimesOriginCity(const_cast<CvCity*>(this), true); // Safe since this just reads the trade route data
+		iTradeRouteGrowthMod *= iNumInternationalTradeRoutes;
+		if (iTradeRouteGrowthMod != 0)
+		{
+			iTotalMod += iTradeRouteGrowthMod;
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_FOODMOD_TRADE_ROUTE", iTradeRouteGrowthMod);
+		}
+#endif
 
 		iDifference *= iTotalMod;
 		iDifference /= 100;
@@ -10505,7 +10554,7 @@ int CvCity::GetLocalHappiness() const
 			}
 		}
 	}
-#ifdef TRAITIFY
+#ifdef TRAITIFY // Building class happiness from traits
 	int iSpecialTraitBuildingHappiness = 0;
 
 	for (int iTraitLoop = 0; iTraitLoop < GC.getNumTraitInfos(); iTraitLoop++)
@@ -11218,6 +11267,9 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	VALIDATE_OBJECT
 	int iModifier = 0;
 	int iTempMod;
+#ifdef TRAITIFY // Trait Yield Modifiers
+	int iTraitMod;
+#endif
 
 	// Yield Rate Modifier
 	iTempMod = getYieldRateModifier(eIndex);
@@ -11303,7 +11355,7 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD_HANSE", iTempMod);
 		}
 	}
-
+#ifndef ECO_UNION_NOT_A_BUILDING
 	// NQMP GJS - new Economic Union BEGIN
 	// Gold Yield Rate Modifier from City States
 	if(eIndex == YIELD_GOLD && GetCityBuildings()->GetCityStateTradeRouteGoldModifier() > 0)
@@ -11315,7 +11367,28 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 		}
 	}
 	// NQMP GJS - new Economic Union END
+#else
+	// Gold Yield Rate Modifier from City-State Trade Routes
+	if (eIndex == YIELD_GOLD)
+	{
+		int iNumCityStates = GET_PLAYER(getOwner()).GetTrade()->GetNumberOfCityStateTradeRoutes();
+		int iPolicyMod = GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CITY_STATE_TRADE_ROUTE_GOLD_MODIFIER);
+		int iBuildingMod = 0; //GetCityBuildings()->GetCityStateTradeRouteGoldModifier(); Refactor Economic Union
 
+		// Calculate the Gold Mod
+		int iGoldMod = (iNumCityStates * iPolicyMod) + iBuildingMod;
+
+		// Apply the modification
+		if (iGoldMod > 0)
+		{
+			iModifier += iGoldMod;
+			if (toolTipSink)
+			{
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_GOLDMOD_YIELD_PER_MINOR_TRADE_ROUTE", iGoldMod);
+			}
+		}
+	}
+#endif
 	// Puppet
 #ifdef AUI_CITY_FIX_VENICE_PUPPETS_GET_NO_YIELD_PENALTIES_BESIDES_CULTURE
 	if (IsPuppet() && !GetPlayer()->GetPlayerTraits()->IsNoAnnexing())
@@ -11323,6 +11396,7 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	if(IsPuppet())
 #endif
 	{
+#ifndef TRAITIFY // Puppet Yield Modifiers
 		switch(eIndex)
 		{
 		case YIELD_SCIENCE:
@@ -11336,6 +11410,35 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 			if(iTempMod != 0 && toolTipSink)
 				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_PUPPET", iTempMod);
 		}
+#else
+		switch (eIndex)
+		{
+		case YIELD_PRODUCTION:
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetProductionModifier();
+			// iTempMod; Not affected by puppet status
+			iModifier += iTraitMod;
+			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_PUPPET", iTraitMod); 
+			break;
+
+		case YIELD_SCIENCE:
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetScienceModifier();
+			iTempMod = GC.getPUPPET_SCIENCE_MODIFIER();
+			iModifier += iTempMod + iTraitMod;
+			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_PUPPET", iTempMod + iTraitMod);
+			break;
+
+		case YIELD_GOLD:
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetGoldModifier();
+			iTempMod = GC.getPUPPET_GOLD_MODIFIER();
+			iModifier += iTempMod + iTraitMod;
+			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_PUPPET", iTempMod + iTraitMod); 
+			break;
+		}
+#endif
+
 	}
 
 	iModifier += iExtra;
@@ -11904,6 +12007,83 @@ int CvCity::GetTradeYieldModifier(YieldTypes eIndex, CvString* toolTipSink) cons
 	}
 	return iReturnValue;
 }
+#ifdef SWISS_MOUNTAINS
+int CvCity::GetNumMountainsNearCity()
+{
+	int iMountainCount = 0;
+
+	// Get the city's plot
+	CvPlot* pCityPlot = plot();
+	if (!pCityPlot) return 0;
+	// Get owner ID 
+	PlayerTypes eOwner = getOwner();
+
+	// Iterate through plots
+	for (int iDX = -3; iDX <= 3; iDX++)
+	{
+		for (int iDY = -3; iDY <= 3; iDY++)
+		{
+			CvPlot* pLoopPlot = plotXYWithRangeCheck(pCityPlot->getX(), pCityPlot->getY(), iDX, iDY, 3);
+			if (pLoopPlot != NULL) // Ensure the plot is valid
+			{
+				// Check if the plot is a Mountain and owned by city
+				if (pLoopPlot->isMountain() && pLoopPlot->getOwner() == eOwner)
+				{
+					iMountainCount++;
+				}
+			}
+		}
+	}
+	return iMountainCount;
+}
+#endif
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+void CvCity::UpdateOriginCityTradeRouteYields()
+{
+	int iNumTradeRoutes = GC.getGame().GetGameTrade()->GetNumTimesOriginCity(this, false);
+
+	// If no trade routes exist, we're done
+	if (iNumTradeRoutes == 0)
+	{
+		m_iPreviousTradeRouteCount = 0; // Reset stored count
+		return;
+	}
+
+	// Calculate the yield changes
+	for (int iBuilding = 0; iBuilding < GC.getNumBuildingInfos(); iBuilding++)
+	{
+		BuildingTypes eBuilding = (BuildingTypes)iBuilding;
+
+		if (!GetCityBuildings()->GetNumBuilding(eBuilding))
+		{
+			continue; // Skip if the city doesn't have this building
+		}
+
+		CvBuildingEntry* pBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if (!pBuildingInfo)
+		{
+			continue;
+		}
+
+		// Compute old and new bonuses
+		int iOldFoodBonus = pBuildingInfo->GetFoodOriginCity() * m_iPreviousTradeRouteCount;
+		int iNewFoodBonus = pBuildingInfo->GetFoodOriginCity() * iNumTradeRoutes;
+
+		int iOldProductionBonus = pBuildingInfo->GetProductionOriginCity() * m_iPreviousTradeRouteCount;
+		int iNewProductionBonus = pBuildingInfo->GetProductionOriginCity() * iNumTradeRoutes;
+
+		// Remove old values and apply new ones
+		ChangeBaseYieldRateFromBuildings(YIELD_FOOD, iNewFoodBonus - iOldFoodBonus);
+		ChangeBaseYieldRateFromBuildings(YIELD_PRODUCTION, iNewProductionBonus - iOldProductionBonus);
+		//  ChangeBaseYieldRateFromBuildings(YIELD_SCIENCE, iNewScienceBonus -iOldScienceBonus); 
+		//  ChangeBaseYieldRateFromBuildings(YIELD_GOLD, iNewGoldBonus -iOldGoldBonus);
+		//  ChangeJONSCulturePerTurnFromBuildings(YIELD_CULTURE, iNewCulture -iOldCultureBonus); 
+		//  ChangeFaithPerTurnFromBuildings(YIELD_FAITH, iNewFaithBonus -iOldFaithBonus);
+	}
+	// Store current trade route count for next turn
+	m_iPreviousTradeRouteCount = iNumTradeRoutes;
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 int CvCity::getDomainFreeExperience(DomainTypes eIndex) const
@@ -12439,6 +12619,51 @@ void CvCity::changeSpecialistFreeExperience(int iChange)
 	m_iSpecialistFreeExperience += iChange;
 	CvAssert(m_iSpecialistFreeExperience >= 0);
 }
+#ifdef GREAT_WALL_DELUA
+void CvCity::updateGlobalHitPoints()
+{
+	int iNewGlobalHitPoints = 0;
+
+	// Loop through all buildings in the game
+	for (int i = 0; i < GC.getNumBuildingInfos(); i++)
+	{
+		CvBuildingEntry* pBuildingInfo = GC.getBuildingInfo((BuildingTypes)i);
+		if (!pBuildingInfo) continue;
+
+		bool bPlayerOwnsBuilding = false;
+
+		// Check if the player owns this building in any of their cities
+		int iLoop;
+		for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
+		{
+			if (pLoopCity->GetCityBuildings()->GetNumRealBuilding((BuildingTypes)i) > 0)
+			{
+				bPlayerOwnsBuilding = true;
+				break;
+			}
+		}
+
+		if (bPlayerOwnsBuilding)
+		{
+			iNewGlobalHitPoints += pBuildingInfo->GetGlobalCityHitPointChange();
+		}
+	}
+
+	// Apply changes to all cities
+	int iLoop;
+	for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
+	{
+		// Remove the old global hit point effect before applying the new one
+		pLoopCity->ChangeExtraHitPoints(-pLoopCity->m_iGlobalHitPoints);
+
+		// Apply the new global hit points
+		pLoopCity->ChangeExtraHitPoints(iNewGlobalHitPoints);
+
+		// Store the new global hit point amount
+		pLoopCity->m_iGlobalHitPoints = iNewGlobalHitPoints;
+	}
+}
+#endif
 
 
 //	--------------------------------------------------------------------------------
@@ -12469,6 +12694,32 @@ void CvCity::updateStrengthValue()
 	iBuildingDefense += (m_pCityBuildings->GetBuildingDefensePerCitizen() * getPopulation());
 #endif
 
+#ifdef GREAT_WALL_DELUA
+	int iGlobalCityDefenseChange = 0;
+
+	// Loop through all buildings in the game
+	for (int i = 0; i < GC.getNumBuildingInfos(); i++)
+	{
+		CvBuildingEntry* pBuildingInfo = GC.getBuildingInfo((BuildingTypes)i);
+		if (!pBuildingInfo) continue;
+		bool bPlayerOwnsBuilding = false;
+		// Check if the player owns this building in any of their cities
+		int iLoop;
+		for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
+		{
+			if (pLoopCity->GetCityBuildings()->GetNumRealBuilding((BuildingTypes)i) > 0)
+			{
+				bPlayerOwnsBuilding = true;
+				break;
+			}
+		}
+		if (bPlayerOwnsBuilding)
+		{
+			iGlobalCityDefenseChange += pBuildingInfo->GetGlobalCityDefenseChange();
+		}
+	}
+	iBuildingDefense += iGlobalCityDefenseChange;
+#endif
 	iBuildingDefense *= (100 + m_pCityBuildings->GetBuildingDefenseMod());
 	iBuildingDefense /= 100;
 
@@ -16703,6 +16954,7 @@ void CvCity::read(FDataStream& kStream)
 		// Change all at once, rather than one by one, else the clamping might adjust the current damage.
 		ChangeExtraHitPoints(iTotalExtraHitPoints);
 	}
+	kStream >> m_iGlobalHitPoints;
 
 	kStream >> m_yieldChanges;
 
@@ -16931,6 +17183,7 @@ void CvCity::write(FDataStream& kStream) const
 	kStream << *m_pCityEspionage;
 
 	kStream << m_iExtraHitPoints;
+	kStream << m_iGlobalHitPoints;
 
 	kStream << m_yieldChanges;
 }

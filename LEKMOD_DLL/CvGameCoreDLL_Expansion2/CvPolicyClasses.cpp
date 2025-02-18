@@ -48,6 +48,9 @@ CvPolicyEntry::CvPolicyEntry(void):
 #ifdef NQ_EXTRA_SPIES_FROM_POLICIES
 	m_iNumExtraSpies(0),
 #endif
+#ifdef CONSULATES
+	m_iNumExtraLeagueVotes(0),
+#endif
 	m_iMedianTechPercentChange(0),
 	m_iStrategicResourceMod(0),
 	m_iWonderProductionModifier(0),
@@ -136,6 +139,12 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iSeaTradeRouteGoldChange(0),
 	m_iInternalTradeRouteGoldChange(0), // NQMP GJS - Silk Road
 	m_iSharedIdeologyTradeGoldChange(0),
+#ifdef POLICY_TRADE_ROUTES
+	m_iNumTradeRoutesBonus(0),
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+	m_iCityStateTradeRouteGoldModifier(0),
+#endif
 	m_iRiggingElectionModifier(0),
 	m_iMilitaryUnitGiftExtraInfluence(0),
 	m_iProtectedMinorPerTurnInfluence(0),
@@ -271,6 +280,9 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_paiBuildingClassHappiness(NULL),
 	m_paiFreeUnitClasses(NULL),
 	m_paiTourismOnUnitCreation(NULL),
+#ifdef POLICY_OLD_TOA
+	m_piGlobalYieldModifier(NULL),
+#endif
 	m_paiHurryModifier(NULL),
 	m_pabSpecialistValid(NULL),
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
@@ -319,6 +331,9 @@ CvPolicyEntry::~CvPolicyEntry(void)
 	SAFE_DELETE_ARRAY(m_paiBuildingClassHappiness);
 	SAFE_DELETE_ARRAY(m_paiFreeUnitClasses);
 	SAFE_DELETE_ARRAY(m_paiTourismOnUnitCreation);
+#ifdef POLICY_OLD_TOA
+	SAFE_DELETE_ARRAY(m_piGlobalYieldModifier);
+#endif
 
 //	SAFE_DELETE_ARRAY(m_pabHurry);
 	SAFE_DELETE_ARRAY(m_paiHurryModifier);
@@ -384,6 +399,10 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iNumFreeGreatPeople = kResults.GetInt("NumFreeGreatPeople");
 #ifdef NQ_EXTRA_SPIES_FROM_POLICIES
 	m_iNumExtraSpies = kResults.GetInt("NumExtraSpies");
+#endif
+#ifdef CONSULATES
+	m_iNumExtraLeagueVotes = kResults.GetInt("ExtraLeagueVotes");
+	
 #endif
 	m_iMedianTechPercentChange = kResults.GetInt("MedianTechPercentChange");
 	m_iStrategicResourceMod = kResults.GetInt("StrategicResourceMod");
@@ -492,7 +511,12 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iSeaTradeRouteGoldChange = kResults.GetInt("SeaTradeRouteGoldChange");
 	m_iInternalTradeRouteGoldChange = kResults.GetInt("InternalTradeRouteGoldChange"); // NQMP GJS - Silk Road
 	m_iSharedIdeologyTradeGoldChange = kResults.GetInt("SharedIdeologyTradeGoldChange");
-
+#ifdef POLICY_TRADE_ROUTES
+	m_iNumTradeRoutesBonus = kResults.GetInt("NumTradeRoutesBonus");
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+	m_iCityStateTradeRouteGoldModifier = kResults.GetInt("CityStateTradeRouteGoldModifier");
+#endif
 	m_iRiggingElectionModifier = kResults.GetInt("RiggingElectionModifier");
 	m_iMilitaryUnitGiftExtraInfluence = kResults.GetInt("MilitaryUnitGiftExtraInfluence");
 	m_iProtectedMinorPerTurnInfluence = kResults.GetInt("ProtectedMinorPerTurnInfluence");
@@ -633,6 +657,9 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 	kUtility.PopulateArrayByValue(m_paiFreeUnitClasses, "UnitClasses", "Policy_FreeUnitClasses", "UnitClassType", "PolicyType", szPolicyType, "Count");
 	kUtility.PopulateArrayByValue(m_paiTourismOnUnitCreation, "UnitClasses", "Policy_TourismOnUnitCreation", "UnitClassType", "PolicyType", szPolicyType, "Tourism");
+#ifdef POLICY_OLD_TOA
+	kUtility.SetYields(m_piGlobalYieldModifier, "Policy_GlobalYieldModifiers", "PolicyType", szPolicyType);
+#endif
 
 	//BuildingYieldModifiers
 	{
@@ -1046,6 +1073,13 @@ int CvPolicyEntry::GetNumFreeGreatPeople() const
 int CvPolicyEntry::GetNumExtraSpies() const
 {
 	return m_iNumExtraSpies;
+}
+#endif
+#ifdef CONSULATES
+/// Number of Extra League Votes
+int CvPolicyEntry::GetNumExtraLeagueVotes() const
+{
+	return m_iNumExtraLeagueVotes;
 }
 #endif
 
@@ -1568,6 +1602,20 @@ int CvPolicyEntry::GetSharedIdeologyTradeGoldChange() const
 {
 	return m_iSharedIdeologyTradeGoldChange;
 }
+#ifdef POLICY_TRADE_ROUTES
+/// Add a static amount of Trade Route capacity
+int CvPolicyEntry::GetNumTradeRoutesBonus() const
+{
+	return m_iNumTradeRoutesBonus;
+}
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+/// Get Modifier for gold in the Empire per city state trade route
+int CvPolicyEntry::GetCityStateTradeRouteGoldModifier() const
+{
+	return m_iCityStateTradeRouteGoldModifier;
+}
+#endif
 
 /// Boost to chance of rigging an election
 int CvPolicyEntry::GetRiggingElectionModifier() const
@@ -2253,6 +2301,15 @@ int CvPolicyEntry::GetTourismByUnitClassCreated(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_paiTourismOnUnitCreation ? m_paiTourismOnUnitCreation[i] : -1;
 }
+#ifdef POLICY_OLD_TOA
+/// Global Yield Modifier
+int CvPolicyEntry::GetGlobalYieldModifier(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piGlobalYieldModifier ? m_piGlobalYieldModifier[i] : -1;
+}
+#endif
 
 /// Is this hurry type now enabled?
 //bool CvPolicyEntry::IsHurry(int i) const
@@ -3272,6 +3329,16 @@ int CvPlayerPolicies::GetNumericModifier(PolicyModifierType eType)
 			case POLICYMOD_SHARED_IDEOLOGY_TRADE_CHANGE:
 				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetSharedIdeologyTradeGoldChange();
 				break;
+#ifdef POLICY_TRADE_ROUTES
+			case POLICYMOD_NUM_TRADE_ROUTES_BONUS:
+				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetNumTradeRoutesBonus();
+				break;
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+			case POLICYMOD_CITY_STATE_TRADE_ROUTE_GOLD_MODIFIER:
+				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetCityStateTradeRouteGoldModifier();
+				break;
+#endif
 			case POLICYMOD_RIGGING_ELECTION_MODIFIER:
 				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetRiggingElectionModifier();
 				break;

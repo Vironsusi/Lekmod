@@ -397,6 +397,10 @@ public:
 	int GetGreatWorkYieldChange(YieldTypes eYield) const;
 	void ChangeGreatWorkYieldChange(YieldTypes eYield, int iChange);
 
+#ifdef TRAITIFY // GreatWorkYieldChange
+	void ApplyTraitGreatWorkYield();
+#endif
+
 	CvPlot* getStartingPlot() const;
 	void setStartingPlot(CvPlot* pNewValue);
 
@@ -672,7 +676,19 @@ public:
 
 	int GetExtraLeagueVotes() const;
 	void ChangeExtraLeagueVotes(int iChange);
-
+#ifdef TRAITIFY
+	int GetTraitExtraLeagueVotes() const;
+#endif
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+	int GetTechExtraLeagueVotes() const;
+	void ChangeTechExtraLeagueVotes(int iChange);
+#endif
+#ifdef CONSULATES
+	int GetPolicyExtraLeagueVotes() const;
+	void ChangePolicyExtraLeagueVotes(int iChange);
+	void SetPolicyExtraLeagueVotes(int iValue);
+	void DoConsulates();
+#endif
 	int GetWoundedUnitDamageMod() const;
 	void SetWoundedUnitDamageMod(int iValue);
 	void ChangeWoundedUnitDamageMod(int iChange);
@@ -1977,6 +1993,12 @@ protected:
 	int m_bMayaBoostMusicians;
 #endif
 	int m_iExtraLeagueVotes;
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+	int m_iTechExtraVotes;
+#endif
+#ifdef CONSULATES
+	int m_iPolicyExtraVotes;
+#endif
 	FAutoVariable<int, CvPlayer> m_iAdvancedStartPoints;
 	FAutoVariable<int, CvPlayer> m_iAttackBonusTurns;
 	int m_iCultureBonusTurns;

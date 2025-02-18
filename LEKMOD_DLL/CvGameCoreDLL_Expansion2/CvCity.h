@@ -135,6 +135,10 @@ public:
 	bool canMaintain(ProcessTypes eProcess, bool bContinue = false) const;
 	bool canJoin() const;
 
+#ifdef SWISS_MOUNTAINS
+	int GetNumMountainsNearCity();
+#endif
+
 	bool IsFeatureSurrounded() const;
 	void SetFeatureSurrounded(bool bValue);
 	void DoUpdateFeatureSurrounded();
@@ -701,7 +705,9 @@ public:
 	void changeProductionToYieldModifier(YieldTypes eIndex, int iChange);
 
 	int GetTradeYieldModifier(YieldTypes eIndex, CvString* toolTipSink = NULL) const;
-
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	void UpdateOriginCityTradeRouteYields();
+#endif
 	// END Yield
 
 	int getDomainFreeExperience(DomainTypes eIndex) const;
@@ -770,6 +776,10 @@ public:
 
 	int getSpecialistFreeExperience() const;
 	void changeSpecialistFreeExperience(int iChange);
+
+#ifdef GREAT_WALL_DELUA
+	void updateGlobalHitPoints();
+#endif
 
 	void updateStrengthValue();
 	int getStrengthValue(bool bForRangeStrike = false) const;
@@ -964,6 +974,9 @@ protected:
 	FAutoVariable<int, CvCity> m_iPopulation;
 	FAutoVariable<int, CvCity> m_iHighestPopulation;
 	int m_iExtraHitPoints;
+#ifdef GREAT_WALL_DELUA
+	int m_iGlobalHitPoints;
+#endif
 
 	FAutoVariable<int, CvCity> m_iNumGreatPeople;
 	FAutoVariable<int, CvCity> m_iBaseGreatPeopleRate;
@@ -1042,6 +1055,10 @@ protected:
 	FAutoVariable<PlayerTypes, CvCity> m_ePreviousOwner;
 	FAutoVariable<PlayerTypes, CvCity> m_eOriginalOwner;
 	FAutoVariable<PlayerTypes, CvCity> m_ePlayersReligion;
+
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	int m_iPreviousTradeRouteCount;
+#endif
 	
 	FAutoVariable<int, CvCity> m_iMountainScienceYield; // NQMP GJS - mountain science yield
 	FAutoVariable<std::vector<int>, CvCity> m_aiSeaPlotYield;

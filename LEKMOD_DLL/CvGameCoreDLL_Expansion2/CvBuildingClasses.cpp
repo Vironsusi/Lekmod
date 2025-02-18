@@ -82,6 +82,10 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iMilitaryProductionModifier(0),
 	m_iSpaceProductionModifier(0),
 	m_iGlobalSpaceProductionModifier(0),
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	m_iFoodOriginCity(0),
+	m_iProductionOriginCity(0),
+#endif
 	m_iMinAreaSize(0),
 	m_iConquestProbability(0),
 	m_iHealRateChange(0),
@@ -111,6 +115,10 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iDefensePerCitizen(0),
 #endif
 	m_iGlobalDefenseModifier(0),
+#ifdef GREAT_WALL_DELUA
+	m_iGlobalCityDefenseChange(0),
+	m_iGlobalCityHitPointChange(0),
+#endif
 	m_iExtraCityHitPoints(0),
 	m_iMissionType(NO_MISSION),
 	m_iMinorFriendshipChange(0),
@@ -139,6 +147,9 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iExtraLeagueVotes(0),
 	m_iPreferredDisplayPosition(0),
 	m_iPortraitIndex(-1),
+#ifdef SWISS_MOUNTAINS
+	m_iTourismPerMountain(0),
+#endif
 	m_bTeamShare(false),
 	m_bWater(false),
 	m_bRiver(false),
@@ -388,6 +399,10 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iBuildingProductionModifier = kResults.GetInt("BuildingProductionModifier");
 	m_iWonderProductionModifier = kResults.GetInt("WonderProductionModifier");
 	m_iCityConnectionTradeRouteModifier = kResults.GetInt("CityConnectionTradeRouteModifier");
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	m_iFoodOriginCity = kResults.GetInt("FoodOriginCity");
+	m_iProductionOriginCity = kResults.GetInt("ProductionOriginCity");
+#endif
 	m_iCapturePlunderModifier = kResults.GetInt("CapturePlunderModifier");
 	m_iPolicyCostModifier = kResults.GetInt("PolicyCostModifier");
 	m_iPlotCultureCostModifier = kResults.GetInt("PlotCultureCostModifier");
@@ -413,6 +428,10 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iDefensePerCitizen = kResults.GetInt("DefensePerCitizen");
 #endif
 	m_iGlobalDefenseModifier = kResults.GetInt("GlobalDefenseMod");
+#ifdef GREAT_WALL_DELUA
+	m_iGlobalCityDefenseChange = kResults.GetInt("GlobalCityDefenseChange");
+	m_iGlobalCityHitPointChange = kResults.GetInt("GlobalCityHitPointChange");
+#endif
 	m_iExtraCityHitPoints = kResults.GetInt("ExtraCityHitPoints");
 	m_iMinorFriendshipChange = kResults.GetInt("MinorFriendshipChange");
 	m_iVictoryPoints = kResults.GetInt("VictoryPoints");
@@ -440,6 +459,9 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iExtraLeagueVotes = kResults.GetInt("ExtraLeagueVotes");
 	m_iPreferredDisplayPosition = kResults.GetInt("DisplayPosition");
 	m_iPortraitIndex = kResults.GetInt("PortraitIndex");
+#ifdef SWISS_MOUNTAINS
+	m_iTourismPerMountain = kResults.GetInt("TourismPerMountain");
+#endif
 
 	m_bArtInfoCulturalVariation = kResults.GetBool("ArtInfoCulturalVariation");
 	m_bArtInfoEraVariation = kResults.GetBool("ArtInfoEraVariation");
@@ -1279,7 +1301,17 @@ int CvBuildingEntry::GetCityConnectionTradeRouteModifier() const
 {
 	return m_iCityConnectionTradeRouteModifier;
 }
-
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+/// Trade route yield for each outgoing trade route
+int CvBuildingEntry::GetFoodOriginCity() const
+{
+	return m_iFoodOriginCity;
+}
+int CvBuildingEntry::GetProductionOriginCity() const
+{
+	return m_iProductionOriginCity;
+}
+#endif
 /// Increased plunder if city captured
 int CvBuildingEntry::GetCapturePlunderModifier() const
 {
@@ -1474,6 +1506,18 @@ int CvBuildingEntry::GetGlobalDefenseModifier() const
 {
 	return m_iGlobalDefenseModifier;
 }
+#ifdef GREAT_WALL_DELUA
+/// Modifier to every City's Building defense
+int CvBuildingEntry::GetGlobalCityDefenseChange() const
+{
+	return m_iGlobalCityDefenseChange;
+}
+/// Modifier to every City's Health
+int CvBuildingEntry::GetGlobalCityHitPointChange() const
+{
+	return m_iGlobalCityHitPointChange;
+}
+#endif
 
 /// Modifier to city's hit points
 int CvBuildingEntry::GetExtraCityHitPoints() const
@@ -1629,7 +1673,13 @@ int CvBuildingEntry::GetPortraitIndex() const
 {
 	return m_iPortraitIndex;
 }
-
+#ifdef SWISS_MOUNTAINS
+/// How much Tourism does this building give per Mountain in the city?
+int CvBuildingEntry::GetMountainTourism() const
+{
+	return m_iTourismPerMountain;
+}
+#endif
 /// Is the presence of this building shared with team allies?
 bool CvBuildingEntry::IsTeamShare() const
 {
@@ -2503,6 +2553,10 @@ CvCityBuildings::CvCityBuildings():
 	m_iBuildingDefensePerCitizen(0),
 #endif
 	m_iBuildingDefenseMod(0),
+#ifdef GREAT_WALL_DELUA
+	m_iGlobalCityDefenseChange(0),
+	m_iGlobalCityHitPointChange(0),
+#endif
 	m_iMissionaryExtraSpreads(0),
 	m_iLandmarksTourismPercent(0),
 	m_iGreatWorksTourismModifier(0),
@@ -2586,6 +2640,10 @@ void CvCityBuildings::Reset()
 	m_iBuildingDefensePerCitizen = 0;
 #endif
 	m_iBuildingDefenseMod = 0;
+#ifdef GREAT_WALL_DELUA
+	m_iGlobalCityDefenseChange = 0;
+	m_iGlobalCityHitPointChange = 0;
+#endif
 	m_iMissionaryExtraSpreads = 0;
 	m_iLandmarksTourismPercent = 0;
 	m_iGreatWorksTourismModifier = 0;
@@ -2622,6 +2680,10 @@ void CvCityBuildings::Read(FDataStream& kStream)
 	kStream >> m_iBuildingDefensePerCitizen;
 #endif
 	kStream >> m_iBuildingDefenseMod;
+#ifdef GREAT_WALL_DELUA
+	kStream >> m_iGlobalCityDefenseChange;
+	kStream >> m_iGlobalCityHitPointChange;
+#endif
 	kStream >> m_iMissionaryExtraSpreads;
 	kStream >> m_iLandmarksTourismPercent;
 	kStream >> m_iGreatWorksTourismModifier;
@@ -2655,6 +2717,10 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	kStream << m_iBuildingDefensePerCitizen;
 #endif
 	kStream << m_iBuildingDefenseMod;
+#ifdef GREAT_WALL_DELUA
+	kStream << m_iGlobalCityDefenseChange;
+	kStream << m_iGlobalCityHitPointChange;
+#endif
 	kStream << m_iMissionaryExtraSpreads;
 	kStream << m_iLandmarksTourismPercent;
 	kStream << m_iGreatWorksTourismModifier;
@@ -4018,6 +4084,42 @@ void CvCityBuildings::ChangeBuildingDefenseMod(int iChange)
 		m_pCity->plot()->plotAction(PUF_makeInfoBarDirty);
 	}
 }
+#ifdef GREAT_WALL_DELUA
+/// Accessor: Get Global Defense Boost from buildings
+int CvCityBuildings::GetGlobalCityDefenseChange() const
+{
+	return m_iGlobalCityDefenseChange;
+}
+
+/// Accessor: Change Global Defense Boost from buildings
+void CvCityBuildings::ChangeGlobalCityDefenseChange(int iChange)
+{
+	if (iChange != 0)
+	{
+		m_iGlobalCityDefenseChange = (m_iGlobalCityDefenseChange + iChange);
+		CvAssert(m_iGlobalCityDefenseChange >= 0);
+		m_pCity->plot()->plotAction(PUF_makeInfoBarDirty);
+	}
+}
+
+/// Accessor: Get Global Health Boost from buildings
+int CvCityBuildings::GetGlobalCityHitPointChange() const
+{
+	return m_iGlobalCityHitPointChange;
+}
+
+/// Accessor: Change Global Health Boost from buildings
+void CvCityBuildings::ChangeGlobalCityHitPointChange(int iChange)
+{
+	if (iChange != 0)
+	{
+		m_iGlobalCityHitPointChange = (m_iGlobalCityHitPointChange + iChange);
+		CvAssert(m_iGlobalCityHitPointChange >= 0);
+		m_pCity->plot()->plotAction(PUF_makeInfoBarDirty);
+	}
+}
+#endif
+
 
 /// Accessor: Get extra times to spread religion for missionaries from this city
 int CvCityBuildings::GetMissionaryExtraSpreads() const

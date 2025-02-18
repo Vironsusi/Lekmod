@@ -153,6 +153,10 @@ public:
 	int GetBuildingProductionModifier() const;
 	int GetWonderProductionModifier() const;
 	int GetCityConnectionTradeRouteModifier() const;
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	int GetFoodOriginCity() const;
+	int GetProductionOriginCity() const;
+#endif
 	int GetCapturePlunderModifier() const;
 	int GetPolicyCostModifier() const;
 	int GetGlobalPlotCultureCostModifier() const;
@@ -188,6 +192,10 @@ public:
 	int GetDefensePerCitizen() const;
 #endif
 	int GetGlobalDefenseModifier() const;
+#ifdef GREAT_WALL_DELUA
+	int GetGlobalCityDefenseChange() const;
+	int GetGlobalCityHitPointChange() const;
+#endif
 	int GetExtraCityHitPoints() const;
 	int GetMinorFriendshipChange() const;
 	int GetVictoryPoints() const;
@@ -215,6 +223,9 @@ public:
 	int GetExtraLeagueVotes() const;
 	int GetPreferredDisplayPosition() const;
 	int GetPortraitIndex() const;
+#ifdef SWISS_MOUNTAINS
+	int GetMountainTourism() const;
+#endif
 	bool IsTeamShare() const;
 	bool IsWater() const;
 	bool IsRiver() const;
@@ -402,6 +413,10 @@ private:
 	int m_iBuildingProductionModifier;
 	int m_iWonderProductionModifier;
 	int m_iCityConnectionTradeRouteModifier;
+#ifdef BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
+	int m_iFoodOriginCity;
+	int m_iProductionOriginCity;
+#endif
 	int m_iCapturePlunderModifier;
 	int m_iPolicyCostModifier;
 	int m_iGlobalPlotCultureCostModifier;
@@ -437,6 +452,10 @@ private:
 	int m_iDefensePerCitizen;
 #endif
 	int m_iGlobalDefenseModifier;
+#ifdef GREAT_WALL_DELUA
+	int m_iGlobalCityDefenseChange;
+	int m_iGlobalCityHitPointChange;
+#endif
 	int m_iExtraCityHitPoints;
 	int m_iMissionType;
 	int m_iMinorFriendshipChange;
@@ -465,6 +484,9 @@ private:
 	int m_iExtraLeagueVotes;
 	int m_iPreferredDisplayPosition;
 	int m_iPortraitIndex;
+#ifdef SWISS_MOUNTAINS
+	int m_iTourismPerMountain;
+#endif
 
 	bool m_bTeamShare;
 	bool m_bWater;
@@ -737,6 +759,13 @@ public:
 	int GetBuildingDefenseMod() const;
 	void ChangeBuildingDefenseMod(int iChange);
 
+#ifdef GREAT_WALL_DELUA
+	int GetGlobalCityDefenseChange() const;
+	void ChangeGlobalCityDefenseChange(int iChange);
+	int GetGlobalCityHitPointChange() const;
+	void ChangeGlobalCityHitPointChange(int iChange);
+#endif
+
 	int GetMissionaryExtraSpreads() const;
 	void ChangeMissionaryExtraSpreads(int iChange);
 
@@ -758,6 +787,10 @@ private:
 	int m_iBuildingDefensePerCitizen;
 #endif
 	int m_iBuildingDefenseMod;
+#ifdef GREAT_WALL_DELUA
+	int m_iGlobalCityDefenseChange;
+	int m_iGlobalCityHitPointChange;
+#endif
 	int m_iMissionaryExtraSpreads;
 	int m_iLandmarksTourismPercent;
 	int m_iGreatWorksTourismModifier;

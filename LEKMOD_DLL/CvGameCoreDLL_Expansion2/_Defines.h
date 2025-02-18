@@ -1001,7 +1001,7 @@
 // -------------------------------------------------------------------------------------
 // This define is for adding to the Trait Effects all currently dummied traits
 // -------------------------------------------------------------------------------------
-/* DUMMY TRAITS
+/* DUMMIED TRAITS
 England: Trait_BuildingClassProductionModifier + Trait_BuildingClassHappiness
 Ireland: Trait_BuildingClassProductionModifier + Trait_BuildingClassHappiness
 Scotland: Trait_BuildingClassYieldChange + CapitalGreatPersonRateModifier
@@ -1096,6 +1096,13 @@ FreshWaterAdjacentToCities BOOL
 ExtraPop INT
 CityCount INT
 GoldFromSettles INT
+FreshWaterImprovementChange
+NonFreshWaterImprovementChange
+PuppetProductionModifier INT
+PuppetGoldModifier INT
+PuppetScienceModifier INT
+InternationalRouteGrowthModifier INT
+	TXT_KEY_FOODMOD_TRADE_ROUTE
 
 PreqreqEra STRING
 ObsoleteEra STRING
@@ -1103,15 +1110,17 @@ AnyIdeology BOOL
 RequiredIdeology STRING
 
 Arrays
-Trait_RouteMovementChanges TRAIT, ROUTETYPE, INT
+Route_TraitMovementChanges ROUTETYPE, TRAITTYPE, INT
 Trait_BuildingClassYieldChange TRAIT, BUILDINGCLASS, YIELDCHANGE
 Trait_BuildingClassYieldModifier TRAIT, BUILDINGCLASS, YIELDMOD
 Trait_BuildingClassHappiness TRAIT, BUILDINGCLASS, HAPPINESS
 Trait_BuildingClassProductionModifier TRAIT, BUILDINGCLASS, PRODMOD
 Trait_ResourceYieldChange TRAIT, RESOURCE, YIELD
-	need to EUI it
 Trait_TerrainYieldChanges TRAIT, TERRIAN, YIELD
-	need to EUI it
+Trait_FeatureYieldChange TRAIT, FEATURE, YIELD -- Used for Vietnam and Canada since they could have improvements on defined features.
+Trait_CityYieldChanges STRING, STRING, INT
+Trait_BuildingClassRemoveRequiredTerrian TRAIT, BUILDINGCLASS
+Trait_GreatWorkYieldChanges TRAIT, YIELDType, YIELD
 // -------------------------------- ^ Finished ^ -------------------------------- \\
 UncoverNewResource BOOL
 NewResourceType STRING
@@ -1120,37 +1129,35 @@ NewResourceType STRING
 
 NoBuyFaithUnit BOOL - More of an extension of NoBuyFaithBuilding but not currently used. Also not that useful.
 
-
 NEW TRAIT GIVE METHODS
 LostOnCapitalCapture BOOL
 
 Arrays
 
-Improvement_TraitFreshWaterImprovementYieldChange Trait, Tech, Improvement, YieldChange
-
+Trait_SpecificImprovementSpeedModifier Trait, Improvement, Modifier - Argentinian UA maybe
 Trait_StealCapitalYieldsPerXYield TRAIT, YIELD, YIELDPERX fucking annoying. Might simplify to an integer.
+	Also needs some code in EUI_TOOLTIP_LIBRARY to make it seen.
 Trait_SpecialistHappinessChanges TRAIT, SPECIALIST, INT
 Trait_UnitClassExtraMovementInTerritory TRAIT, UNITCLASS, INT
-Trait_CityYieldModifiers STRING, STRING, INT
-	Conditional BOOLs	OnlyCapital, and OnlyPuppet
-Trait_BuildingClassRemoveRequiredTerrian TRAIT, BUILDING, TERRIAN
-Trait_CityYieldChanges STRING, STRING, INT
 Trait_YieldFromMeets STRING, STRING, INT
 Trait_YieldFromPromotions STRING, STRING, INT
-Trait_InternationalTradeRouteYieldModifier STRING, STRING, INT
 END LIST*/
-#define UNIT_IDEOLOGY_UNLOCK
-// new boolean that allows a unit to be unlocked by adopting ANY ideology.
-#define BUILDING_FREE_BUILDING_ALL_CITIES
-// new string that allows a building to give a free buildingclass in all cities. GREAT WALL
-// Or might do a few ints that give Global HP change and Global Defense change
-#define POLICY_TRADE_ROUTES
-// new integer that allows policies to give a static amount of trade routes. GRAND BAZAAR
-#define POLICY_OLD_TOA
-// new effect that allows a policy to give the Old Temple of Artemis effect without the dummy Encampment building.
-#define BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE
-// New Array that allows buildings to give a yield to the city they are in if the city is the origin of a trade route, Like Colossus. MINAA and ROCKCUT TOMBS
-
+#define UNIT_IDEOLOGY_UNLOCK // AnyIdeology BOOL
+#define GREAT_WALL_DELUA // GlobalCityDefenseChange INT GlobalCityHitPointChange INT
+#define POLICY_TRADE_ROUTES // NumTradeRouteBonus INT
+#define POLICY_OLD_TOA // Policy_GlobalYieldModifiers POLICY, YIELD, INT
+#define BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE // DONE can be expanded to include more yields. New Integers in CvBuildingClass - FoodForOriginCity, ProductionForOriginCity
+#define GLOBAL_INTERNAL_BASE_VALUE // Globaled the base value for internal trade routes
+#define GLOBALIZATION_IS_USEFUL_MAYBE // New Integer in Techs to give extra votes in the league if you have the tech & Some new functions in CvPlayer for shit.
+//TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TECH_VOTES
+#define CONSULATES // New Integer in Policies to give extra votes in the league if you have the tech, the change is meant to scale based on Era & Also new functions in CvPlayer for shit.
+// TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_POLICY_VOTES
+// NumExtraSpies <-- USE FOR POLICIES
+#define ECO_UNION_NOT_A_BUILDING //CityStateTradeRouteGoldModifier
+#define BUILDING_ERA_YIELD_SCALING // Building_YieldChangeEras
+#define SWISS_MOUNTAINS // Find how many mountains are in your territory and within 3 range of the city.
+// New Function in CvCity to find how many mountains are near a city, new Int in CvBuildingClasses to get how much tourism per mountain near a city.
+// -------------------------------- ^ End Loup Changes ^ -------------------------------- \\
 ////////////////////////
 //Benched or not working
 ////////////////////////

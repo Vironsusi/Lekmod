@@ -6731,7 +6731,9 @@ void CvTeam::processTech(TechTypes eTech, int iChange)
 			kPlayer.changeWorkerSpeedModifier(pTech->GetWorkerSpeedModifier() * iChange);
 			kPlayer.ChangeInfluenceSpreadModifier(pTech->GetInfluenceSpreadModifier() * iChange);
 			kPlayer.ChangeExtraVotesPerDiplomat(pTech->GetExtraVotesPerDiplomat() * iChange);
-
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE // Change vote count
+			kPlayer.ChangeTechExtraLeagueVotes(pTech->GetExtraLeagueVotes()* iChange);
+#endif
 			// Free promotion from this tech?
 #ifdef AUI_WARNING_FIXES
 			for (uint iPromotion = 0; iPromotion < GC.getNumPromotionInfos(); iPromotion++)

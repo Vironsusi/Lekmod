@@ -59,6 +59,9 @@ public:
 #ifdef NQ_EXTRA_SPIES_FROM_POLICIES
 	int GetNumExtraSpies() const;
 #endif
+#ifdef CONSULATES
+	int GetNumExtraLeagueVotes() const;
+#endif
 	int GetMedianTechPercentChange() const;
 	int GetStrategicResourceMod() const;
 	int GetWonderProductionModifier() const;
@@ -147,6 +150,12 @@ public:
 	int GetSeaTradeRouteGoldChange() const;
 	int GetInternalTradeRouteGoldChange() const; // NQMP GJS - Silk Road
 	int GetSharedIdeologyTradeGoldChange() const;
+#ifdef POLICY_TRADE_ROUTES
+	int GetNumTradeRoutesBonus() const;
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+	int GetCityStateTradeRouteGoldModifier() const;
+#endif
 	int GetRiggingElectionModifier() const;
 	int GetMilitaryUnitGiftExtraInfluence() const;
 	int GetProtectedMinorPerTurnInfluence() const;
@@ -298,6 +307,9 @@ public:
 	int GetBuildingClassTourismModifier(int i) const;
 	int GetNumFreeUnitsByClass(int i) const;
 	int GetTourismByUnitClassCreated(int i) const;
+#ifdef POLICY_OLD_TOA
+	int GetGlobalYieldModifier(int i) const;
+#endif
 	int GetImprovementCultureChanges(int i) const;
 
 	int GetHurryModifier(int i) const;
@@ -344,6 +356,9 @@ private:
 	int m_iNumFreeGreatPeople;
 #ifdef NQ_EXTRA_SPIES_FROM_POLICIES
 	int m_iNumExtraSpies;
+#endif
+#ifdef CONSULATES
+	int m_iNumExtraLeagueVotes;
 #endif
 	int m_iMedianTechPercentChange;
 	int m_iStrategicResourceMod;
@@ -430,6 +445,12 @@ private:
 	int m_iSeaTradeRouteGoldChange;
 	int m_iInternalTradeRouteGoldChange; // NQMP GJS - Silk Road
 	int m_iSharedIdeologyTradeGoldChange;
+#ifdef POLICY_TRADE_ROUTES
+	int m_iNumTradeRoutesBonus;
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+	int m_iCityStateTradeRouteGoldModifier;
+#endif
 	int m_iRiggingElectionModifier;
 	int m_iMilitaryUnitGiftExtraInfluence;
 	int m_iProtectedMinorPerTurnInfluence;
@@ -583,7 +604,9 @@ private:
 	int* m_paiBuildingClassHappiness;
 	int* m_paiFreeUnitClasses;
 	int* m_paiTourismOnUnitCreation;
-
+#ifdef POLICY_OLD_TOA
+	int* m_piGlobalYieldModifier;
+#endif
 //	bool* m_pabHurry;
 	bool* m_pabSpecialistValid;
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
@@ -734,6 +757,12 @@ enum PolicyModifierType
 	POLICYMOD_LAND_TRADE_GOLD_CHANGE,
 	POLICYMOD_SEA_TRADE_GOLD_CHANGE,
 	POLICYMOD_SHARED_IDEOLOGY_TRADE_CHANGE,
+#ifdef POLICY_TRADE_ROUTES
+	POLICYMOD_NUM_TRADE_ROUTES_BONUS,
+#endif
+#ifdef ECO_UNION_NOT_A_BUILDING
+	POLICYMOD_CITY_STATE_TRADE_ROUTE_GOLD_MODIFIER,
+#endif
 	POLICYMOD_RIGGING_ELECTION_MODIFIER,
 	POLICYMOD_MILITARY_UNIT_GIFT_INFLUENCE,
 	POLICYMOD_PROTECTED_MINOR_INFLUENCE,

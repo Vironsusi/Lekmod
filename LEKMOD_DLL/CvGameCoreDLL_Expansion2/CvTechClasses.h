@@ -62,6 +62,10 @@ public:
 	//EAP: Civilian Embark
 	bool IsAllowsEmbarkingCivilian() const;
 
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+	int GetExtraLeagueVotes() const;
+#endif
+
 	bool IsAllowsDefensiveEmbarking() const;
 	bool IsEmbarkedAllWaterPassage() const;
 	bool IsAllowsBarbarianBoats() const;
@@ -132,6 +136,10 @@ private:
 	bool m_bAllowsEmbarking;
 	//EAP: Civilian Embark
 	bool m_bAllowsEmbarkingCivilian;
+
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+	int m_iExtraLeagueVotes;
+#endif
 
 	bool m_bAllowsDefensiveEmbarking;
 	bool m_bEmbarkedAllWaterPassage;

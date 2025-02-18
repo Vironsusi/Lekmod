@@ -3647,9 +3647,17 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 		iVotes += iWonderVotes;
 
 #ifdef TRAITIFY //League Votes from Traits
-		int iTraitVotes = GET_PLAYER(ePlayer).GetPlayerTraits()->GetNumExtraLeagueVotes();
+		int iTraitVotes = GET_PLAYER(ePlayer).GetTraitExtraLeagueVotes();
+		iVotes += iTraitVotes;
 #endif
-
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE //League Votes from Techs
+		int iTechVotes = GET_PLAYER(ePlayer).GetTechExtraLeagueVotes();
+		iVotes += iTechVotes;
+#endif
+#ifdef CONSULATES //League Votes from Policies
+		int iPolicyVotes = GET_PLAYER(ePlayer).GetPolicyExtraLeagueVotes();
+		iVotes += iPolicyVotes;
+#endif
 		// World Religion
 		int iWorldReligionVotes = GetExtraVotesForFollowingReligion(ePlayer);
 		iVotes += iWorldReligionVotes;
@@ -3700,12 +3708,30 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 				sTemp << iWonderVotes;
 				pMember->sVoteSources += sTemp.toUTF8();
 			}
+#ifdef TRAITIFY //League Votes from Traits
 			if (iTraitVotes > 0)
 			{
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TRAIT_VOTES");
 				sTemp << iTraitVotes;
 				pMember->sVoteSources += sTemp.toUTF8();
 			}
+#endif
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
+			if (iTechVotes > 0)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TECH_VOTES");
+				sTemp << iTechVotes;
+				pMember->sVoteSources += sTemp.toUTF8();
+			}
+#endif
+#ifdef CONSULATES
+			if (iPolicyVotes > 0)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_POLICY_VOTES");
+				sTemp << iPolicyVotes;
+				pMember->sVoteSources += sTemp.toUTF8();
+			}
+#endif
 			if (iWorldReligionVotes > 0)
 			{
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_WORLD_RELIGION_VOTES");

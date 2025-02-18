@@ -153,6 +153,12 @@ public:
 	int GetExtraPopulationNewCities() const;
 	int GetExtraPopulationCityCount() const;
 	int GetGoldBurstOnFound() const;
+	bool IsFreshWaterOnlyImprovementChange() const;
+	bool IsNonFreshWaterOnlyImprovementChange() const;
+	int GetPuppetProductionModifier() const;
+	int GetPuppetScienceModifier() const;
+	int GetPuppetGoldModifier() const;
+	int GetInternationalRouteGrowthModifier() const;
 #endif
 
 	//EAP: Natural Wonder finder faith
@@ -249,14 +255,16 @@ public:
 	int GetResourceQuantityModifier(int i) const;
 	int GetMovesChangeUnitCombat(const int unitCombatID) const;
 #ifdef TRAITIFY //Arrays
-	int GetYieldStealPerX(int i) const;
+	int GetCityYieldChange(int i) const;
+	int GetGreatWorkYieldChange(int i) const;
+	bool IsBuildingClassTerrainRemoval(int i, int j) const;
 	int GetBuildingClassProductionModifier(int i) const;
 	int GetBuildingClassHappiness(int i) const;
 	int GetTerrainYieldChange(int i, int j) const;
 	int GetResourceYieldChange(int i, int j) const;
-	int* GetTerrainYieldChangeArray(int i) const;
 	int GetBuildingClassYieldChanges(int i, int j) const;
 	int GetBuildingClassYieldModifiers(int i, int j) const;
+	int GetFeatureYieldChanges(FeatureTypes eIndex1, YieldTypes eIndex2) const;
 #endif
 	int GetMaintenanceModifierUnitCombat(const int unitCombatID) const;
 	int GetImprovementYieldChanges(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
@@ -379,6 +387,12 @@ protected:
 	int m_iExtraPopulationNewCities;
 	int m_iExtraPopulationCityCount;
 	int m_iGoldBurstOnFound;
+	bool m_bFreshWaterOnlyImprovementChange;
+	bool m_bNonFreshWaterOnlyImprovementChange;
+	int m_iPuppetProductionModifier;
+	int m_iPuppetScienceModifier;
+	int m_iPuppetGoldModifier;
+	int m_iInternationalRouteGrowthModifier;
 #endif
 
 	//EAP: Natural wonder faith for the finder
@@ -468,13 +482,16 @@ protected:
 	int* m_piMovesChangeUnitCombats;
 	int* m_piMaintenanceModifierUnitCombats;
 #ifdef TRAITIFY //Arrays
-	int* m_paiYieldStealPerX;
+	int* m_piCityYieldChange;
+	int* m_piGreatWorkYieldChange;
 	int* m_paiBuildingClassProductionModifiers;
 	int* m_paiBuildingClassHappiness;
+	int** m_ppaiBuildingClassRequiredTerrainRemoval;
 	int** m_ppaiTerrainYieldChange;
 	int** m_ppaiResourceYieldChange;
 	int** m_ppiBuildingClassYieldModifiers;
 	int** m_ppiBuildingClassYieldChanges;
+	int** m_ppiFeatureYieldChanges;
 #endif
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
 	std::pair<int**, size_t> m_ppiImprovementYieldChanges;
@@ -914,6 +931,30 @@ public:
 	{
 		return m_iGoldBurstOnFound;
 	};
+	bool IsFreshWaterOnlyImprovementChange() const
+	{
+		return m_bFreshWaterOnlyImprovementChange;
+	};
+	bool IsNonFreshWaterOnlyImprovementChange() const
+	{
+		return m_bNonFreshWaterOnlyImprovementChange;
+	};
+	int GetPuppetProductionModifier() const
+	{
+		return m_iPuppetProductionModifier;
+	};
+	int GetPuppetScienceModifier() const
+	{
+		return m_iPuppetScienceModifier;
+	};
+	int GetPuppetGoldModifier() const
+	{
+		return m_iPuppetGoldModifier;
+	};
+	int GetInternationalRouteGrowthModifier() const
+	{
+		return m_iInternationalRouteGrowthModifier;
+	};
 #endif
 
 	//EAP Faith for the natural wonder finder
@@ -1195,10 +1236,6 @@ public:
 		return m_iYieldRateModifier[(int)eYield];
 	};
 #ifdef TRAITIFY 
-	int GetYieldStealPerX(YieldTypes eYield) const
-	{
-		return m_iYieldStealPerX[(int)eYield];
-	};
 #endif
 	int GetStrategicResourceQuantityModifier(TerrainTypes eTerrain) const
 	{
@@ -1225,6 +1262,10 @@ public:
 	bool CheckForBarbarianConversion(CvPlot* pPlot);
 	int GetCapitalBuildingDiscount(BuildingTypes eBuilding);
 #ifdef TRAITIFY
+	int GetFeatureYieldChange(FeatureTypes eFeature, YieldTypes eYield) const;
+	int GetCityYieldChange(YieldTypes eYield);
+	int GetGreatWorkYieldChange(YieldTypes eYield);
+	bool IsBuildingClassRequiredTerrainRemoval(BuildingClassTypes eBuildingClass);
 	int GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
 	int GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYieldType);
 	int GetResourceYieldChange(ResourceTypes eResource, YieldTypes eYieldType);
@@ -1385,6 +1426,12 @@ private:
 	int m_iExtraPopulationNewCities;
 	int m_iExtraPopulationCityCount;
 	int m_iGoldBurstOnFound;
+	bool m_bFreshWaterOnlyImprovementChange;
+	bool m_bNonFreshWaterOnlyImprovementChange;
+	int m_iPuppetProductionModifier;
+	int m_iPuppetScienceModifier;
+	int m_iPuppetGoldModifier;
+	int m_iInternationalRouteGrowthModifier;
 #endif
 	//EAP: Natural wonder faith for the finder
 	int m_iNaturalWonderFirstFinderFaith;
@@ -1470,9 +1517,6 @@ private:
 	int m_iYieldChangePerTradePartner[NUM_YIELD_TYPES];
 	int m_iYieldChangeIncomingTradeRoute[NUM_YIELD_TYPES];
 	int m_iYieldRateModifier[NUM_YIELD_TYPES];
-#ifdef TRAITIFY //Arrays
-	int m_iYieldStealPerX[NUM_YIELD_TYPES];
-#endif
 	int m_iStrategicResourceQuantityModifier[NUM_TERRAIN_TYPES];
 	std::vector<int> m_aiResourceQuantityModifier;
 	std::vector<bool> m_abNoTrain;
@@ -1503,6 +1547,9 @@ private:
 #endif
 
 	std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > > m_ppaaiUnimprovedFeatureYieldChange;
+#ifdef TRAITIFY //Arrays
+	std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > > m_ppaaiFeatureYieldChange;
+#endif
 
 	std::vector<FreeResourceXCities> m_aFreeResourceXCities;
 };

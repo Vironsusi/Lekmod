@@ -201,6 +201,12 @@ CvPlayer::CvPlayer() :
 	, m_bMayaBoostMusicians(false)
 #endif
 	, m_iExtraLeagueVotes(0)
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Constructor
+	, m_iTechExtraVotes(0)
+#endif
+#ifdef CONSULATES//Constructor
+	, m_iPolicyExtraVotes(0)
+#endif
 	, m_iSpecialPolicyBuildingHappiness("CvPlayer::m_iSpecialPolicyBuildingHappiness", m_syncArchive)
 	, m_iWoundedUnitDamageMod("CvPlayer::m_iWoundedUnitDamageMod", m_syncArchive)
 	, m_iUnitUpgradeCostMod("CvPlayer::m_iUnitUpgradeCostMod", m_syncArchive)
@@ -946,6 +952,12 @@ void CvPlayer::uninit()
 	m_bMayaBoostMusicians = 0;
 #endif
 	m_iExtraLeagueVotes = 0;
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE // uninit
+	m_iTechExtraVotes = 0;
+#endif
+#ifdef CONSULATES// uninit
+	m_iPolicyExtraVotes = 0;
+#endif
 	m_iSpecialPolicyBuildingHappiness = 0;
 	m_iWoundedUnitDamageMod = 0;
 	m_iUnitUpgradeCostMod = 0;
@@ -3416,7 +3428,7 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift)
 					pNewCity->SetIgnoreCityForHappiness(false);
 				}
 			}
-#ifdef TRAITIFY
+#ifdef TRAITIFY // Free Courthouse for Conquest
 			if (bConquest)
 			{
 				if (GetPlayerTraits()->IsFreeCourthouse())
@@ -4936,7 +4948,7 @@ int CvPlayer::getCachedSpyStartingRank() const
 	return m_iCachedSpyStartingRank;
 }
 #endif
-#ifdef TRAITIFY
+#ifdef TRAITIFY //doTurn() SendTraitChangeNotification() Not Working
 void CvPlayer::SendTraitChangeNotification()
 {
 	if (!isHuman()) // Only notify human players
@@ -4991,6 +5003,8 @@ void CvPlayer::doTurn()
 	m_pTraits->InitPlayerTraits();
 	recomputePolicyCostModifier();
 
+	//Change Great Work Yields
+	ApplyTraitGreatWorkYield();
 	
 	std::set<TraitTypes> newTraits;
 	for (int i = 0; i < GC.getNumTraitInfos(); i++)
@@ -5014,6 +5028,10 @@ void CvPlayer::doTurn()
 
 #ifdef TRAITIFY //doTurn() DoTradeGuards()
 	DoTradeGuards();
+#endif
+#ifdef CONSULATES
+	//Called every turn to escape the need to adopt a policy to update the bonus.
+	DoConsulates();
 #endif
 
 	if(getCultureBombTimer() > 0)
@@ -5719,12 +5737,13 @@ void CvPlayer::DoTradeGuards()
 
 		std::vector<CvString> tradeRouteInfo = GetTrade()->GetPlotToolTips(pPlot);
 
-		// If the plot has valid trade route tooltips, it's part of an international trade route
+		// If the plot has valid trade route tooltips, it's part of an trade route
 		if (!tradeRouteInfo.empty() && pLoopUnit->IsCombatUnit())
 		{
 			if (iXPReward > 0)
 			{
 				pLoopUnit->changeExperience(iXPReward);
+				// Already handled.
 			/*  char xpText[256];
 				sprintf_s(xpText, "+%d XP", iXPReward);
 				float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
@@ -11958,7 +11977,22 @@ void CvPlayer::ChangeGreatWorkYieldChange(YieldTypes eYield, int iChange)
 		m_aiGreatWorkYieldChange[eYield] = m_aiGreatWorkYieldChange[eYield] + iChange;
 	}
 }
+#ifdef TRAITIFY // GreatWork Yield Change
+void CvPlayer::ApplyTraitGreatWorkYield()
+{
+	// Loop through all yield types
+	for (int iI = 0; iI < NUM_YIELD_TYPES; iI++)
+	{
+		YieldTypes eYield = (YieldTypes)iI;
+		int iMod = GetPlayerTraits()->GetGreatWorkYieldChange(eYield); // Fetch Trait Bonus
 
+		if (iMod != 0)
+		{
+			ChangeGreatWorkYieldChange(eYield, iMod);
+		}
+	}
+}
+#endif
 //	--------------------------------------------------------------------------------
 CvPlot* CvPlayer::getStartingPlot() const
 {
@@ -15689,20 +15723,79 @@ void CvPlayer::ChangeNumStolenScience(int iChange)
 
 //	--------------------------------------------------------------------------------
 /// Extra league votes
-#ifndef TRAITIFY //Extra League Votes
+
 int CvPlayer::GetExtraLeagueVotes() const
 {
 	return m_iExtraLeagueVotes;
 }
-#else
-int CvPlayer::GetExtraLeagueVotes() const
+#ifdef TRAITIFY //Getter
+// Traits - Currently for Vactican
+// No need to make a change function since this just returns the value found in the trait entry and there is no method to gain more. I think.
+int CvPlayer::GetTraitExtraLeagueVotes() const
 {
-	return m_iExtraLeagueVotes + GetPlayerTraits()->GetNumExtraLeagueVotes();
+	return GetPlayerTraits()->GetNumExtraLeagueVotes();
+}
+#endif
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Getter
+//Techs - Currently only Globalization
+int CvPlayer::GetTechExtraLeagueVotes() const
+{
+	return m_iTechExtraVotes;
+}
+// Change Tech Votes
+void CvPlayer::ChangeTechExtraLeagueVotes(int iChange)
+{
+	m_iTechExtraVotes += iChange;
+	CvAssert(m_iExtraLeagueVotes >= 0);
+	if (m_iTechExtraVotes < 0)
+	{
+		m_iTechExtraVotes = 0;
+	}
+}
+#endif
+#ifdef CONSULATES //Getter
+// Policy based Extra Votes
+int CvPlayer::GetPolicyExtraLeagueVotes() const
+{
+	return m_iPolicyExtraVotes;
+}
+void CvPlayer::SetPolicyExtraLeagueVotes(int iVotes)
+{
+	m_iPolicyExtraVotes = iVotes;
+}
+// Change Policy Votes
+void CvPlayer::ChangePolicyExtraLeagueVotes(int iChange)
+{
+	m_iPolicyExtraVotes += iChange;
+	CvAssert(m_iExtraLeagueVotes >= 0);
+	if (m_iPolicyExtraVotes < 0)
+	{
+		m_iPolicyExtraVotes = 0;
+	}
+}
+void CvPlayer::DoConsulates() 
+{
+if (GetPolicyExtraLeagueVotes() > 0)
+{
+	const EraTypes eRenaissanceEra = (EraTypes)GC.getInfoTypeForString("ERA_RENAISSANCE", true);
+	int iCurrentEra = GetCurrentEra();
+
+	// Ensure the current era is beyond the Renaissance era
+	if (iCurrentEra > eRenaissanceEra)
+	{
+		int iEraDifference = iCurrentEra - eRenaissanceEra;
+
+		// Reset votes to the base value before adding in the Era votes.
+		SetPolicyExtraLeagueVotes(1);
+
+		ChangePolicyExtraLeagueVotes(iEraDifference);
+	}
+}
 }
 #endif
 
 //	--------------------------------------------------------------------------------
-/// Extra league votes
+/// Change Vote Count
 void CvPlayer::ChangeExtraLeagueVotes(int iChange)
 {
 	m_iExtraLeagueVotes += iChange;
@@ -25796,7 +25889,9 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 #ifdef NQ_RAIL_CONNECTION_HAPPINESS_FROM_POLICIES
 	ChangeHappinessPerRailConnection(pPolicy->GetHappinessPerRailConnection() * iChange);
 #endif
-
+#ifdef CONSULATES
+	ChangePolicyExtraLeagueVotes(pPolicy->GetNumExtraLeagueVotes() * iChange);
+#endif
 	ChangeHappinessPerXPopulation(pPolicy->GetHappinessPerXPopulation() * iChange);
 	ChangeExtraHappinessPerLuxury(pPolicy->GetExtraHappinessPerLuxury() * iChange);
 	ChangeUnhappinessFromUnitsMod(pPolicy->GetUnhappinessFromUnitsMod() * iChange);
@@ -25916,7 +26011,11 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		iMod = pPolicy->GetYieldModifier(iI) * iChange;
 		if(iMod != 0)
 			changeYieldRateModifier(eYield, iMod);
-
+#ifdef POLICY_OLD_TOA
+		iMod = pPolicy->GetGlobalYieldModifier(iI) * iChange; 
+		if(iMod != 0)
+			changeYieldRateModifier(eYield, iMod);
+#endif
 		iMod = pPolicy->GetCityYieldChange(iI) * iChange;
 		if(iMod != 0)
 			ChangeCityYieldChange(eYield, iMod * 100);
@@ -26675,7 +26774,7 @@ void CvPlayer::DoReformationNotification()
 	}
 }
 #endif
-#ifdef TRAITIFY
+#ifdef TRAITIFY  //ApplyFreshWaterToCityPlots
 void CvPlayer::ApplyFreshWaterToCityPlots(CvCity* pCity, bool bGrantFreshWater)
 {
 	if (!pCity || !GetPlayerTraits()->IsGiveFreshWaterAroundCities())
@@ -27017,6 +27116,12 @@ void CvPlayer::Read(FDataStream& kStream)
 	{
 		m_iExtraLeagueVotes = 0;
 	}
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Read
+	kStream >> m_iTechExtraVotes;
+#endif
+#ifdef CONSULATES//Read
+	kStream >> m_iPolicyExtraVotes;
+#endif
 	kStream >> m_iSpecialPolicyBuildingHappiness;
 	kStream >> m_iWoundedUnitDamageMod;
 	kStream >> m_iUnitUpgradeCostMod;
@@ -27676,6 +27781,12 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_bMayaBoostMusicians;
 #endif
 	kStream << m_iExtraLeagueVotes;
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Write
+	kStream << m_iTechExtraVotes;
+#endif
+#ifdef CONSULATES	//Write
+	kStream << m_iPolicyExtraVotes;
+#endif
 	kStream << m_iSpecialPolicyBuildingHappiness;
 	kStream << m_iWoundedUnitDamageMod;
 	kStream << m_iUnitUpgradeCostMod;
