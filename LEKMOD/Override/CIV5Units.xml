@@ -93325,7 +93325,7 @@
 			<ArtInfoEraVariation>false</ArtInfoEraVariation> 
 			<ArtInfoRandomVariation>false</ArtInfoRandomVariation> 
 			<MountainScienceYield>0</MountainScienceYield> 
-			<CityStateTradeRouteGoldModifier>8</CityStateTradeRouteGoldModifier> 
+			<CityStateTradeRouteGoldModifier>5</CityStateTradeRouteGoldModifier> 
 			<FreeFlatFaith>0</FreeFlatFaith> 
 		</Row>
 		<Row> 
@@ -152759,7 +152759,7 @@
 			<Description>TXT_KEY_GAME_OPTION_CS_ALLYING_WAR_RESCTRICTION</Description>
 			<Help>TXT_KEY_GAME_OPTION_CS_ALLYING_WAR_RESCTRICTION_HELP</Help>
 			<Default>false</Default> 
-			<Visible>true</Visible> 
+			<Visible>false</Visible> 
 			<SupportsSinglePlayer>false</SupportsSinglePlayer>
 			<SupportsMultiplayer>true</SupportsMultiplayer> 
 		</Row>
@@ -153376,7 +153376,7 @@
 			<MapProb>0</MapProb> 
 			<Experience>0</Experience> 
 			<Healing>100</Healing> 
-			<DamagePrereq>40</DamagePrereq> 
+			<DamagePrereq>99</DamagePrereq> 
 			<Population>0</Population> 
 			<Culture>0</Culture> 
 			<Faith>7</Faith> 
@@ -153926,7 +153926,7 @@
 			<Bad>false</Bad> 
 			<BarbarianUnitProb>0</BarbarianUnitProb> 
 			<MinBarbarians>0</MinBarbarians>
-			<RandomImprovement>2</RandomImprovement>
+			<RandomImprovement>1</RandomImprovement>
 			<AfterTurn>8</AfterTurn>
 		</Row>
 		<Row> 
@@ -156987,11 +156987,12 @@
 			<HandicapType>HANDICAP_SETTLER</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
+
 		<Row> 
 			<HandicapType>HANDICAP_SETTLER</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_SETTLER</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157031,11 +157032,12 @@
 			<HandicapType>HANDICAP_CHIEFTAIN</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
+
 		<Row> 
 			<HandicapType>HANDICAP_CHIEFTAIN</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_CHIEFTAIN</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157067,11 +157069,11 @@
 			<HandicapType>HANDICAP_WARLORD</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
 		<Row> 
 			<HandicapType>HANDICAP_WARLORD</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_WARLORD</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157103,11 +157105,11 @@
 			<HandicapType>HANDICAP_PRINCE</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
 		<Row> 
 			<HandicapType>HANDICAP_PRINCE</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_PRINCE</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157139,11 +157141,11 @@
 			<HandicapType>HANDICAP_KING</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
 		<Row> 
 			<HandicapType>HANDICAP_KING</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_KING</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157175,11 +157177,12 @@
 			<HandicapType>HANDICAP_EMPEROR</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
+
 		<Row> 
 			<HandicapType>HANDICAP_EMPEROR</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_EMPEROR</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157211,11 +157214,11 @@
 			<HandicapType>HANDICAP_IMMORTAL</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
 		<Row> 
 			<HandicapType>HANDICAP_IMMORTAL</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_IMMORTAL</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157247,11 +157250,11 @@
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
 		<Row> 
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157283,11 +157286,12 @@
 			<HandicapType>HANDICAP_AI_DEFAULT</HandicapType> 
 			<GoodyType>GOODY_PANTHEON_FAITH</GoodyType> 
 		</Row>
--->
+
 		<Row> 
 			<HandicapType>HANDICAP_AI_DEFAULT</HandicapType> 
 			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_AI_DEFAULT</HandicapType> 
 			<GoodyType>GOODY_GOLD</GoodyType> 
@@ -157415,6 +157419,7 @@
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<GoodyType>GOODY_TILE_GROW</GoodyType> 
 		</Row>
+<!--
 		<Row> 
 			<HandicapType>HANDICAP_AI_DEFAULT</HandicapType> 
 			<GoodyType>GOODY_IMPROVEMENT</GoodyType> 
@@ -157451,6 +157456,7 @@
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<GoodyType>GOODY_IMPROVEMENT</GoodyType> 
 		</Row>
+-->
 		<Row> 
 			<HandicapType>HANDICAP_AI_DEFAULT</HandicapType> 
 			<GoodyType>GOODY_EXPERIENCE_MOVE</GoodyType> 
@@ -236895,7 +236901,7 @@
 			<ProductionFromGarrison>0</ProductionFromGarrison> 
 			<MinorMilitaryNumExtraUnitsToGift>0</MinorMilitaryNumExtraUnitsToGift> 
 			<CityStateBonusModifier>0</CityStateBonusModifier> 
-			<NumCitiesFreeAestheticsSchools>20</NumCitiesFreeAestheticsSchools> 
+			<NumCitiesFreeAestheticsSchools>99</NumCitiesFreeAestheticsSchools> 
 			<TourismPerWonder>0</TourismPerWonder> 
 			<InternalTradeRouteGoldChange>0</InternalTradeRouteGoldChange> 
 			<ExtraTerritoryClaim>0</ExtraTerritoryClaim> 
@@ -249859,7 +249865,7 @@
 			<PolicyType>POLICY_LEGALISM</PolicyType> 
 			<BuildingClassType>BUILDINGCLASS_OXFORD_UNIVERSITY</BuildingClassType> 
 			<CultureChange>2</CultureChange> 
-		</Row>
+		</Row> 
 		<Row> 
 			<PolicyType>POLICY_PROFESSIONAL_ARMY</PolicyType> 
 			<BuildingClassType>BUILDINGCLASS_BARRACKS</BuildingClassType> 

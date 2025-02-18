@@ -1346,7 +1346,7 @@ END LIST*/
 // Prevent timer mid-turn fluctuations - update it once per turn
 #define GAME_UPDATE_TURN_TIMER_ONCE_PER_TURN
 // Can’t declare war after allying enemy css for CS_ALLYING_WAR_RESCTRICTION_TIMER seconds
-#define CS_ALLYING_WAR_RESCTRICTION
+// #define CS_ALLYING_WAR_RESCTRICTION
 #ifdef CS_ALLYING_WAR_RESCTRICTION
 #define CS_ALLYING_WAR_RESCTRICTION_TIMER 120.f
 #endif
@@ -1370,7 +1370,7 @@ END LIST*/
 #define PENALTY_FOR_DELAYING_POLICIES
 // Adds rail connection icon
 #define LUA_METHOD_IS_INDUSTRIAL_ROUTE_TO_CAPITAL
-/// Fix Militiry Caste culture when units stacking in city
+/// Fix Military Caste culture when units stacking in city
 #define FIX_POLICY_CULTURE_PER_GARRISONED_UNIT
 
 

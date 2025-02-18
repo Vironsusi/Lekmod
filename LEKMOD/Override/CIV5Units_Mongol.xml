@@ -14,7 +14,7 @@
 		
 		
 		<Row Tag="TXT_KEY_LEKMOD_VERSION">
-			<Text>Lekmod v33.6</Text>
+			<Text>Lekmod v33.11</Text>
 		</Row>
 		
 		<Replace Tag="TXT_KEY_GAME_OPTION_NO_MP_POLICY_SAVING"> 
@@ -5662,7 +5662,7 @@ Many individual cacicazgos have been studied in colonial Mexico, showing that en
 	<!-- New options -->
 	<!-- version checker -->
 		<Row Tag="TXT_KEY_GAME_OPTION_SCUFFED_VERSION_CHECKER">
-			<Text>[COLOR_POSITIVE_TEXT]Lekmod v33.6[ENDCOLOR]</Text>
+			<Text>[COLOR_POSITIVE_TEXT]Lekmod v33.11[ENDCOLOR]</Text>
 		</Row>
 		<Row Tag="TXT_KEY_GAME_OPTION_SCUFFED_VERSION_CHECKER_HELP">
 			<Text>[COLOR_POSITIVE_TEXT]Version Checker[ENDCOLOR][NEWLINE][NEWLINE]This Game Option allows for a simple way of checking if people in your game lobby are running the same version of Lekmod or not. Simply enable this option once all the desires Players are in, then whomever does not see this Game Option in the Game Option tab after turning it on, is running a different version!</Text>
@@ -13108,7 +13108,7 @@ strongest around the Gulf of Bothnia, where land steadily rises about 1 cm a yea
 		</Replace>
 		<Replace Tag="TXT_KEY_AD_SETUP_ADVANCED_OPTIONS"> 
 			<Text>
-				[COLOR_POSITIVE_TEXT]Lekmod v33.6[ENDCOLOR]  
+				[COLOR_POSITIVE_TEXT]Lekmod v33.11[ENDCOLOR]  
 			</Text>
 		</Replace>
 		<Replace Tag="TXT_KEY_AD_SETUP_CITY_STATES"> 
@@ -17909,7 +17909,7 @@ strongest around the Gulf of Bothnia, where land steadily rises about 1 cm a yea
 		</Replace>
 		<Replace Tag="TXT_KEY_BUILDING_AYYUBIDS_UNIVERSITYH_HELP"> 
 			<Text>
-				Replaces the University. +1 [ICON_RESEARCH] Science from Flood Plain tiles and +2 [ICON_RESEARCH] Science from Oasisis worked by this City.[NEWLINE][NEWLINE]City must have a Library.
+				Replaces the University. +1 [ICON_RESEARCH] Science from Flood Plain tiles and +2 [ICON_RESEARCH] Science from each Oasis tile worked by this City.[NEWLINE][NEWLINE]City must have a Library.
 			</Text>
 		</Replace>
 		<Replace Tag="TXT_KEY_BUILDING_AYYUBIDS_UNIVERSITYH_STRATEGY"> 
@@ -19111,7 +19111,7 @@ strongest around the Gulf of Bothnia, where land steadily rises about 1 cm a yea
 		</Replace>
 		<Replace Tag="TXT_KEY_BUILDING_T1_ECONOMIC_UNION_STRATEGY"> 
 			<Text>
-				+8% [ICON_GOLD] Gold for each Trade Route your civilization has with a City-State.
+				+5% [ICON_GOLD] Gold for each Trade Route your civilization has with a City-State.
 			</Text>
 		</Replace>
 		<Replace Tag="TXT_KEY_BUILDING_TAJ_MAHAL"> 
@@ -67699,7 +67699,7 @@ The second sack of Ulundi is considered by historians to be the definitive end o
 		</Replace>
 		<Replace Tag="TXT_KEY_GAME_SELECTION_SCREEN"> 
 			<Text>
-				[COLOR_POSITIVE_TEXT]Lekmod v33.6[ENDCOLOR] 
+				[COLOR_POSITIVE_TEXT]Lekmod v33.11[ENDCOLOR] 
 			</Text>
 		</Replace>
 		<Replace Tag="TXT_KEY_GAME_SETUP_RANDOMIZE"> 
@@ -102349,7 +102349,7 @@ The ship has weather'd every rack; the prize we sought is won."
 		</Replace>
 		<Replace Tag="TXT_KEY_MULTIPLAYER_STAGING_ROOM"> 
 			<Text>
-				[COLOR_POSITIVE_TEXT]Lekmod v33.6[ENDCOLOR]
+				[COLOR_POSITIVE_TEXT]Lekmod v33.11[ENDCOLOR]
 			</Text>
 		</Replace>
 		<Replace Tag="TXT_KEY_MULTIPLAYER_STAGING_ROOM_GAME_OPTIONS_TT"> 
@@ -113899,7 +113899,7 @@ The ship has weather'd every rack; the prize we sought is won."
 		</Replace>
 		<Replace Tag="TXT_KEY_POLICY_ECONOMIC_UNION_HELP"> 
 			<Text>
-				[COLOR_POSITIVE_TEXT]Economic Union[ENDCOLOR][NEWLINE]All cities gain +8% [ICON_GOLD] Gold for each [ICON_INTERNATIONAL_TRADE] Trade Route your civilization has with a City-State. +1 [ICON_INTERNATIONAL_TRADE] Trade Route.
+				[COLOR_POSITIVE_TEXT]Economic Union[ENDCOLOR][NEWLINE]All cities gain +5% [ICON_GOLD] Gold for each [ICON_INTERNATIONAL_TRADE] Trade Route your civilization has with a City-State. +1 [ICON_INTERNATIONAL_TRADE] Trade Route.
 			</Text>
 		</Replace>
 		<Replace Tag="TXT_KEY_POLICY_ECONOMIC_UNION_TEXT"> 
@@ -143672,15 +143672,17 @@ The ship has weather'd every rack; the prize we sought is won."
 		</Row>
 		<Row Tag="TXT_KEY_UI_CHECK_BAT_TT"> 
 			<Text>
-				Run [COLOR_GREEN]ui_check.bat[ENDCOLOR] which is in the root folder of the Lekmod. Make sure the mod named [COLOR_CYAN]Lekmod_v33.6[ENDCOLOR] and if you are using Enhanced User Interface then EUI folder is named [COLOR_CYAN]UI_bc1[ENDCOLOR] or [COLOR_CYAN]UI_bc1_xits[ENDCOLOR].
+				Please run the [COLOR_GREEN]ui_check.bat[ENDCOLOR] file which is found in the root folder of the Lekmod files. This will automatically adjust the mod files depending on if you have the Enhanced User Interface mod installed to avoid potential conflicts with the Lekmod User Interface files. Make sure that if you are using Enhanced User Interface the EUI folder should be named [COLOR_CYAN]UI_bc1[ENDCOLOR] or [COLOR_CYAN]UI_bc1_xits[ENDCOLOR].
 			</Text>
 		</Row>
 		<Row Tag="TXT_KEY_GAME_OPTION_CS_ALLYING_WAR_RESCTRICTION"> 
 			<Text>
+				No War When Replacing City-State Allies
 			</Text>
 		</Row>
 		<Row Tag="TXT_KEY_GAME_OPTION_CS_ALLYING_WAR_RESCTRICTION_HELP"> 
 			<Text>
+				If this and the turn timer are enabled, whenever a player replaces another player's ally status of a [ICON_CITY_STATE] City-State, that player may not declare war on the replaced player for a full 120 seconds. During this time, the replaced player may still declare war on the replacing player even if the replaced player regains the ally status of the [ICON_CITY_STATE] City-State. If the replaced player does regain ally status, the timer resets, and the replacing player has to wait another 120 seconds. If the replaced player fails to regain the ally status within the allotted time, the replacing player will gain priority over the [ICON_CITY_STATE] City-State, reversing the roles. This timer is independent for each [ICON_CITY_STATE] City-State.
 			</Text>
 		</Row>
 	</Language_en_US>
