@@ -50,6 +50,8 @@ CvPolicyEntry::CvPolicyEntry(void):
 #endif
 #ifdef CONSULATES
 	m_iNumExtraLeagueVotes(0),
+	m_iVoteIncreasePerEra(0),
+	m_iVoteIncreaseStartingEra(0),
 #endif
 	m_iMedianTechPercentChange(0),
 	m_iStrategicResourceMod(0),
@@ -402,7 +404,9 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 #endif
 #ifdef CONSULATES
 	m_iNumExtraLeagueVotes = kResults.GetInt("ExtraLeagueVotes");
-	
+	m_iVoteIncreasePerEra = kResults.GetInt("VoteIncreasePerEra");
+	const char* szStartingEra = kResults.GetText("VoteIncreaseStartingEra");
+	m_iVoteIncreaseStartingEra = GC.getInfoTypeForString(szStartingEra, true);
 #endif
 	m_iMedianTechPercentChange = kResults.GetInt("MedianTechPercentChange");
 	m_iStrategicResourceMod = kResults.GetInt("StrategicResourceMod");
@@ -1080,6 +1084,18 @@ int CvPolicyEntry::GetNumExtraSpies() const
 int CvPolicyEntry::GetNumExtraLeagueVotes() const
 {
 	return m_iNumExtraLeagueVotes;
+}
+
+/// Number of Votes per Era
+int CvPolicyEntry::GetVoteIncreasePerEra() const
+{
+	return m_iVoteIncreasePerEra;
+}
+
+/// Starting Era for Extra Votes
+int CvPolicyEntry::GetVoteIncreaseStartingEra() const
+{
+	return m_iVoteIncreaseStartingEra;
 }
 #endif
 
@@ -2219,7 +2235,6 @@ int* CvPolicyEntry::GetSpecialistExtraYieldArray() const
 {
 	return m_piSpecialistExtraYield;
 }
-
 /// Production modifier by unit type
 int CvPolicyEntry::GetUnitCombatProductionModifiers(int i) const
 {
@@ -3332,6 +3347,14 @@ int CvPlayerPolicies::GetNumericModifier(PolicyModifierType eType)
 #ifdef POLICY_TRADE_ROUTES
 			case POLICYMOD_NUM_TRADE_ROUTES_BONUS:
 				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetNumTradeRoutesBonus();
+				break;
+#endif
+#ifdef CONSULATES
+			case POLICYMOD_VOTE_INCREASE_PER_ERA: // Consulates
+				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetVoteIncreasePerEra();
+				break;
+			case POLICYMOD_VOTE_INCREASE_STARTING_ERA: // Consulates
+				rtnValue += m_pPolicies->GetPolicyEntry(i)->GetVoteIncreaseStartingEra();
 				break;
 #endif
 #ifdef ECO_UNION_NOT_A_BUILDING

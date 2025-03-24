@@ -8129,8 +8129,12 @@ void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX,
 int CvMinorCivAI::GetBullyGoldAmount(PlayerTypes /*eBullyPlayer*/)
 {
 	int iGold = GC.getMINOR_BULLY_GOLD();
+#ifndef GLOBAL_INTERNAL_BASE_VALUE
 	int iGoldGrowthFactor = 350; //antonjs: todo: XML
-
+#else
+	// Loup: Normal value is 350, but can be modified by XML now ~ only took like 15 years antonjs KEK
+	int iGoldGrowthFactor = GC.getBULLY_GOLD_GROWTH_FACTOR();
+#endif
 	// Add gold, more if later in game
 	float fGameProgressFactor = ((float) GC.getGame().getElapsedGameTurns() / (float) GC.getGame().getEstimateEndTurn());
 	CvAssertMsg(fGameProgressFactor >= 0.0f, "fGameProgressFactor is not expected to be negative! Please send Anton your save file and version.");
@@ -8391,7 +8395,7 @@ int CvMinorCivAI::CalculateBullyMetric(PlayerTypes eBullyPlayer, bool bForUnit, 
 	iScore += iPoliciesScore;
 
 // **************************
-#ifdef TRAITIFY //Trait Modifiers to Bullying
+#ifdef TRAITIFY //Trait Modifiers to Bullying minors
 // Modifier to positive scores
 // **************************
 	int iTraitScore = 0;

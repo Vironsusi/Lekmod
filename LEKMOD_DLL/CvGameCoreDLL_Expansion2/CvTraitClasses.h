@@ -108,6 +108,14 @@ public:
 	EraTypes GetObsoleteEra() const;
 	PolicyBranchTypes GetRequiredIdeology() const;
 	bool IsAnyIdeology() const;
+	bool IsFreshWaterOnlyImprovementChange() const;
+	bool IsNonFreshWaterOnlyImprovementChange() const;
+	bool IsYieldOnSettleToCapital() const;
+	bool IsYieldOnConquestToCapital() const;
+	bool IsNaturalWonderRewardToCapital() const;
+	bool IsHalfMoreSpecialistUnhappiness() const;
+	bool IsHalfSpecialistUnhappiness() const;
+	bool IsProductionModsandChangesAreCapitalOnly() const;
 
 	bool IsEnabledByEra(EraTypes eEra);
 	bool IsObsoleteByEra(EraTypes eEra);
@@ -133,32 +141,18 @@ public:
 	int GetInternalTradeRouteYieldModifier() const;
 	int GetInternalTradeRouteGoldChange() const;
 	int GetCapitalGreatPersonRateModifier() const;
-	int GetWonderGoldReward() const;
-	int GetWeLoveTheKingDayCount() const;
 	int GetForeignReligiousPressure() const;
-	int GetGoldFromTradeGuards() const;
-	int GetXPFromTradeGuards() const;
-	bool IsNoBuyFaithBuilding() const;
-	bool IsNoBuyFaithUnit() const;
-	int GetNoBuyProductionPercent() const;
 	int GetIdeologyUnhappinessModifier() const;
 	int GetFreeIdeologicalTenets() const;
-	bool IsAutoConvertReligionOnFound() const;
-	bool IsFreeCourthouse() const;
 	int GetUnhappinessModifierForPuppets() const;
-	bool IsExpandedGoldenAge() const;
-	int GetExtendGoldenAgeOnPolicy() const;
-	int GetGivenGoldenAgePointsOnPolicy() const;
-	bool IsGiveFreshWaterAroundCities() const;
 	int GetExtraPopulationNewCities() const;
-	int GetExtraPopulationCityCount() const;
 	int GetGoldBurstOnFound() const;
-	bool IsFreshWaterOnlyImprovementChange() const;
-	bool IsNonFreshWaterOnlyImprovementChange() const;
 	int GetPuppetProductionModifier() const;
 	int GetPuppetScienceModifier() const;
 	int GetPuppetGoldModifier() const;
 	int GetInternationalRouteGrowthModifier() const;
+	int GetNaturalWonderFinderRewardChange() const;
+	int GetLocalHappinessPerCity() const;
 #endif
 
 	//EAP: Natural Wonder finder faith
@@ -255,16 +249,36 @@ public:
 	int GetResourceQuantityModifier(int i) const;
 	int GetMovesChangeUnitCombat(const int unitCombatID) const;
 #ifdef TRAITIFY //Arrays
-	int GetCityYieldChange(int i) const;
-	int GetGreatWorkYieldChange(int i) const;
-	bool IsBuildingClassTerrainRemoval(int i, int j) const;
-	int GetBuildingClassProductionModifier(int i) const;
-	int GetBuildingClassHappiness(int i) const;
+	int GetCityConnectionYieldChanges(int i, bool b) const;
+	int GetCapitalYieldPerXForeignCapitalYield(int i) const;
 	int GetTerrainYieldChange(int i, int j) const;
 	int GetResourceYieldChange(int i, int j) const;
+	int GetFeatureYieldChanges(FeatureTypes eIndex1, YieldTypes eIndex2) const;
+	int GetNaturalWonderFinderReward(int i) const;
+	int GetCityYieldChange(int i) const;
+	int GetPuppetYieldModifiers(int i) const;
+	int GetGreatWorkYieldChange(int i) const;
+	int GetYieldOnSettle(int i) const;
+	int GetYieldOnConquest(int i) const;
+	int GetSpecialistHappinessChanges(int i) const;
+	bool IsUnitClassForcedCapitalSpawn(int i, int j) const;
+	//Unit ProdChanges
+	int GetUnitClassProductionChange(int i) const;
+	int GetUnitCombatProductionChange(int i) const;
+	int GetUnitDomainProductionChange(int i) const;
+	// Unit ProdMods
+	int GetUnitClassProductionModifier(int i) const;
+	int GetUnitCombatProductionModifier(int i) const;
+	int GetUnitDomainProductionModifier(int i) const;
+	//BuildingClassStuff
+	bool IsBuildingClassRequiredTerrainRemoval(int i, int j) const;
+	int GetBuildingClassProductionModifier(int i) const;
+	int GetBuildingClassProductionChange(int i) const;
+	int GetBuildingClassHappiness(int i) const;
+	int GetBuildingClassGlobalHappiness(int i) const;
+	int GetBuildingCostOverride(int i, int j) const;
 	int GetBuildingClassYieldChanges(int i, int j) const;
 	int GetBuildingClassYieldModifiers(int i, int j) const;
-	int GetFeatureYieldChanges(FeatureTypes eIndex1, YieldTypes eIndex2) const;
 #endif
 	int GetMaintenanceModifierUnitCombat(const int unitCombatID) const;
 	int GetImprovementYieldChanges(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
@@ -347,6 +361,14 @@ protected:
 	EraTypes m_eObsoleteEra;
 	PolicyBranchTypes m_eRequiredIdeology;
 	bool m_bAnyIdeology;
+	bool m_bFreshWaterOnlyImprovementChange;
+	bool m_bNonFreshWaterOnlyImprovementChange;
+	bool m_bYieldOnSettleToCapital;
+	bool m_bYieldOnConquestToCapital;
+	bool m_bNaturalWonderRewardToCapital;
+	bool m_bHalfMoreSpecialistUnhappiness;
+	bool m_bHalfSpecialistUnhappiness;
+	bool m_bProductionModsandChangesAreCapitalOnly;
 
 	int m_iGoldenAgeCultureModifier;
 	int m_iGoldenAgePointBurstOnCapture;
@@ -367,32 +389,18 @@ protected:
 	int m_iInternalTradeRouteYieldModifier;
 	int m_iInternalTradeRouteGoldChange;
 	int m_iCapitalGreatPersonRateModifier;
-	int m_iWonderGoldReward;
-	int m_iWeLoveTheKingDayCount;
 	int m_iForeignReligiousPressure;
-	int m_iGoldFromTradeGuards;
-	int m_iXPFromTradeGuards;
-	bool m_bNoBuyFaithBuilding;
-	bool m_bNoBuyFaithUnit;
-	int m_iNoBuyProductionPercent;
 	int m_iIdeologyUnhappinessModifier;
 	int m_iFreeIdeologicalTenets;
-	bool m_bAutoConvertReligionOnFound;
-	bool m_bFreeCourthouse;
 	int m_iUnhappinessModifierForPuppets;
-	bool m_bExpandedGoldenAge;
-	int m_iExtendGoldenAgeOnPolicy;
-	int m_fGivenGoldenAgePointsOnPolicy;
-	bool m_bGiveFreshWaterAroundCities;
 	int m_iExtraPopulationNewCities;
-	int m_iExtraPopulationCityCount;
 	int m_iGoldBurstOnFound;
-	bool m_bFreshWaterOnlyImprovementChange;
-	bool m_bNonFreshWaterOnlyImprovementChange;
 	int m_iPuppetProductionModifier;
 	int m_iPuppetScienceModifier;
 	int m_iPuppetGoldModifier;
 	int m_iInternationalRouteGrowthModifier;
+	int m_iNaturalWonderFinderRewardChange;
+	int m_iLocalHappinessPerCity;
 #endif
 
 	//EAP: Natural wonder faith for the finder
@@ -484,14 +492,36 @@ protected:
 #ifdef TRAITIFY //Arrays
 	int* m_piCityYieldChange;
 	int* m_piGreatWorkYieldChange;
-	int* m_paiBuildingClassProductionModifiers;
-	int* m_paiBuildingClassHappiness;
-	int** m_ppaiBuildingClassRequiredTerrainRemoval;
+	int* m_piCityConnectionYieldChange;
+	int* m_piCapitalConnectionYieldChange;
+	int* m_piCapitalYieldPerXForeignCapitalYield;
+	int* m_piYieldOnSettle;
+	int* m_piYieldOnConquest;
+	int* m_piNaturalWonderFinderReward;
+	int* m_piPuppetYieldModifiers;
+	int* m_paiSpecialistHappinessChanges;
 	int** m_ppaiTerrainYieldChange;
 	int** m_ppaiResourceYieldChange;
+	int** m_ppiFeatureYieldChanges;
+	int** m_ppaiUnitClassForcedCapitalSpawn;
+	//Unit ProdChanges
+	int* m_paiUnitClassProductionChanges;
+	int* m_paiUnitCombatProductionChanges;
+	int* m_paiDomainProductionChanges;
+	//Unit Production Modifiers
+	int* m_paiUnitClassProductionModifiers;
+	int* m_paiUnitCombatProductionModifiers;
+	int* m_paiDomainProductionModifiers;
+	//BuildingClassStuff
+	int* m_paiBuildingClassProductionModifiers;
+	int* m_paiBuildingClassProductionChanges;
+	int* m_paiBuildingClassHappiness;
+	int* m_paiBuildingClassGlobalHappiness;
+	int** m_ppiBuildingCostOverride;
+	int** m_ppaiBuildingClassRequiredTerrainRemoval;
 	int** m_ppiBuildingClassYieldModifiers;
 	int** m_ppiBuildingClassYieldChanges;
-	int** m_ppiFeatureYieldChanges;
+	
 #endif
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
 	std::pair<int**, size_t> m_ppiImprovementYieldChanges;
@@ -771,10 +801,44 @@ public:
 	{
 		return m_eRequiredIdeology;
 	};
+	//Bools
 	bool IsAnyIdeology() const
 	{
 		return m_bAnyIdeology;
 	};
+	bool IsFreshWaterOnlyImprovementChange() const
+	{
+		return m_bFreshWaterOnlyImprovementChange;
+	};
+	bool IsNonFreshWaterOnlyImprovementChange() const
+	{
+		return m_bNonFreshWaterOnlyImprovementChange;
+	};
+	bool IsYieldOnSettleToCapital() const
+	{
+		return m_bYieldOnSettleToCapital;
+	};
+	bool IsYieldOnConquestToCapital() const
+	{
+		return m_bYieldOnConquestToCapital;
+	};
+	bool IsNaturalWonderRewardToCapital() const
+	{
+		return m_bNaturalWonderRewardToCapital;
+	};
+	bool IsHalfMoreSpecialistUnhappiness() const
+	{
+		return m_bHalfMoreSpecialistUnhappiness;
+	};
+	bool IsHalfSpecialistUnhappiness() const
+	{
+		return m_bHalfSpecialistUnhappiness;
+	};
+	bool IsProductionModsandChangesAreCapitalOnly() const
+	{
+		return m_bProductionModsandChangesAreCapitalOnly;
+	};
+	//Ints
 	int GetGoldenAgeCultureModifier() const
 	{
 		return m_iGoldenAgeCultureModifier;
@@ -851,37 +915,9 @@ public:
 	{
 		return m_iCapitalGreatPersonRateModifier;
 	};
-	int GetWonderGoldReward() const
-	{
-		return m_iWonderGoldReward;
-	};
-	int GetWeLoveTheKingDayCount() const
-	{
-		return m_iWeLoveTheKingDayCount;
-	};
 	int GetForeignReligiousPressure() const
 	{
 		return m_iForeignReligiousPressure;
-	};
-	int GetGoldFromTradeGuards() const
-	{
-		return m_iGoldFromTradeGuards;
-	};
-	int GetXPFromTradeGuards() const
-	{
-		return m_iXPFromTradeGuards;
-	};
-	bool IsNoBuyFaithBuilding() const
-	{
-		return m_bNoBuyFaithBuilding;
-	};
-	bool IsNoBuyFaithUnit() const
-	{
-		return m_bNoBuyFaithUnit;
-	};
-	int GetNoBuyProductionPercent() const
-	{
-		return m_iNoBuyProductionPercent;
 	};
 	int GetIdeologyUnhappinessModifier() const
 	{
@@ -891,53 +927,17 @@ public:
 	{
 		return m_iFreeIdeologicalTenets;
 	};
-	bool AutoConvertReligionOnFound() const
-	{
-		return m_bAutoConvertReligionOnFound;
-	};
-	bool IsFreeCourthouse() const
-	{
-		return m_bFreeCourthouse;
-	};
 	int GetUnhappinessModifierForPuppets() const
 	{
 		return m_iUnhappinessModifierForPuppets;
-	};
-	bool IsExpandedGoldenAge() const
-	{
-		return m_bExpandedGoldenAge;
-	};
-	int GetExtendGoldenAgeOnPolicy() const
-	{
-		return m_iExtendGoldenAgeOnPolicy;
-	};
-	int GetGivenGoldenAgePointsOnPolicy() const
-	{
-		return m_fGivenGoldenAgePointsOnPolicy;
-	};
-	bool IsGiveFreshWaterAroundCities() const
-	{
-		return m_bGiveFreshWaterAroundCities;
 	};
 	int GetExtraPopulationNewCities() const
 	{
 		return m_iExtraPopulationNewCities;
 	};
-	int GetExtraPopulationCityCount() const
-	{
-		return m_iExtraPopulationCityCount;
-	};
 	int GetGoldBurstOnFound() const
 	{
 		return m_iGoldBurstOnFound;
-	};
-	bool IsFreshWaterOnlyImprovementChange() const
-	{
-		return m_bFreshWaterOnlyImprovementChange;
-	};
-	bool IsNonFreshWaterOnlyImprovementChange() const
-	{
-		return m_bNonFreshWaterOnlyImprovementChange;
 	};
 	int GetPuppetProductionModifier() const
 	{
@@ -954,6 +954,14 @@ public:
 	int GetInternationalRouteGrowthModifier() const
 	{
 		return m_iInternationalRouteGrowthModifier;
+	};
+	int GetNaturalWonderFinderRewardChange() const
+	{
+		return m_iNaturalWonderFinderRewardChange;
+	};
+	int GetLocalHappinessPerCity() const
+	{
+		return m_iLocalHappinessPerCity;
 	};
 #endif
 
@@ -1235,8 +1243,6 @@ public:
 	{
 		return m_iYieldRateModifier[(int)eYield];
 	};
-#ifdef TRAITIFY 
-#endif
 	int GetStrategicResourceQuantityModifier(TerrainTypes eTerrain) const
 	{
 		return m_iStrategicResourceQuantityModifier[(int)eTerrain];
@@ -1264,14 +1270,35 @@ public:
 #ifdef TRAITIFY
 	int GetFeatureYieldChange(FeatureTypes eFeature, YieldTypes eYield) const;
 	int GetCityYieldChange(YieldTypes eYield);
+	int GetPuppetYieldModifier(YieldTypes eYield);
 	int GetGreatWorkYieldChange(YieldTypes eYield);
-	bool IsBuildingClassRequiredTerrainRemoval(BuildingClassTypes eBuildingClass);
-	int GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
+	int GetCityConnectionYieldChange(YieldTypes eYieldType, bool bCapitalOnly);
+	int GetCapitalYieldPerXForeignCapitalYield(YieldTypes eYieldType);
+	int GetYieldOnSettle(YieldTypes eYieldType);
+	int GetYieldOnConquest(YieldTypes eYieldType);
+	int GetNaturalWonderFinderReward(YieldTypes eYieldType);
 	int GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYieldType);
 	int GetResourceYieldChange(ResourceTypes eResource, YieldTypes eYieldType);
-	int GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
+	int GetSpecialistHappinessChanges(SpecialistTypes eSpecialist);
+	bool IsUnitClassForcedCapitalSpawn(UnitClassTypes eUnitClass);
+	// Unit ProdChanges
+	int GetUnitClassProductionChange(UnitClassTypes eUnitClass);
+	int GetUnitCombatProductionChange(UnitCombatTypes eUnitCombat);
+	int GetUnitDomainProductionChange(DomainTypes eDomain);
+	// Unit ProdMods
+	int GetUnitClassProductionModifier(UnitClassTypes eUnitClass);
+	int GetUnitCombatProductionModifier(UnitCombatTypes eUnitCombat);
+	int GetUnitDomainProductionModifier(DomainTypes eDomain);
+	// BuildingClassStuff
+	bool IsBuildingClassRequiredTerrainRemoval(BuildingClassTypes eBuildingClass);
 	int GetBuildingClassProductionModifier(BuildingClassTypes eBuildingClass);
+	int GetBuildingClassProductionChange(BuildingClassTypes eBuildingClass);
 	int GetBuildingClassHappiness(BuildingClassTypes eBuildingClass);
+	int GetBuildingClassGlobalHappiness(BuildingClassTypes eBuildingClass);
+	int GetBuildingCostOverride(BuildingTypes eBuilding, YieldTypes eYieldType);
+	int GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
+	int GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
+	
 #endif
 	// Inserted Table Entries from CMP DLL ~EAP
 	TechTypes GetFreeBuildingPrereqTech() const;
@@ -1386,6 +1413,14 @@ private:
 	EraTypes m_eObsoleteEra;
 	PolicyBranchTypes m_eRequiredIdeology;
 	bool m_bAnyIdeology;
+	bool m_bFreshWaterOnlyImprovementChange;
+	bool m_bNonFreshWaterOnlyImprovementChange;
+	bool m_bYieldOnSettleToCapital;
+	bool m_bYieldOnConquestToCapital;
+	bool m_bNaturalWonderRewardToCapital;
+	bool m_bHalfMoreSpecialistUnhappiness;
+	bool m_bHalfSpecialistUnhappiness;
+	bool m_bProductionModsandChangesAreCapitalOnly;
 
 	int m_iGoldenAgeCultureModifier;
 	int m_iGoldenAgePointBurstOnCapture;
@@ -1406,32 +1441,18 @@ private:
 	int m_iInternalTradeRouteYieldModifier;
 	int m_iInternalTradeRouteGoldChange;
 	int m_iCapitalGreatPersonRateModifier;
-	int m_iWonderGoldReward;
-	int m_iWeLoveTheKingDayCount;
 	int m_iForeignReligiousPressure;
-	int m_iGoldFromTradeGuards;
-	int m_iXPFromTradeGuards;
-	bool m_bNoBuyFaithBuilding;
-	bool m_bNoBuyFaithUnit;
-	int m_iNoBuyProductionPercent;
 	int m_iIdeologyUnhappinessModifier;
 	int m_iFreeIdeologicalTenets;
-	bool m_bAutoConvertReligionOnFound;
-	bool m_bFreeCourthouse;
 	int m_iUnhappinessModifierForPuppets;
-	bool m_bExpandedGoldenAge;
-	int m_iExtendGoldenAgeOnPolicy;
-	int m_fGivenGoldenAgePointsOnPolicy;
-	bool m_bGiveFreshWaterAroundCities;
 	int m_iExtraPopulationNewCities;
-	int m_iExtraPopulationCityCount;
 	int m_iGoldBurstOnFound;
-	bool m_bFreshWaterOnlyImprovementChange;
-	bool m_bNonFreshWaterOnlyImprovementChange;
 	int m_iPuppetProductionModifier;
 	int m_iPuppetScienceModifier;
 	int m_iPuppetGoldModifier;
 	int m_iInternationalRouteGrowthModifier;
+	int m_iNaturalWonderFinderRewardChange;
+	int m_iLocalHappinessPerCity;
 #endif
 	//EAP: Natural wonder faith for the finder
 	int m_iNaturalWonderFirstFinderFaith;

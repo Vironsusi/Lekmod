@@ -366,7 +366,10 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 
 	Method(GetBaseYieldRateFromTerrain);
 	Method(ChangeBaseYieldRateFromTerrain);
-
+#ifdef TRAITIFY // Lua export for Cuban Yield Trait effect
+	Method(GetStolenYieldRate);
+	Method(SetStolenYieldRate);
+#endif
 	Method(GetBaseYieldRateFromBuildings);
 	Method(ChangeBaseYieldRateFromBuildings);
 
@@ -2999,6 +3002,18 @@ int CvLuaCity::lChangeBaseYieldRateFromTerrain(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvCity::ChangeBaseYieldRateFromTerrain);
 }
+#ifdef TRAITIFY // Lua Export for Cuban Yield Trait effect
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetStolenYieldRate(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvCity::GetStolenYieldRate);
+}
+//------------------------------------------------------------------------------
+int CvLuaCity::lSetStolenYieldRate(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvCity::SetStolenYieldRate);
+}
+#endif
 //------------------------------------------------------------------------------
 int CvLuaCity::lGetBaseYieldRateFromBuildings(lua_State* L)
 {

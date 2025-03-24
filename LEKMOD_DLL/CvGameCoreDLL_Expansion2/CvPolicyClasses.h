@@ -61,6 +61,8 @@ public:
 #endif
 #ifdef CONSULATES
 	int GetNumExtraLeagueVotes() const;
+	int GetVoteIncreasePerEra() const;
+	int GetVoteIncreaseStartingEra() const;
 #endif
 	int GetMedianTechPercentChange() const;
 	int GetStrategicResourceMod() const;
@@ -359,6 +361,8 @@ private:
 #endif
 #ifdef CONSULATES
 	int m_iNumExtraLeagueVotes;
+	int m_iVoteIncreasePerEra;
+	int m_iVoteIncreaseStartingEra;
 #endif
 	int m_iMedianTechPercentChange;
 	int m_iStrategicResourceMod;
@@ -759,6 +763,10 @@ enum PolicyModifierType
 	POLICYMOD_SHARED_IDEOLOGY_TRADE_CHANGE,
 #ifdef POLICY_TRADE_ROUTES
 	POLICYMOD_NUM_TRADE_ROUTES_BONUS,
+#endif
+#ifdef CONSULATES
+	POLICYMOD_VOTE_INCREASE_PER_ERA,
+	POLICYMOD_VOTE_INCREASE_STARTING_ERA,
 #endif
 #ifdef ECO_UNION_NOT_A_BUILDING
 	POLICYMOD_CITY_STATE_TRADE_ROUTE_GOLD_MODIFIER,

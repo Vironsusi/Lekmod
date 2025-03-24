@@ -1058,7 +1058,6 @@ GreatEngineerPointsModifier INT
 CapitalDefenseBonus INT
 CityDefenseBonus INT
 GreatGeneralSiegeBonus INT
-ProductionDiscountForTradeUnits INT
 MinorFriendshipMinimum INT
 NumTradeRouteBonus INT
 FaithCostModifier INT
@@ -1075,45 +1074,53 @@ UnitProductionModifier INT
 InternalTradeRouteYieldModifier INT
 InternalTradeRouteGoldChange INT
 CapitalGreatPersonRateModifier INT
-WonderGoldReward INT
-WeLoveTheKingDayCount INT
 ForeignReligiousPressure INT
 IdeologyPressureUnhappinessModifier INT
-DoTradeGuards BOOL
-GoldFromTradeGuards INT
-XPForTradeGuards INT
-NoBuyFaithBuilding BOOL
-	NewLineInBuildingxml "CanNoBuy"
 FreeIdeologicalTenets INT
-AutoConvertReligionOnFound BOOL
-NoBuyProductionPercent INT
-FreeCourthouse BOOL
 UnhappinessModifierForPuppetedCities INT
-IsExpandedGoldenAge BOOL
-ExtendGoldenAgeOnPolicy INT
-GivenGoldenAgePointsOnPolicy INT
-FreshWaterAdjacentToCities BOOL
 ExtraPop INT
-CityCount INT
-GoldFromSettles INT
 FreshWaterImprovementChange
 NonFreshWaterImprovementChange
-PuppetProductionModifier INT
-PuppetGoldModifier INT
-PuppetScienceModifier INT
 InternationalRouteGrowthModifier INT
 	TXT_KEY_FOODMOD_TRADE_ROUTE
+YieldOnSettleToCapital BOOL
+YieldOnConquestToCapital BOOL
+NaturalWonderRewardToCapital BOOL
+NaturalWonderFinderRewardChange INT
+LocalHappinessPerCity INT
+HalfMoreSpecialistUnhappiness BOOL
+HalfSpecialistUnhappiness BOOL
+
 
 PreqreqEra STRING
 ObsoleteEra STRING
 AnyIdeology BOOL
 RequiredIdeology STRING
 
+txtkeys
+TXT_KEY_PRODMOD_UNIT_CLASS_TRAIT_PLAYER
+TXT_KEY_PRODMOD_UNIT_DOMAIN_TRAIT_PLAYER
+TXT_KEY_PRODMOD_BUILDING_TRAIT_PLAYER
+
+TXT_KEY_PRODCOST_UNIT_CLASS_TRAIT_PLAYER
+TXT_KEY_PRODCOST_UNIT_COMBAT_TRAIT_PLAYER
+TXT_KEY_PRODCOST_UNIT_DOMAIN_TRAIT_PLAYER
+TXT_KEY_PRODCOST_BUILDING_CLASS_TRAIT_PLAYER
+
+TXT_KEY_YIELD_FROM_OTHER_CAPITALS
+TXT_KEY_CULTURE_FROM_OTHER_CAPITALS
+TXT_KEY_FAITH_FROM_OTHER_CAPITALS
+
+TXT_KEY_PRODMOD_UNIT_COMBAT_CLASS_CAPITAL
+TXT_KEY_PRODCOST_UNIT_COMBAT_TRAIT_CAPITAL
+TXT_KEY_PRODMOD_UNIT_DOMAIN_TRAIT_CAPITAL
+
 Arrays
 Route_TraitMovementChanges ROUTETYPE, TRAITTYPE, INT
 Trait_BuildingClassYieldChange TRAIT, BUILDINGCLASS, YIELDCHANGE
 Trait_BuildingClassYieldModifier TRAIT, BUILDINGCLASS, YIELDMOD
 Trait_BuildingClassHappiness TRAIT, BUILDINGCLASS, HAPPINESS
+Trait_BuildingClassGlobalHappiness TRAIT, BUILDINGCLASS, GLOBALHAPPINESS
 Trait_BuildingClassProductionModifier TRAIT, BUILDINGCLASS, PRODMOD
 Trait_ResourceYieldChange TRAIT, RESOURCE, YIELD
 Trait_TerrainYieldChanges TRAIT, TERRIAN, YIELD
@@ -1121,42 +1128,80 @@ Trait_FeatureYieldChange TRAIT, FEATURE, YIELD -- Used for Vietnam and Canada si
 Trait_CityYieldChanges STRING, STRING, INT
 Trait_BuildingClassRemoveRequiredTerrian TRAIT, BUILDINGCLASS
 Trait_GreatWorkYieldChanges TRAIT, YIELDType, YIELD
+Trait_BuildingCostOverride Trait, Building, YieldType (Gold, Faith or Production), Cost
+	This would override the cost of a building with the defined yield type, and sets the cost to the defined amount. If set to -1, the building cannot be made with that method.
+Trait_YieldOnSettle TRAIT, YIELD, YIELDAMOUNT
+	bool in the trait to make it so that the yield only applies to the capital or to the new city.
+Trait_YieldOnConquest TRAIT, YIELD, YIELDAMOUNT
+	bool in the trait to make it so that the yield only applies to the capital or to the new city.
+Feature_FirstFinderYield FEATURE, YIELD, YIELDAMOUNT
+Trait_NaturalWonderFinderReward TRAIT, YIELD, YIELDAMOUNT
+	NaturalWonderFinderRewardChange
+Trait_UnitClassProductionModifiers
+Trait_UnitCombatProductionModifiers
+Trait_DomainProductionModifiers
+Trait_UnitClassProductionChanges
+Trait_UnitCombatProductionChanges
+Trait_DomainProductionChanges
+Trait_PuppetYieldModifier
+Trait_UnitClassForceSpawnCapital
+Trait_StealCapitalYieldsPerXYield TRAIT, YIELD, YIELD
+	Also needs some code in EUI_TOOLTIP_LIBRARY to make it seen.
+
+Policy_VoteChangeEra
 // -------------------------------- ^ Finished ^ -------------------------------- \\
 UncoverNewResource BOOL
 NewResourceType STRING
 	This should be Expanded into is own function that can be called by Buildings, Traits and Policies.
 	Currently resides in a Building only method. might Extract since it currently is very clunky for only being used to give a Horse.
 
-NoBuyFaithUnit BOOL - More of an extension of NoBuyFaithBuilding but not currently used. Also not that useful.
+NoBuyFaithUnit BOOL - More of an extension of NoBuyFaithBuilding but not currently used. Also not that useful. If implemented, should be done via a Trait_UnitCostOverride like buildings are.
 
 NEW TRAIT GIVE METHODS
 LostOnCapitalCapture BOOL
 
 Arrays
-
+Trait_CityConnectionYieldChanges TRAIT, YIELDTYPE, YIELD
+	Needs accompanying boolean to make it so that the yields can be applied to only the capital or all cities.
+	Normal City Connection Yields works but not the capital part of the table. Also i think I did it in a dumb way.
+Trait_UnitClassBornYieldBurst TRAIT, UNITCLASS, YIELD, YIELDAMOUNT
+Trait_UnitClassExpendedYieldBurst TRAIT, UNITCLASS, YIELD, YIELDAMOUNT
 Trait_SpecificImprovementSpeedModifier Trait, Improvement, Modifier - Argentinian UA maybe
-Trait_StealCapitalYieldsPerXYield TRAIT, YIELD, YIELDPERX fucking annoying. Might simplify to an integer.
-	Also needs some code in EUI_TOOLTIP_LIBRARY to make it seen.
 Trait_SpecialistHappinessChanges TRAIT, SPECIALIST, INT
-Trait_UnitClassExtraMovementInTerritory TRAIT, UNITCLASS, INT
+
+
 Trait_YieldFromMeets STRING, STRING, INT
+	Probably shouldnt be made
 Trait_YieldFromPromotions STRING, STRING, INT
+	Probably shouldnt be made
+
+
+Building_GreatWorkSlotFilledEffectChange idk tbh but ill figure something out
+
+CIVS LEFT
+Bolivia
+Timurids - Trait Lost Effect
 END LIST*/
 #define UNIT_IDEOLOGY_UNLOCK // AnyIdeology BOOL
 #define GREAT_WALL_DELUA // GlobalCityDefenseChange INT GlobalCityHitPointChange INT
 #define POLICY_TRADE_ROUTES // NumTradeRouteBonus INT
 #define POLICY_OLD_TOA // Policy_GlobalYieldModifiers POLICY, YIELD, INT
 #define BUILDING_OUTGOING_TRADE_ROUTE_YIELDCHANGE // DONE can be expanded to include more yields. New Integers in CvBuildingClass - FoodForOriginCity, ProductionForOriginCity
-#define GLOBAL_INTERNAL_BASE_VALUE // Globaled the base value for internal trade routes
+// This SHOULD be an arraytable, but the trade route code is kinda fucked so im not going to touch it in this pass through.
+#define GLOBAL_INTERNAL_BASE_VALUE // Globaled the base value for internal trade routes, and one for the hardcoded Tribute gold growth factor.
 #define GLOBALIZATION_IS_USEFUL_MAYBE // New Integer in Techs to give extra votes in the league if you have the tech & Some new functions in CvPlayer for shit.
 //TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TECH_VOTES
 #define CONSULATES // New Integer in Policies to give extra votes in the league if you have the tech, the change is meant to scale based on Era & Also new functions in CvPlayer for shit.
+// Policy_VoteChangeEra
 // TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_POLICY_VOTES
 // NumExtraSpies <-- USE FOR POLICIES
 #define ECO_UNION_NOT_A_BUILDING //CityStateTradeRouteGoldModifier
 #define BUILDING_ERA_YIELD_SCALING // Building_YieldChangeEras
 #define SWISS_MOUNTAINS // Find how many mountains are in your territory and within 3 range of the city.
-// New Function in CvCity to find how many mountains are near a city, new Int in CvBuildingClasses to get how much tourism per mountain near a city.
+// New Function in CvCity to find how many mountains are near a city, new Int in CvBuildingClasses to get how much tourism per mountain near a city.]
+#define GREAT_WORK_HOOKS // Might be a good idea or not, idk yet
+// New hooks in several functions that handle moving great works for the purpose of triggering Cuban Dance Hall like effects with out extremely cumbersome dll code.
+// HOOKS IN - MoveGreatWorks, SwapGreatWorks and MoveWorkIntoSlot
 // -------------------------------- ^ End Loup Changes ^ -------------------------------- \\
 ////////////////////////
 //Benched or not working

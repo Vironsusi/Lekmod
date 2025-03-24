@@ -369,7 +369,7 @@ protected:
 	static int lGetNumPolicies(lua_State* L);
 	static int lGetNumPoliciesInBranch(lua_State* L);
 	static int lHasPolicy(lua_State* L);
-#ifdef TRAITIFY
+#ifdef TRAITIFY // Lua export for detecting if a player has a trait
 	static int lHasTrait(lua_State* L);
 #endif
 #ifdef LEKMOD_NEW_LUA_METHODS
@@ -928,6 +928,9 @@ protected:
 	static int lGetMayaCalendarLongString(lua_State* L);
 
 	static int lGetExtraBuildingHappinessFromPolicies(lua_State* L);
+#ifdef TRAITIFY // Lua export for getting extra happiness from traits
+	static int lGetExtraBuildingHappinessFromTraits(lua_State* L);
+#endif
 
 	static int lGetPrevCity(lua_State* L);
 	static int lGetNextCity(lua_State* L);
@@ -947,6 +950,11 @@ protected:
 	static int lGetPolicyBuildingClassYieldChange(lua_State* L);
 	static int lGetPolicyEspionageModifier(lua_State* L);
 	static int lGetPolicyEspionageCatchSpiesModifier(lua_State* L);
+
+#ifdef TRAITIFY // Lua export for getting policy yield modifiers
+	static int lGetTraitBuildingClassYieldModifier(lua_State* L);
+	static int lGetTraitBuildingClassYieldChange(lua_State* L);
+#endif
 
 	static int lGetPlayerBuildingClassYieldChange(lua_State* L);
 	static int lGetPlayerBuildingClassHappiness(lua_State* L);

@@ -5150,6 +5150,9 @@ CvFeatureInfo::CvFeatureInfo() :
 	m_piHillsYieldChange(NULL),
 	m_pi3DAudioScriptFootstepIndex(NULL),
 	m_pbTerrain(NULL),
+#ifdef TRAITIFY // Refactored the Eldorado code to be more generic
+	m_piFirstFinderYield(NULL),
+#endif
 	m_bClearable(false)
 {
 }
@@ -5161,6 +5164,9 @@ CvFeatureInfo::~CvFeatureInfo()
 	SAFE_DELETE_ARRAY(m_piHillsYieldChange);
 	SAFE_DELETE_ARRAY(m_pi3DAudioScriptFootstepIndex);
 	SAFE_DELETE_ARRAY(m_pbTerrain);
+#ifdef TRAITIFY // Refactored the Eldorado code to be more generic
+	SAFE_DELETE_ARRAY(m_piFirstFinderYield);
+#endif
 }
 //------------------------------------------------------------------------------
 int CvFeatureInfo::getStartingLocationWeight() const
@@ -5367,7 +5373,14 @@ bool CvFeatureInfo::isTerrain(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_pbTerrain ? m_pbTerrain[i] : false;
 }
-
+#ifdef TRAITIFY // Refactored the Eldorado code to be more generic
+int CvFeatureInfo::GetFirstFinderYield(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piFirstFinderYield ? m_piFirstFinderYield[i] : -1;
+}
+#endif
 // Set each time the game is started
 bool CvFeatureInfo::IsClearable() const
 {
@@ -5456,6 +5469,10 @@ bool CvFeatureInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.SetYields(m_piHillsYieldChange, "Feature_HillsYieldChanges", "FeatureType", szFeatureType);
 
 	kUtility.PopulateArrayByExistence(m_pbTerrain, "Terrains", "Feature_TerrainBooleans", "TerrainType", "FeatureType", szFeatureType);
+
+#ifdef TRAITIFY // Refactored the Eldorado code to be more generic
+	kUtility.SetYields(m_piFirstFinderYield, "Feature_FirstFinderYield", "FeatureType", szFeatureType);
+#endif
 
 	// Determine of this feature is clearable - set each time the game is started
 	m_bClearable = false;

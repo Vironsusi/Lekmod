@@ -388,7 +388,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetNumPolicies);
 	Method(GetNumPoliciesInBranch);
 	Method(HasPolicy);
-#ifdef TRAITIFY
+#ifdef TRAITIFY // Lua export for Detecting if a Player has a Trait
 	Method(HasTrait);
 #endif
 #ifdef LEKMOD_NEW_LUA_METHODS
@@ -931,6 +931,9 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetMayaCalendarLongString);
 
 	Method(GetExtraBuildingHappinessFromPolicies);
+#ifdef TRAITIFY // Lua export for Extra Building Happiness from Traits
+	Method(GetExtraBuildingHappinessFromTraits);
+#endif
 
 	Method(GetNextCity);
 	Method(GetPrevCity);
@@ -950,6 +953,11 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetPolicyBuildingClassYieldChange);
 	Method(GetPolicyEspionageModifier);
 	Method(GetPolicyEspionageCatchSpiesModifier);
+	 
+#ifdef TRAITIFY // Lua export for Trait Building Class Yield Modifiers
+	Method(GetTraitBuildingClassYieldModifier);
+	Method(GetTraitBuildingClassYieldChange);
+#endif
 
 	Method(GetPlayerBuildingClassYieldChange);
 	Method(GetPlayerBuildingClassHappiness);
@@ -4991,7 +4999,7 @@ int CvLuaPlayer::lHasPolicy(lua_State* L)
 	lua_pushboolean(L, bResult);
 	return 1;
 }
-#ifdef TRAITIFY
+#ifdef TRAITIFY // Lua Export for detecting if a player has a trait
 //------------------------------------------------------------------------------
 //bool hasTrait(TraitTypes  iIndex);
 int CvLuaPlayer::lHasTrait(lua_State* L)
@@ -9581,8 +9589,45 @@ int CvLuaPlayer::lGetExtraBuildingHappinessFromPolicies(lua_State* L)
 	lua_pushinteger(L, -1);
 	return 0;
 }
+#ifdef TRAITIFY //Happiness from buildingclass defined in traits, lua export for UI. Includes the GlobalHappiness Array
+//------------------------------------------------------------------------------ 
+int CvLuaPlayer::lGetExtraBuildingHappinessFromTraits(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	if (pkPlayer)
+	{
+		const BuildingTypes eBuilding = (BuildingTypes)lua_tointeger(L, 2);
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if (pkBuildingInfo)
+		{
+			BuildingClassTypes eBuildingClass = (BuildingClassTypes)pkBuildingInfo->GetBuildingClassType();
 
+			int iExtraHappiness = 0;
 
+			for (int iTraitLoop = 0; iTraitLoop < GC.getNumTraitInfos(); iTraitLoop++)
+			{
+				const TraitTypes eTrait = static_cast<TraitTypes>(iTraitLoop);
+				CvTraitEntry* pkTraitInfo = GC.getTraitInfo(eTrait);
+				if (pkTraitInfo)
+				{
+					if (pkPlayer->GetPlayerTraits()->HasTrait(eTrait))
+					{
+						iExtraHappiness += pkTraitInfo->GetBuildingClassHappiness(eBuildingClass);
+						iExtraHappiness += pkTraitInfo->GetBuildingClassGlobalHappiness(eBuildingClass);
+					}
+				}
+			}
+
+			lua_pushinteger(L, iExtraHappiness);
+			return 1;
+		}
+	}
+
+	//BUG: This can't be right...
+	lua_pushinteger(L, -1);
+	return 0;
+}
+#endif
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetNextCity(lua_State* L)
 {
@@ -9766,7 +9811,36 @@ int CvLuaPlayer::lGetPolicyBuildingClassYieldChange(lua_State* L)
 
 	return 0;
 }
-
+#ifdef TRAITIFY //Yield from buildingclass defined in traits, lua export for UI
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetTraitBuildingClassYieldModifier(lua_State* L)
+{
+	const BuildingClassTypes eBuildingClass = (BuildingClassTypes)luaL_checkint(L, 2);
+	const YieldTypes eYieldType = (YieldTypes)luaL_checkint(L, 3);
+	CvPlayer* pkPlayer = GetInstance(L);
+	if (pkPlayer)
+	{
+		int modifier = pkPlayer->GetPlayerTraits()->GetBuildingClassYieldModifier(eBuildingClass, eYieldType);
+		lua_pushinteger(L, modifier);
+		return 1;
+	}
+	return 0;
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetTraitBuildingClassYieldChange(lua_State* L)
+{
+	const BuildingClassTypes eBuildingClass = (BuildingClassTypes)luaL_checkint(L, 2);
+	const YieldTypes eYieldType = (YieldTypes)luaL_checkint(L, 3);
+	CvPlayer* pkPlayer = GetInstance(L);
+	if (pkPlayer)
+	{
+		int modifier = pkPlayer->GetPlayerTraits()->GetBuildingClassYieldChange(eBuildingClass, eYieldType);
+		lua_pushinteger(L, modifier);
+		return 1;
+	}
+	return 0;
+}
+#endif
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetPolicyEspionageModifier(lua_State* L)
 {
@@ -9807,6 +9881,7 @@ int CvLuaPlayer::lGetPlayerBuildingClassYieldChange(lua_State* L)
 	if(pkPlayer)
 	{
 		int iChange = pkPlayer->GetBuildingClassYieldChange(eBuildingClass, eYieldType);
+
 		lua_pushinteger(L, iChange);
 
 		return 1;

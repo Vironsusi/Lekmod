@@ -432,6 +432,9 @@ public:
 	int GetJONSCulturePerTurnFromGreatWorks() const;
 
 	int GetJONSCulturePerTurnFromTraits() const;
+#ifdef TRAITIFY // Allow outside change to CulturePerTurnFromTraits
+	void ChangeJONSCulturePerTurnFromTraits(int iChange);
+#endif
 
 	int GetJONSCulturePerTurnFromReligion() const;
 	void ChangeJONSCulturePerTurnFromReligion(int iChange);
@@ -451,6 +454,9 @@ public:
 	void ChangeFaithPerTurnFromPolicies(int iChange);
 
 	int GetFaithPerTurnFromTraits() const;
+#ifdef TRAITIFY // Allow outside change to FaithPerTurnFromTraits
+	void ChangeFaithPerTurnFromTraits(int iChange);
+#endif
 
 	int GetFaithPerTurnFromReligion() const;
 	void ChangeFaithPerTurnFromReligion(int iChange);
@@ -661,6 +667,11 @@ public:
 
 	int GetBaseYieldRateFromTerrain(YieldTypes eIndex) const;
 	void ChangeBaseYieldRateFromTerrain(YieldTypes eIndex, int iChange);
+
+#ifdef TRAITIFY // Get and Setters for YieldSteal values
+	int GetStolenYieldRate(YieldTypes eIndex) const;
+	void SetStolenYieldRate(YieldTypes eIndex, int iValue);
+#endif
 
 	int GetBaseYieldRateFromBuildings(YieldTypes eIndex) const;
 	void ChangeBaseYieldRateFromBuildings(YieldTypes eIndex, int iChange);
@@ -991,6 +1002,10 @@ protected:
 	FAutoVariable<int, CvCity> m_iJONSCulturePerTurnFromPolicies;
 	FAutoVariable<int, CvCity> m_iJONSCulturePerTurnFromSpecialists;
 	FAutoVariable<int, CvCity> m_iJONSCulturePerTurnFromReligion;
+#ifdef TRAITIFY // new variables
+	FAutoVariable<int, CvCity> m_iJONSCulturePerTurnFromTraits;
+	int m_iFaithPerTurnFromTraits;
+#endif
 	int m_iFaithPerTurnFromBuildings;
 	int m_iFaithPerTurnFromPolicies;
 	int m_iFaithPerTurnFromReligion;
@@ -1066,6 +1081,9 @@ protected:
 	FAutoVariable<std::vector<int>, CvCity> m_aiLakePlotYield;
 	FAutoVariable<std::vector<int>, CvCity> m_aiSeaResourceYield;
 	FAutoVariable<std::vector<int>, CvCity> m_aiBaseYieldRateFromTerrain;
+#ifdef TRAITIFY //new variable for stolen yields
+	FAutoVariable<std::vector<int>, CvCity> m_aiStolenYieldRate;
+#endif
 	FAutoVariable<std::vector<int>, CvCity> m_aiBaseYieldRateFromBuildings;
 	FAutoVariable<std::vector<int>, CvCity> m_aiBaseYieldRateFromSpecialists;
 	FAutoVariable<std::vector<int>, CvCity> m_aiBaseYieldRateFromMisc;

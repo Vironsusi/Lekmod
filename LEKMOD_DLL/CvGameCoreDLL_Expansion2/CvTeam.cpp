@@ -5846,6 +5846,16 @@ void CvTeam::setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, b
 				//AddNotification(NOTIFICATION_VICTORY, strBuffer, strSummary);
 
 				SetCurrentEra(eNewEra);
+				// ReInit Player Traits as some have an Era requirement
+				for (int iI = 0; iI < MAX_PLAYERS; iI++)
+				{
+					CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iI);
+					if (kPlayer.getTeam() == GetID() && kPlayer.isEverAlive())
+					{
+						kPlayer.GetPlayerTraits()->Reset();
+						kPlayer.GetPlayerTraits()->InitPlayerTraits();
+					}
+				}
 			}
 			// DON'T enter a new era with this tech
 			else

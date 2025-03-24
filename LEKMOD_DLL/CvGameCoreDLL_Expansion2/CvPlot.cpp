@@ -9005,7 +9005,7 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 							}
 						}
 					}
-
+#ifndef TRAITIFY // Refactor Yield Reward for finding Natural Wonders
 					// FIRST (MAJOR CIV) FINDER?
 					int iFinderGold = 0;
 					int iFinderFaith = 0;
@@ -9164,7 +9164,235 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 							}
 						}
 					}
+#else // TRAITIFY Start new Yield Reward for finding Natural Wonders
+					// FIRST (MAJOR CIV) FINDER?
+					bool bFirstFinder = false;
+					int iYieldPerTeamMember = 0;
+					CvCity* pTargetCity = NULL;
+					CvTeam& kTeam = GET_TEAM(eTeam);
+					if (!kTeam.isMinorCiv() && !kTeam.isBarbarian() && !kTeam.isObserver())
+					{
+						if (getNumMajorCivsRevealed() == 0)
+						{
+							changeNumMajorCivsRevealed(1);
+							bFirstFinder = true;
 
+							CvFeatureInfo* pFeatureInfo = GC.getFeatureInfo(getFeatureType());
+							if (pFeatureInfo)
+							{
+								// Apply first finder yields from the natural wonder feature itself
+								for (int iYield = 0; iYield < NUM_YIELD_TYPES; ++iYield)
+								{
+									YieldTypes eLoopYield = static_cast<YieldTypes>(iYield);
+									int iFeatureFinderYield = pFeatureInfo->GetFirstFinderYield(eLoopYield);
+
+									if (iFeatureFinderYield > 0)
+									{
+										iYieldPerTeamMember = (kTeam.getNumMembers() > 0) ? iFeatureFinderYield / kTeam.getNumMembers() : iFeatureFinderYield;
+
+										// Grant feature-based first finder yield to all players in the team
+										for (int iI = 0; iI < MAX_MAJOR_CIVS; ++iI)
+										{
+											CvPlayerAI& playerI = GET_PLAYER((PlayerTypes)iI);
+											if (playerI.isAlive() && playerI.getTeam() == eTeam)
+											{
+												pTargetCity = playerI.findBestCityForGoody(this); // Assign rewards to the best city
+												CvAssertMsg(pTargetCity, "pTargetCity is NULL in CvPlot::setRevealed");
+												switch (eLoopYield)
+												{
+												case YIELD_FOOD:
+													if (pTargetCity) pTargetCity->changeFoodTimes100(iYieldPerTeamMember * 100);
+													break;
+												case YIELD_PRODUCTION:
+													if (pTargetCity) pTargetCity->changeOverflowProduction(iYieldPerTeamMember);
+													break;
+												case YIELD_CULTURE:
+													playerI.changeJONSCulture(iYieldPerTeamMember);
+													break;
+												case YIELD_FAITH:
+													playerI.ChangeFaith(iYieldPerTeamMember);
+													break;
+												case YIELD_SCIENCE:
+												{
+													TechTypes eCurrentTech = playerI.GetPlayerTechs()->GetCurrentResearch();
+													if (eCurrentTech == NO_TECH)
+													{
+														playerI.changeOverflowResearch(iYieldPerTeamMember);
+													}
+													else
+													{
+														GET_TEAM(playerI.getTeam()).GetTeamTechs()->ChangeResearchProgress(eCurrentTech, iYieldPerTeamMember, playerI.GetID());
+													}
+												}
+												break;
+												case YIELD_GOLD:
+													playerI.GetTreasury()->ChangeGold(iYieldPerTeamMember);
+													break;
+												default:
+													break;
+												}
+											}
+
+											// Report the Yield to the active team
+											if (eTeam == eActiveTeam)
+											{
+												char szText[256] = { 0 };
+												float fDelay = 0;
+												switch (eLoopYield)
+												{
+												case YIELD_FOOD:
+													sprintf_s(szText, "[COLOR_GREEN]+%d[ENDCOLOR] [ICON_FOOD]", iYieldPerTeamMember);
+													break;
+												case YIELD_PRODUCTION:
+													sprintf_s(szText, "[COLOR_YIELD_PRODUCTION]+%d[ENDCOLOR] [ICON_PRODUCTION]", iYieldPerTeamMember);
+													break;
+												case YIELD_CULTURE:
+													sprintf_s(szText, "[COLOR_MAGENTA]+%d[ENDCOLOR] [ICON_CULTURE]", iYieldPerTeamMember);
+													break;
+												case YIELD_FAITH:
+													sprintf_s(szText, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_PEACE]", iYieldPerTeamMember);
+													break;
+												case YIELD_SCIENCE:
+													sprintf_s(szText, "[COLOR_BLUE]+%d[ENDCOLOR] [ICON_RESEARCH]", iYieldPerTeamMember);
+													break;
+												case YIELD_GOLD:
+													sprintf_s(szText, "[COLOR_YELLOW]+%d[ENDCOLOR] [ICON_GOLD]", iYieldPerTeamMember);
+													break;
+												default:
+													break;
+												}
+												// Show Yield only if it is greater than Zero.
+												if (strlen(szText) > 0)
+												{
+													GC.GetEngineUserInterface()->AddPopupText(getX(), getY(), szText, (GC.getPOST_COMBAT_TEXT_DELAY() * 3));
+													fDelay += 0.5f;
+												}
+											}
+										}
+									}
+								}
+							}
+							// Apply trait-based rewards independently
+							for (int iI = 0; iI < MAX_MAJOR_CIVS; ++iI)
+							{
+								CvPlayerAI& playerI = GET_PLAYER((PlayerTypes)iI);
+								if (playerI.isAlive() && playerI.getTeam() == eTeam)
+								{
+									for (int iYield = 0; iYield < NUM_YIELD_TYPES; ++iYield)
+									{
+										YieldTypes eLoopYield = static_cast<YieldTypes>(iYield);
+
+										int iFinderYield = playerI.GetPlayerTraits()->GetNaturalWonderFinderReward(eLoopYield);
+
+										if (iFinderYield > 0 && playerI.GetPlayerTraits()->GetNaturalWonderFinderRewardChange() != 0)
+										{
+											int iIncrease = 0;
+											// Get the Number of Wonders found -1, and then multiply it by the change
+											iIncrease += (GET_TEAM(eTeam).GetNumNaturalWondersDiscovered() - 1) * playerI.GetPlayerTraits()->GetNaturalWonderFinderRewardChange();
+											iFinderYield += iIncrease;
+										}
+										// if the Change reduces the reward to 0 or less, set it to 0 to prevent wierdness
+										if (iFinderYield < 0)
+										{
+											iFinderYield = 0;
+										}
+
+										// Compute yield per team member
+										int iYieldPerTeamMember = (kTeam.getNumMembers() > 0) ? iFinderYield / kTeam.getNumMembers() : iFinderYield;
+
+										if(iYieldPerTeamMember > 0)
+										{
+											// Determine target city
+											CvCity* pTargetCity = NULL;
+											if (playerI.GetPlayerTraits()->IsNaturalWonderRewardToCapital())
+											{
+												pTargetCity = playerI.getCapitalCity();
+											}
+											else
+											{
+												pTargetCity = playerI.findBestCityForGoody(this);
+											}
+											CvAssertMsg(pTargetCity, "pTargetCity is NULL in CvPlot::setRevealed");
+
+											// Apply the yield
+											switch (eLoopYield)
+											{
+											case YIELD_FOOD:
+												if (pTargetCity) pTargetCity->changeFoodTimes100(iYieldPerTeamMember * 100);
+												break;
+											case YIELD_PRODUCTION:
+												if (pTargetCity) pTargetCity->changeOverflowProduction(iYieldPerTeamMember);
+												break;
+											case YIELD_CULTURE:
+												playerI.changeJONSCulture(iYieldPerTeamMember);
+												break;
+											case YIELD_FAITH:
+												playerI.ChangeFaith(iYieldPerTeamMember);
+												break;
+											case YIELD_SCIENCE:
+											{
+												TechTypes eCurrentTech = playerI.GetPlayerTechs()->GetCurrentResearch();
+												if (eCurrentTech == NO_TECH)
+												{
+													playerI.changeOverflowResearch(iYieldPerTeamMember);
+												}
+												else
+												{
+													GET_TEAM(playerI.getTeam()).GetTeamTechs()->ChangeResearchProgress(eCurrentTech, iYieldPerTeamMember, playerI.GetID());
+												}
+											}
+											break;
+											case YIELD_GOLD:
+												playerI.GetTreasury()->ChangeGold(iYieldPerTeamMember);
+												break;
+											default:
+												break;
+											}
+
+											// Display floating text for the reward
+											// IDK why this isnt showing ALL the rewards but whatever, they apply and scale correctly so good enough.
+											if (eTeam == eActiveTeam)
+											{
+												char szText[256] = { 0 };
+												float fDelay = 0;
+												switch (eLoopYield)
+												{
+												case YIELD_FOOD:
+													sprintf_s(szText, "[COLOR_GREEN]+%d[ENDCOLOR] [ICON_FOOD]", iYieldPerTeamMember);
+													break;
+												case YIELD_PRODUCTION:
+													// Note: COLOR_YIELD_PRODUCTION seems to be a dull blue, for some reason.
+													sprintf_s(szText, "[COLOR_YIELD_PRODUCTION]+%d[ENDCOLOR] [ICON_PRODUCTION]", iYieldPerTeamMember);
+													break;
+												case YIELD_CULTURE:
+													sprintf_s(szText, "[COLOR_MAGENTA]+%d[ENDCOLOR] [ICON_CULTURE]", iYieldPerTeamMember);
+													break;
+												case YIELD_FAITH:
+													sprintf_s(szText, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_PEACE]", iYieldPerTeamMember);
+													break;
+												case YIELD_SCIENCE:
+													sprintf_s(szText, "[COLOR_BLUE]+%d[ENDCOLOR] [ICON_RESEARCH]", iYieldPerTeamMember);
+													break;
+												case YIELD_GOLD:
+													sprintf_s(szText, "[COLOR_YELLOW]+%d[ENDCOLOR] [ICON_GOLD]", iYieldPerTeamMember);
+													break;
+												default:
+													break;
+												}
+												if (strlen(szText) > 0)
+												{
+													//show floating text at the wonder plot
+													GC.GetEngineUserInterface()->AddPopupText(getX(), getY(), szText, (GC.getPOST_COMBAT_TEXT_DELAY() * 3.5));
+													fDelay += 0.5f;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+#endif
 					// If it's the active team then tell them they found something
 					if(eTeam == eActiveTeam)
 					{
@@ -9177,7 +9405,7 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 						// Popup (no MP)
 						if(!GC.getGame().isNetworkMultiPlayer() && !bDontShowRewardPopup)	// KWG: candidate for !GC.getGame().isOption(GAMEOPTION_SIMULTANEOUS_TURNS)
 						{
-							CvPopupInfo kPopupInfo(BUTTONPOPUP_NATURAL_WONDER_REWARD, getX(), getY(), iFinderGold, 0 /*iFlags */, bFirstFinder);
+							CvPopupInfo kPopupInfo(BUTTONPOPUP_NATURAL_WONDER_REWARD, getX(), getY(), iYieldPerTeamMember, 0 /*iFlags */, bFirstFinder);
 							pInterface->AddPopup(kPopupInfo);
 							CvPlayer& kActivePlayer = GET_PLAYER(GC.getGame().getActivePlayer());
 							if (kActivePlayer.getTeam() == eActiveTeam)

@@ -678,6 +678,10 @@ public:
 	void ChangeExtraLeagueVotes(int iChange);
 #ifdef TRAITIFY
 	int GetTraitExtraLeagueVotes() const;
+	void ChangeTraitExtraLeagueVotes(int iChange);
+
+	int GetCapitalYieldPerXForeignCapitalYield(YieldTypes eYieldType) const;
+	void ApplyCapitalYieldFromForeignCapitals();
 #endif
 #ifdef GLOBALIZATION_IS_USEFUL_MAYBE
 	int GetTechExtraLeagueVotes() const;
@@ -863,6 +867,11 @@ public:
 	int GetGreatPersonExpendGold() const;
 	void ChangeGreatPersonExpendGold(int iChange);
 
+#ifdef TRAITIFY // Tracking Last Great Person used
+	int GetLastGreatPersonExpended() const;
+	void SetLastGreatPersonExpended(int iValue);
+#endif
+
 	// Great People Spawning
 	void DoSeedGreatPeopleSpawnCounter();
 	void DoApplyNewAllyGPBonus();
@@ -884,6 +893,10 @@ public:
 
 	int getMaxPlayerBuildingProductionModifier() const;
 	void changeMaxPlayerBuildingProductionModifier(int iChange);
+#ifdef TRAITIFY
+	int getNormalBuildingProductionModifier() const;
+	void changeNormalBuildingProductionModifier(int iChange);
+#endif
 
 	int getFreeExperience() const;
 	void changeFreeExperienceFromBldgs(int ichange);
@@ -892,9 +905,6 @@ public:
 
 #ifdef LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
 	void DoReformationNotification();
-#endif
-#ifdef TRAITIFY
-	void ApplyFreshWaterToCityPlots(CvCity* pCity, bool bGrantFreshWater);
 #endif
 	void doUpdateBarbarianCampVisibility();
 
@@ -1992,6 +2002,9 @@ protected:
 	int m_bMayaBoostArtists;
 	int m_bMayaBoostMusicians;
 #endif
+#ifdef TRAITIFY
+	int m_iTraitExtraVotes;
+#endif
 	int m_iExtraLeagueVotes;
 #ifdef GLOBALIZATION_IS_USEFUL_MAYBE
 	int m_iTechExtraVotes;
@@ -2061,6 +2074,10 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iMaxGlobalBuildingProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iMaxTeamBuildingProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iMaxPlayerBuildingProductionModifier;
+#ifdef TRAITIFY
+	int m_iLastGreatPersonExpended;
+	FAutoVariable<int, CvPlayer> m_iNormalBuildingProductionModifier;
+#endif
 	FAutoVariable<int, CvPlayer> m_iFreeExperience;
 	FAutoVariable<int, CvPlayer> m_iFreeExperienceFromBldgs;
 	FAutoVariable<int, CvPlayer> m_iFreeExperienceFromMinors;
@@ -2127,7 +2144,6 @@ protected:
 #ifdef NQ_ALLOW_PUPPET_PURCHASING_FROM_POLICIES
 	int m_iAllowPuppetPurchasingCount;
 #endif
-
 	int m_iEnablesSSPartPurchaseCount;
 	FAutoVariable<int, CvPlayer> m_iConscriptCount;
 	FAutoVariable<int, CvPlayer> m_iMaxConscript;

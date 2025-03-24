@@ -1568,6 +1568,10 @@ public:
 	const char* getEffectType() const;
 	int getEffectProbability() const;
 
+#ifdef TRAITIFY // Part of the NWFinder Yield Refactor
+	int GetFirstFinderYield(int i) const;
+#endif
+
 
 	int getYieldChange(int i) const;
 	int getRiverYieldChange(int i) const;
@@ -1630,6 +1634,10 @@ protected:
 	int* m_piHillsYieldChange;
 	int* m_pi3DAudioScriptFootstepIndex;
 	bool* m_pbTerrain;
+
+#ifdef TRAITIFY // Part of the NWFinder Yield Refactor
+	int* m_piFirstFinderYield;
+#endif
 
 private:
 	CvString m_strArtDefineTag;

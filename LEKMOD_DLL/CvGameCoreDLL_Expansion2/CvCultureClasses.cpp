@@ -197,13 +197,34 @@ CvString CvGameCulture::GetGreatWorkTooltip(int iIndex, PlayerTypes eOwner) cons
 	szTooltip += ")";
 	szTooltip += "[NEWLINE]";
 	CvString cultureString;
+#ifdef TRAITIFY // Show Yields being Added to Great Works in the Hover Tooltip
+	int iFoodPerWork = 0;
+	iFoodPerWork += GET_PLAYER(eOwner).GetGreatWorkYieldChange(YIELD_FOOD);
+	int iProductionPerWork = 0;
+	iProductionPerWork += GET_PLAYER(eOwner).GetGreatWorkYieldChange(YIELD_PRODUCTION);
+	int iGoldPerWork = 0;
+	iGoldPerWork += GET_PLAYER(eOwner).GetGreatWorkYieldChange(YIELD_GOLD);
+	int iSciencePerWork = 0;
+	iSciencePerWork += GET_PLAYER(eOwner).GetGreatWorkYieldChange(YIELD_SCIENCE);
+	int iFaithPerWork = 0;
+	iFaithPerWork += GET_PLAYER(eOwner).GetGreatWorkYieldChange(YIELD_FAITH);
+#endif
 	int iCulturePerWork = GC.getBASE_CULTURE_PER_GREAT_WORK();
 	iCulturePerWork += GET_PLAYER(eOwner).GetGreatWorkYieldChange(YIELD_CULTURE);
 	int iTourismPerWork = GC.getBASE_TOURISM_PER_GREAT_WORK();
 	iTourismPerWork += GET_PLAYER(eOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_EXTRA_TOURISM_PER_GREAT_WORK); // NQMP GJS - Cultural Exchange
 
-
+#ifndef TRAITIFY // Build Tooltip String Dynamically
 	cultureString.Format ("+%d [ICON_CULTURE], +%d [ICON_TOURISM]", iCulturePerWork, iTourismPerWork);
+#else
+	if (iFoodPerWork != 0) cultureString += CvString::format("+%d [ICON_FOOD] ", iFoodPerWork);
+	if (iProductionPerWork != 0) cultureString += CvString::format("+%d [ICON_PRODUCTION] ", iProductionPerWork);
+	if (iGoldPerWork != 0) cultureString += CvString::format("+%d [ICON_GOLD] ", iGoldPerWork);
+	if (iSciencePerWork != 0) cultureString += CvString::format("+%d [ICON_RESEARCH] ", iSciencePerWork);
+	if (iFaithPerWork != 0) cultureString += CvString::format("+%d [ICON_PEACE] ", iFaithPerWork);
+	if (iCulturePerWork != 0) cultureString += CvString::format("+%d [ICON_CULTURE] ", iCulturePerWork);
+	if (iTourismPerWork != 0) cultureString += CvString::format("+%d [ICON_TOURISM] ", iTourismPerWork);
+#endif
 	szTooltip += cultureString;
 
 	return szTooltip;
@@ -596,6 +617,21 @@ bool CvGameCulture::SwapGreatWorks (PlayerTypes ePlayer1, int iWork1, PlayerType
 	
 	GC.GetEngineUserInterface()->setDirty(GreatWorksScreen_DIRTY_BIT, true);
 
+#ifdef GREAT_WORK_HOOKS
+	// Potential Hook location for Cuban Dance Hall type effects
+	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
+	if (pkScriptSystem)
+	{
+		CvLuaArgsHandle args;
+		args->Push(ePlayer1);
+		args->Push(iWork1);
+		args->Push(ePlayer2);
+		args->Push(iWork2);
+
+		bool bResult;
+		LuaSupport::CallHook(pkScriptSystem, "SwapGreatWorks", args.get(), bResult);
+	}
+#endif
 	return true;
 }
 
@@ -621,6 +657,26 @@ void CvGameCulture::MoveGreatWorks(PlayerTypes ePlayer, int iCity1, int iBuildin
 	int workType2 = pCity2->GetCityBuildings()->GetBuildingGreatWork((BuildingClassTypes)iBuildingClass2, iWorkIndex2);
 	pCity1->GetCityBuildings()->SetBuildingGreatWork((BuildingClassTypes)iBuildingClass1, iWorkIndex1, workType2);
 	pCity2->GetCityBuildings()->SetBuildingGreatWork((BuildingClassTypes)iBuildingClass2, iWorkIndex2, workType1);
+#ifdef GREAT_WORK_HOOKS
+	// Potential Hook location for Cuban Dance Hall type effects
+	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
+	if (pkScriptSystem)
+	{
+		CvLuaArgsHandle args;
+		args->Push(ePlayer);
+		args->Push(iCity1);
+		args->Push(iBuildingClass1);
+		args->Push(iWorkIndex1);
+		args->Push(iCity2);
+		args->Push(iBuildingClass2);
+		args->Push(iWorkIndex2);
+		args->Push(workType1);
+		args->Push(workType2);
+
+		bool bResult;
+		LuaSupport::CallHook(pkScriptSystem, "MoveGreatWorks", args.get(), bResult);
+	}
+#endif
 }
 
 /// How many civs do we need to be influential over to win?
@@ -1915,6 +1971,26 @@ void CvPlayerCulture::MoveWorkIntoSlot (CvGreatWorkInMyEmpire kWork, int iCityID
 		pToCity->GetCityBuildings()->SetBuildingGreatWork(eToBuildingClass, iSlot, kWork.m_iGreatWorkIndex);
 		pFromCity->GetCityBuildings()->SetBuildingGreatWork(eFromBuildingClass, iFromSlot, iFromWork);
 	}
+#ifdef GREAT_WORK_HOOKS
+	// Potential Hook location for Cuban Dance Hall like effects
+	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
+	if (pkScriptSystem)
+	{
+		CvLuaArgsHandle args;
+		args->Push(m_pPlayer->GetID());
+		args->Push(iCityID);
+		args->Push(eBuilding);
+		args->Push(iSlot);
+		args->Push(kWork.m_iGreatWorkIndex);
+		args->Push(iFromCityID);
+		args->Push(eFromBuildingType);
+		args->Push(iFromSlot);
+		args->Push(kWork.m_iGreatWorkIndex);
+
+		bool bResult;
+		LuaSupport::CallHook(pkScriptSystem, "MoveWorkIntoSlot", args.get(), bResult);
+	}
+#endif
 }
 
 int CvPlayerCulture::GetSwappableWritingIndex() const
@@ -5004,7 +5080,41 @@ CvString CvCityCulture::GetTourismTooltip()
 			}
 		}
 	}
+#ifdef SWISS_MOUNTAINS // Populate the Toolip with the Tourism per Mountain from buildings
+	// Tourism Per Mountain from buildings
+	for (int jJ = 0; jJ < GC.getNumBuildingClassInfos(); jJ++)
+	{
+		BuildingClassTypes eBuildingClass = (BuildingClassTypes)jJ;
 
+		CvBuildingClassInfo* pkBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+		if (!pkBuildingClassInfo)
+		{
+			continue;
+		}
+
+		CvCivilizationInfo& playerCivilizationInfo = GET_PLAYER(m_pCity->getOwner()).getCivilizationInfo();
+		BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
+
+		if (eBuilding != NO_BUILDING)
+		{
+			CvBuildingEntry* pkEntry = GC.getBuildingInfo(eBuilding);
+			if (pkEntry && m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
+			{
+				int iTourismPerMountain = pkEntry->GetMountainTourism();
+				if (iTourismPerMountain > 0)
+				{
+					int iMountainCount = m_pCity->GetNumMountainsNearCity();
+					int iTotalMountainTourism = iMountainCount * iTourismPerMountain;
+					if (szRtnValue.length() > 0)
+					{
+						szRtnValue += "[NEWLINE][ICON_BULLET]";
+					}
+					szRtnValue += GetLocalizedText("TXT_KEY_CO_CITY_TOURISM_MOUNTAIN", iTotalMountainTourism, iMountainCount);
+				}
+			}
+		}
+	}
+#endif 
 	int iBuildingMod = 0;
 #ifdef AUI_WARNING_FIXES
 	for (uint iBuildingClassLoop = 0; iBuildingClassLoop < GC.getNumBuildingClassInfos(); iBuildingClassLoop++)

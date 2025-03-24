@@ -120,8 +120,8 @@ bool CvTechEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	//EAP: Civilian Embark
 	m_bAllowsEmbarkingCivilian = kResults.GetBool("AllowsEmbarkingCivilian");
 
-#ifdef GLOBALIZATION_IS_USEFUL_MAYBE
-	m_iExtraLeagueVotes = kResults.GetInt("ExtraLeagueVotes");
+#ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Change the name of the xml tag to AdditionalDelegates
+	m_iExtraLeagueVotes = kResults.GetInt("AdditionalDelegates");
 #endif
 
 	m_bAllowsDefensiveEmbarking = kResults.GetBool("AllowsDefensiveEmbarking");

@@ -199,6 +199,9 @@ CvPlayer::CvPlayer() :
 	, m_bMayaBoostWriters(false)
 	, m_bMayaBoostArtists(false)
 	, m_bMayaBoostMusicians(false)
+#endif 
+#ifdef TRAITIFY // Trait based Extra votes in the Congress
+	, m_iTraitExtraVotes(0)
 #endif
 	, m_iExtraLeagueVotes(0)
 #ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Constructor
@@ -270,6 +273,10 @@ CvPlayer::CvPlayer() :
 	, m_iMaxGlobalBuildingProductionModifier("CvPlayer::m_iMaxGlobalBuildingProductionModifier", m_syncArchive)
 	, m_iMaxTeamBuildingProductionModifier("CvPlayer::m_iMaxTeamBuildingProductionModifier", m_syncArchive)
 	, m_iMaxPlayerBuildingProductionModifier("CvPlayer::m_iMaxPlayerBuildingProductionModifier", m_syncArchive)
+#ifdef TRAITIFY // Some more trait based variables
+	, m_iLastGreatPersonExpended(0)
+	, m_iNormalBuildingProductionModifier("CvPlayer::m_iNormalBuildingProductionModifier", m_syncArchive)
+#endif
 	, m_iFreeExperience("CvPlayer::m_iFreeExperience", m_syncArchive)
 	, m_iFreeExperienceFromBldgs("CvPlayer::m_iFreeExperienceFromBldgs", m_syncArchive)
 	, m_iFreeExperienceFromMinors("CvPlayer::m_iFreeExperienceFromMinors", m_syncArchive)
@@ -708,6 +715,14 @@ void CvPlayer::init(PlayerTypes eID)
 		changeMaxGlobalBuildingProductionModifier(GetPlayerTraits()->GetMaxGlobalBuildingProductionModifier());
 		changeMaxTeamBuildingProductionModifier(GetPlayerTraits()->GetMaxTeamBuildingProductionModifier());
 		changeMaxPlayerBuildingProductionModifier(GetPlayerTraits()->GetMaxPlayerBuildingProductionModifier());
+#ifdef TRAITIFY // Some start of the game trait initializations
+		changeNormalBuildingProductionModifier(GetPlayerTraits()->GetBuildingProductionModifier());
+		ChangeTraitExtraLeagueVotes(GetPlayerTraits()->GetNumExtraLeagueVotes());
+		changeHalfMoreSpecialistUnhappinessCount(GetPlayerTraits()->IsHalfMoreSpecialistUnhappiness());
+		changeHalfSpecialistUnhappinessCount(GetPlayerTraits()->IsHalfSpecialistUnhappiness());
+		// getTraitMovementChange is handled at a Team Level.
+#endif
+		changeWonderProductionModifier(GetPlayerTraits()->GetWonderProductionModifier());
 		ChangePlotGoldCostMod(GetPlayerTraits()->GetPlotBuyCostModifier());
 		ChangePlotCultureCostModifier(GetPlayerTraits()->GetPlotCultureCostModifier());
 		GetTreasury()->ChangeCityConnectionTradeRouteGoldChange(GetPlayerTraits()->GetCityConnectionTradeRouteChange());
@@ -951,6 +966,9 @@ void CvPlayer::uninit()
 	m_bMayaBoostArtists = 0;
 	m_bMayaBoostMusicians = 0;
 #endif
+#ifdef TRAITIFY // Trait based extra votes
+	m_iTraitExtraVotes = 0;
+#endif
 	m_iExtraLeagueVotes = 0;
 #ifdef GLOBALIZATION_IS_USEFUL_MAYBE // uninit
 	m_iTechExtraVotes = 0;
@@ -1028,6 +1046,10 @@ void CvPlayer::uninit()
 	m_iMaxGlobalBuildingProductionModifier = 0;
 	m_iMaxTeamBuildingProductionModifier = 0;
 	m_iMaxPlayerBuildingProductionModifier = 0;
+#ifdef TRAITIFY // Some trait based variables
+	m_iLastGreatPersonExpended = 0;
+	m_iNormalBuildingProductionModifier = 0;
+#endif
 	m_iFreeExperience = 0;
 	m_iFreeExperienceFromBldgs = 0;
 	m_iFreeExperienceFromMinors = 0;
@@ -2088,11 +2110,19 @@ CvPlot* CvPlayer::addFreeUnit(UnitTypes eUnit, UnitAITypes eUnitAI)
 	// Determine if the unit should always spawn in the capital
 	bool bForceCapitalSpawn = false;
 	UnitAITypes eDefaultAI = static_cast<UnitAITypes>(pkUnitInfo->GetDefaultUnitAIType());
+	UnitClassTypes eUnitClass = static_cast<UnitClassTypes>(pkUnitInfo->GetUnitClassType());
 
-	if (eDefaultAI == UNITAI_TRADE_UNIT) // Covers Caravans & Cargo Ships
+	if (eDefaultAI == UNITAI_TRADE_UNIT) // BUGFIX: places Caravans & Cargo Ships in the capital.
 	{
 		bForceCapitalSpawn = true;
 	}
+	
+	// Check if the player's traits force this unit class to spawn in the capital
+	if (eUnitClass != NO_UNITCLASS && GetPlayerTraits()->IsUnitClassForcedCapitalSpawn(eUnitClass))
+	{
+		bForceCapitalSpawn = true;
+	}
+
 
 	// If the unit must spawn in the capital, override plot selection
 	if (bForceCapitalSpawn && pCapital)
@@ -2114,7 +2144,6 @@ CvPlot* CvPlayer::addFreeUnit(UnitTypes eUnit, UnitAITypes eUnitAI)
 			return pStartingPlot;
 		}
 
-		// **Existing logic for normal unit placement**
 		CvPlot* pBestPlot = NULL;
 		if (isHuman() && !(pkUnitInfo->IsFound()))
 		{
@@ -2406,30 +2435,133 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift)
 #ifdef TRAITIFY // GoldenAgePoints on City Capture
 	if (bConquest)
 	{
+		CvTeam& owningTeam = GET_TEAM(getTeam());
 		CvPlayerTraits* pTraits = GetPlayerTraits();
-		int iGoldenAgePoints = pTraits->GetGoldenAgePointBurstOnCapture();
+		float fDelay = 2.0f;
 
-		if (iGoldenAgePoints > 0)
+		for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 		{
-			// Adjust for Game Speed
+			YieldTypes eLoopYield = (YieldTypes)iYield;
+
+			// Get the yield bonus from the player's trait
+			int iConquestBonus = pTraits->GetYieldOnConquest(eLoopYield);
+			int iGoldenAgePoints = pTraits->GetGoldenAgePointBurstOnCapture();
 			int iGameSpeedModifier = GC.getGameSpeedInfo(GC.getGame().getGameSpeedType())->getGoldenAgePercent();
+
+			// Adjust for Game Speed
+			iConquestBonus = (iConquestBonus * iGameSpeedModifier) / 100;
 			iGoldenAgePoints = (iGoldenAgePoints * iGameSpeedModifier) / 100;
 
-			// Apply points
-			ChangeGoldenAgeProgressMeter(iGoldenAgePoints);
-
-			// Display floating text if the city tile is visible
-			if (pOldCity->plot()->GetActiveFogOfWarMode() == FOGOFWARMODE_OFF)
+			if (iConquestBonus > 0 || iGoldenAgePoints > 0)
 			{
-				char text[256];
-				sprintf_s(text, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_GOLDEN_AGE]", iGoldenAgePoints);
+				// Get capital reference for possible yield redirection
+				CvCity* pCapital = getCapitalCity();
+				bool bRedirectToCapital = pTraits->IsYieldOnConquestToCapital();
 
-				// Match combat text delay to avoid overlap
-				float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
-				GC.GetEngineUserInterface()->AddPopupText(pOldCity->getX(), pOldCity->getY(), text, fDelay);
+				switch (eLoopYield)
+				{
+				case YIELD_FOOD:
+					if (bRedirectToCapital && pCapital)
+						pCapital->changeFoodTimes100(iConquestBonus * 100);
+					else
+						pOldCity->changeFoodTimes100(iConquestBonus * 100);
+					break;
+
+				case YIELD_PRODUCTION:
+					if (bRedirectToCapital && pCapital)
+						pCapital->changeOverflowProduction(iConquestBonus);
+					else
+						pOldCity->changeOverflowProduction(iConquestBonus);
+					break;
+
+				case YIELD_CULTURE:
+					changeJONSCulture(iConquestBonus);
+					break;
+
+				case YIELD_FAITH:
+					ChangeFaith(iConquestBonus);
+					break;
+				case YIELD_SCIENCE:
+				{
+					TechTypes eCurrentTech = GetPlayerTechs()->GetCurrentResearch();
+					if (eCurrentTech == NO_TECH)
+					{
+						changeOverflowResearch(iConquestBonus);
+					}
+					else
+					{
+						owningTeam.GetTeamTechs()->ChangeResearchProgress(eCurrentTech, iConquestBonus, GetID());
+					}
+				}
+				break;
+				case YIELD_GOLD:
+					GetTreasury()->ChangeGold(iConquestBonus);
+					break;
+
+				default:
+					break;
+				}
+
+				// Create floating text for UI feedback
+				char szText[256] = { 0 };
+				switch (eLoopYield)
+				{
+				case YIELD_FOOD:
+					sprintf_s(szText, "[COLOR_GREEN]+%d[ENDCOLOR] [ICON_FOOD]", iConquestBonus);
+					break;
+				case YIELD_PRODUCTION:
+					sprintf_s(szText, "[COLOR_YIELD_PRODUCTION]+%d[ENDCOLOR] [ICON_PRODUCTION]", iConquestBonus);
+					break;
+				case YIELD_CULTURE:
+					sprintf_s(szText, "[COLOR_MAGENTA]+%d[ENDCOLOR] [ICON_CULTURE]", iConquestBonus);
+					break;
+				case YIELD_FAITH:
+					sprintf_s(szText, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_PEACE]", iConquestBonus);
+					break;
+				case YIELD_SCIENCE:
+					sprintf_s(szText, "[COLOR_BLUE]+%d[ENDCOLOR] [ICON_RESEARCH]", iConquestBonus);
+					break;
+				case YIELD_GOLD:
+					sprintf_s(szText, "[COLOR_YELLOW]+%d[ENDCOLOR] [ICON_GOLD]", iConquestBonus);
+					break;
+				default:
+					break;
+				}
+				if (strlen(szText) > 0)
+				{
+					if (bRedirectToCapital && pCapital)
+					{
+						// Send floating text to the capital if the trait applies
+						GC.GetEngineUserInterface()->AddPopupText(pCapital->getX(), pCapital->getY(), szText, fDelay);
+					}
+					else
+					{
+						// Otherwise, show floating text at the newly captured city
+						GC.GetEngineUserInterface()->AddPopupText(pOldCity->getX(), pOldCity->getY(), szText, fDelay);
+					}
+					fDelay += 0.5f;
+				}
+
+				// Apply Golden Age Points
+				if (iGoldenAgePoints > 0)
+				{
+					ChangeGoldenAgeProgressMeter(iGoldenAgePoints);
+
+					// Display floating text if the city tile is visible
+					if (pOldCity->plot()->GetActiveFogOfWarMode() == FOGOFWARMODE_OFF)
+					{
+						char text[256];
+						sprintf_s(text, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_GOLDEN_AGE]", iGoldenAgePoints);
+
+						// Match combat text delay to avoid overlap
+						float fGAP_Delay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
+						GC.GetEngineUserInterface()->AddPopupText(pOldCity->getX(), pOldCity->getY(), text, fGAP_Delay);
+					}
+				}
 			}
 		}
 	}
+
 #endif
 
 
@@ -3428,55 +3560,6 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift)
 					pNewCity->SetIgnoreCityForHappiness(false);
 				}
 			}
-#ifdef TRAITIFY // Free Courthouse for Conquest
-			if (bConquest)
-			{
-				if (GetPlayerTraits()->IsFreeCourthouse())
-				{
-					ReligionTypes eFoundedReligion = GetReligions()->GetReligionCreatedByPlayer();
-					ReligionTypes eCityReligion = pNewCity->GetCityReligions()->GetReligiousMajority();
-
-					if (eFoundedReligion != NO_RELIGION && eFoundedReligion == eCityReligion)
-					{
-						if (pNewCity->IsOccupied() || pNewCity->IsPuppet())
-						{
-							BuildingClassTypes eCourthouseClass = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_COURTHOUSE");
-							if (eCourthouseClass != NO_BUILDINGCLASS)
-							{
-								BuildingTypes eCourthouse = (BuildingTypes)getCivilizationInfo().getCivilizationBuildings(eCourthouseClass);
-								if (eCourthouse == NO_BUILDING)
-								{
-									eCourthouse = (BuildingTypes)GC.getInfoTypeForString("BUILDING_COURTHOUSE");
-								}
-
-								if (eCourthouse != NO_BUILDING)
-								{
-									pNewCity->GetCityBuildings()->SetNumRealBuilding(eCourthouse, 1);
-								}
-							}
-						}
-					}
-				}
-			}
-
-			if (pNewCity)
-			{
-				CvPlayer& kOldPlayer = GET_PLAYER(eOldOwner);
-				CvPlayer& kNewPlayer = GET_PLAYER(pNewCity->getOwner());
-
-				// Step 1: Remove fresh water if the old owner had the trait
-				if (kOldPlayer.GetPlayerTraits()->IsGiveFreshWaterAroundCities())
-				{
-					kOldPlayer.ApplyFreshWaterToCityPlots(pNewCity, false);
-				}
-
-				// Step 2: Apply fresh water if the new owner has the trait
-				if (kNewPlayer.GetPlayerTraits()->IsGiveFreshWaterAroundCities())
-				{
-					kNewPlayer.ApplyFreshWaterToCityPlots(pNewCity, true);
-				}
-			}
-#endif
 
 			// No choice but to capture it, tell about pillage gold (if any)
 			else if(iCaptureGold > 0 || iCaptureCulture > 0 || iCaptureGreatWorks > 0)
@@ -4987,51 +5070,27 @@ void CvPlayer::doTurn()
 
 	AI_doTurnPre();
 
-#ifdef TRAITIFY
-	std::set<TraitTypes> oldTraits;
-	for (int i = 0; i < GC.getNumTraitInfos(); i++)
-	{
-		TraitTypes eTrait = static_cast<TraitTypes>(i);
-		if (GetPlayerTraits()->HasTrait(eTrait))
-		{
-			oldTraits.insert(eTrait);
-		}
-	}
-
-	
+#ifdef TRAITIFY // doTurn() reaquire the player's Trait every turn.
 	m_pTraits->Reset();
 	m_pTraits->InitPlayerTraits();
 	recomputePolicyCostModifier();
 
-	//Change Great Work Yields
+	//Change Great Work Yields, since Traits do not have the same mechanism as Policies or Techs to allow the thing to be changed on aquisition.
 	ApplyTraitGreatWorkYield();
 	
-	std::set<TraitTypes> newTraits;
-	for (int i = 0; i < GC.getNumTraitInfos(); i++)
-	{
-		TraitTypes eTrait = static_cast<TraitTypes>(i);
-		if (GetPlayerTraits()->HasTrait(eTrait))
-		{
-			newTraits.insert(eTrait);
-		}
-	}
-
-	//Check if traits changed
-	if (oldTraits != newTraits)
-	{
-		SendTraitChangeNotification();
-	}
 #endif
 #ifdef AUI_YIELDS_APPLIED_AFTER_TURN_NOT_BEFORE
 	cacheYields();
 #endif
 
-#ifdef TRAITIFY //doTurn() DoTradeGuards()
-	DoTradeGuards();
-#endif
+
+
 #ifdef CONSULATES
 	//Called every turn to escape the need to adopt a policy to update the bonus.
 	DoConsulates();
+#endif
+#ifdef TRAITIFY //doTurn() for Yield Steal
+	ApplyCapitalYieldFromForeignCapitals();
 #endif
 
 	if(getCultureBombTimer() > 0)
@@ -5714,54 +5773,6 @@ void CvPlayer::SetAllUnitsUnprocessed()
 		pLoopUnit->SetTurnProcessed(false);
 	}
 }
-
-#ifdef TRAITIFY //TradeGuards
-void CvPlayer::DoTradeGuards()
-{
-	// Get Trait Values
-	int iGoldReward = GetPlayerTraits()->GetGoldFromTradeGuards();
-	int iXPReward = GetPlayerTraits()->GetXPFromTradeGuards();
-
-	// Only apply if at least one value is positive
-	if (iGoldReward == 0 && iXPReward == 0)
-		return;
-
-	// Loop through all player units
-	CvUnit* pLoopUnit;
-	int iLoop;
-	for (pLoopUnit = firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = nextUnit(&iLoop))
-	{
-		CvPlot* pPlot = pLoopUnit->plot();
-		if (!pPlot)
-			continue;
-
-		std::vector<CvString> tradeRouteInfo = GetTrade()->GetPlotToolTips(pPlot);
-
-		// If the plot has valid trade route tooltips, it's part of an trade route
-		if (!tradeRouteInfo.empty() && pLoopUnit->IsCombatUnit())
-		{
-			if (iXPReward > 0)
-			{
-				pLoopUnit->changeExperience(iXPReward);
-				// Already handled.
-			/*  char xpText[256];
-				sprintf_s(xpText, "+%d XP", iXPReward);
-				float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
-				GC.GetEngineUserInterface()->AddPopupText(pLoopUnit->getX(), pLoopUnit->getY(), xpText, fDelay);*/
-			}
-
-			if (iGoldReward > 0)
-			{
-				GET_PLAYER(GetID()).GetTreasury()->ChangeGold(iGoldReward);
-				char goldText[256];
-				sprintf_s(goldText, "[COLOR_YIELD_GOLD]+%d [ICON_GOLD] Gold[ENDCOLOR]", iGoldReward);
-				float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
-				GC.GetEngineUserInterface()->AddPopupText(pLoopUnit->getX(), pLoopUnit->getY(), goldText, fDelay);
-			}
-		}
-	}
-}
-#endif
 
 //	--------------------------------------------------------------------------------
 /// Units heal and then get their movement back
@@ -6705,7 +6716,6 @@ void CvPlayer::findNewCapital()
 		pBestCity->GetCityBuildings()->SetNumRealBuilding(eCapitalBuilding, 1);
 	}
 }
-
 //	--------------------------------------------------------------------------------
 bool CvPlayer::canRaze(CvCity* pCity, bool bIgnoreCapitals) const
 {
@@ -9325,12 +9335,7 @@ bool CvPlayer::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestV
 	{
 		return false;
 	}
-
-	if (pBuildingInfo.IsCanNoBuy() && GetPlayerTraits()->IsNoBuyFaithBuilding())
-	{
-		return true;
-	}
-
+#ifndef TRAITIFY // redo the building blocking code that is based on the buildings base production as there is now a mechanic to override it.
 	if (!bIgnoreCost)
 	{
 		if(pBuildingInfo.GetProductionCost() == -1)
@@ -9338,7 +9343,29 @@ bool CvPlayer::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestV
 			return false;
 		}
 	}
+#else
+	if (!bIgnoreCost)
+	{
+		// Get the base production cost and any trait-based override
+		int iBaseCost = pBuildingInfo.GetProductionCost();
+		int iOverrideCost = GetPlayerTraits()->GetBuildingCostOverride(eBuilding, YIELD_PRODUCTION);
 
+		// Block buildings that have a base production cost of -1 and no valid override
+		if (iBaseCost == -1 && iOverrideCost < 0)
+		{
+			return false;
+		}
+
+		// Block buildings that have a valid production cost but an override setting them to -1
+		if (iBaseCost > -1 && iOverrideCost == -1)
+		{
+			return false;
+		}
+		// Let buildings with no override and vaild production cost through, and those with a valid override
+	}
+
+
+#endif
 
 	PolicyBranchTypes eBranch = (PolicyBranchTypes)pBuildingInfo.GetPolicyBranchType();
 	if (eBranch != NO_POLICY_BRANCH_TYPE)
@@ -9992,6 +10019,9 @@ int CvPlayer::getProductionNeeded(UnitTypes eUnit) const
 		return 0;
 
 	int iProductionNeeded = pkUnitEntry->GetProductionCost();
+	//#ifdef TRAITIFY // UnitProductionOverride
+
+	//#endif
 	iProductionNeeded *= 100 + getUnitClassCount(eUnitClass) * pkUnitClassInfo->getInstanceCostModifier();
 	iProductionNeeded /= 100;
 
@@ -10033,14 +10063,32 @@ int CvPlayer::getProductionNeeded(UnitTypes eUnit) const
 	iProductionNeeded *= (100 + pkUnitEntry->GetFinalProductionCostModifier());
 	iProductionNeeded /= 100;
 #endif
-#ifdef TRAITIFY // Trait Effect on final production cost
-	// Find the Caravans and Cargo Ships
-	if (pkUnitEntry->GetDefaultUnitAIType() == UNITAI_TRADE_UNIT) 
+#ifdef TRAITIFY // Trait Effect on final production cost by UnitClass
+	/*int iMilitaryProductionModifier = GetPlayerTraits()->GetUnitProductionChange();
+	if (iMilitaryProductionModifier != 0 && pkUnitEntry->IsMilitaryProduction())
 	{
-		// Get the Discount
-		int iProductionDiscount = (100 + GetPlayerTraits()->GetProductionDiscountForTradeUnits());
-		// Apply the Discount
-		iProductionNeeded *= iProductionDiscount;
+		iProductionNeeded *= (100 + iMilitaryProductionModifier);
+		iProductionNeeded /= 100;
+	}*/
+	int iTotalProductionChange = 100;
+	if(GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly() == false)
+	{
+		int iUnitClassProductionChange = GetPlayerTraits()->GetUnitClassProductionChange(eUnitClass);
+		if (iUnitClassProductionChange != 0)
+		{
+			iTotalProductionChange += iUnitClassProductionChange;
+		}
+		int iUnitCombatProductionChange = GetPlayerTraits()->GetUnitCombatProductionChange((UnitCombatTypes)pkUnitEntry->GetUnitCombatType());
+		if (iUnitCombatProductionChange != 0 && pkUnitEntry->GetUnitCombatType() != NO_UNITCOMBAT)
+		{
+			iTotalProductionChange += iUnitCombatProductionChange;
+		}
+		int iUnitDomainProductionChange = GetPlayerTraits()->GetUnitDomainProductionChange((DomainTypes)pkUnitEntry->GetDomainType());
+		if (iUnitDomainProductionChange != 0 && pkUnitEntry->GetDomainType() != NO_DOMAIN)
+		{
+			iTotalProductionChange += iUnitDomainProductionChange;
+		}
+		iProductionNeeded *= iTotalProductionChange;
 		iProductionNeeded /= 100;
 	}
 #endif
@@ -10063,6 +10111,14 @@ int CvPlayer::getProductionNeeded(BuildingTypes eBuilding) const
 	}
 
 	iProductionNeeded = pkBuildingInfo->GetProductionCost();
+
+#ifdef TRAITIFY // BuildingProductionOverride
+	int iOverrideProductionCost = GetPlayerTraits()->GetBuildingCostOverride(eBuilding, YIELD_PRODUCTION);
+	if (iOverrideProductionCost > 0) // Only use if valid
+	{
+		iProductionNeeded = iOverrideProductionCost;
+	}
+#endif
 
 	if(pkBuildingInfo->GetNumCityCostMod() > 0 && getNumCities() > 0)
 	{
@@ -10127,26 +10183,7 @@ int CvPlayer::getProductionNeeded(BuildingTypes eBuilding) const
 			}
 		}
 	}
-#ifdef TRAITIFY // Convert Faith Cost to Production Cost
-	// If the building is a faith building, and the player has the NoBuy Trait, set the production cost to a percent of the faith cost.
-	if (pkBuildingInfo->IsCanNoBuy() && GetPlayerTraits()->IsNoBuyFaithBuilding())
-	{
-		int iFaithCost = pkBuildingInfo->GetFaithCost();
 
-		int iFaithCostModifier = GetPlayerTraits()->GetFaithCostModifier() + GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER);
-		iFaithCost = iFaithCost * (100 + iFaithCostModifier) / 100;
-
-		int iConversionPercent = GetPlayerTraits()->GetNoBuyProductionPercent();
-
-		int iProductionCost = (iFaithCost * iConversionPercent) / 100;
-		iProductionNeeded = std::max(1, iProductionCost);
-
-		iProductionNeeded *= GC.getGame().getGameSpeedInfo().getFaithPercent();
-		iProductionNeeded /= 100;
-
-		return iProductionNeeded;
-	}
-#endif
 	if(!isHuman() && !IsAITeammateOfHuman() && !isBarbarian())
 	{
 		if(isWorldWonderClass(pkBuildingInfo->GetBuildingClassInfo()))
@@ -10163,6 +10200,17 @@ int CvPlayer::getProductionNeeded(BuildingTypes eBuilding) const
 		iProductionNeeded *= std::max(0, ((GC.getGame().getHandicapInfo().getAIPerEraModifier() * GetCurrentEra()) + 100));
 		iProductionNeeded /= 100;
 	}
+#ifdef TRAITIFY // Trait Effect on final production cost by BuildingClass
+	if (GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly() == false)
+	{
+		int iBuildingClassProductionChange = GetPlayerTraits()->GetBuildingClassProductionChange((BuildingClassTypes)pkBuildingInfo->GetBuildingClassType());
+		if (iBuildingClassProductionChange != 0)
+		{
+			iProductionNeeded *= (100 + iBuildingClassProductionChange);
+			iProductionNeeded /= 100;
+		}
+	}
+#endif
 
 	return std::max(1, iProductionNeeded);
 }
@@ -10262,10 +10310,10 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 
 	CvUnitEntry* pUnitEntry = GC.getUnitInfo(eUnit);
 
-	if(pUnitEntry)
+	if (pUnitEntry)
 	{
 		// Military bonus
-		if(pUnitEntry->IsMilitaryProduction())
+		if (pUnitEntry->IsMilitaryProduction())
 		{
 			iTempMod = getMilitaryProductionModifier();
 			iMultiplier += iTempMod;
@@ -10273,7 +10321,7 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 		}
 
 		// Settler bonus
-		if(pUnitEntry->IsFound())
+		if (pUnitEntry->IsFound())
 		{
 			iTempMod = getSettlerProductionModifier();
 			iMultiplier += iTempMod;
@@ -10281,31 +10329,32 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 		}
 
 		// Unit Combat class bonus
-		if(pUnitEntry->GetUnitCombatType() != NO_UNITCOMBAT)
+		if (pUnitEntry->GetUnitCombatType() != NO_UNITCOMBAT)
 		{
-			iTempMod = getUnitCombatProductionModifiers((UnitCombatTypes) pUnitEntry->GetUnitCombatType());
+			iTempMod = getUnitCombatProductionModifiers((UnitCombatTypes)pUnitEntry->GetUnitCombatType());
 			iMultiplier += iTempMod;
-			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_COBMAT_CLASS_PLAYER", iTempMod);
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_COMBAT_CLASS_PLAYER", iTempMod);
 		}
 
 		// Trait bonus
+#ifndef TRAITIFY
 #ifdef AUI_WARNING_FIXES
 		CvPlayerTraits* pPlayerTraits = GetPlayerTraits();
 		for (uint iI = 0; iI < GC.getNumTraitInfos(); iI++)
 #else
 		int iNumTraits = GC.getNumTraitInfos();
 		CvPlayerTraits* pPlayerTraits = GetPlayerTraits();
-		for(int iI = 0; iI < iNumTraits; iI++)
+		for (int iI = 0; iI < iNumTraits; iI++)
 #endif
 		{
-			if(pPlayerTraits->HasTrait((TraitTypes)iI))
+			if (pPlayerTraits->HasTrait((TraitTypes)iI))
 			{
 				iMultiplier += pUnitEntry->GetProductionTraits(iI);
 
-				if(pUnitEntry->GetSpecialUnitType() != NO_SPECIALUNIT)
+				if (pUnitEntry->GetSpecialUnitType() != NO_SPECIALUNIT)
 				{
-					CvSpecialUnitInfo* pkSpecialUnitInfo = GC.getSpecialUnitInfo((SpecialUnitTypes) pUnitEntry->GetSpecialUnitType());
-					if(pkSpecialUnitInfo)
+					CvSpecialUnitInfo* pkSpecialUnitInfo = GC.getSpecialUnitInfo((SpecialUnitTypes)pUnitEntry->GetSpecialUnitType());
+					if (pkSpecialUnitInfo)
 					{
 						iTempMod = pkSpecialUnitInfo->getProductionTraits(iI);
 						iMultiplier += iTempMod;
@@ -10315,7 +10364,108 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 			}
 		}
 	}
+#else // New Trait based ProdMod ArrayTables and integers.
+		int iNumTraits = GC.getNumTraitInfos();
+		CvPlayerTraits* pPlayerTraits = GetPlayerTraits();
+		for (int iI = 0; iI < iNumTraits; iI++)
+		{
+			if (pPlayerTraits->HasTrait((TraitTypes)iI))
+			{
+				// Military Mod
+				int iTraitMilitaryMod = pPlayerTraits->GetUnitProductionModifier();
+				if (pUnitEntry->IsMilitaryProduction())
+				{
+					if (iTraitMilitaryMod != 0)
+					{
+						iTempMod = iTraitMilitaryMod;
+						iMultiplier += iTempMod;
+						GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_MILITARY_PLAYER", iTempMod);
+					}
+				}
+				if (GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly() == false)
+				{
+					// Unit Class Mod
+					int iTraitUnitClassMod = pPlayerTraits->GetUnitClassProductionModifier((UnitClassTypes)pUnitEntry->GetUnitClassType());
+					if (pUnitEntry->GetUnitClassType() != NO_UNITCLASS && iTraitUnitClassMod != 0)
+					{
+						if (iTraitUnitClassMod != 0)
+						{
+							iTempMod = iTraitUnitClassMod;
+							iMultiplier += iTempMod;
+							GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_CLASS_TRAIT_PLAYER", iTempMod);
+						}
+					}
+					// Unit Combat Mod
+					int iTraitUnitCombatMod = pPlayerTraits->GetUnitCombatProductionModifier((UnitCombatTypes)pUnitEntry->GetUnitCombatType());
+					if (pUnitEntry->GetUnitCombatType() != NO_UNITCOMBAT && iTraitUnitCombatMod != 0)
+					{
+						if (iTraitUnitCombatMod != 0)
+						{
+							iTempMod = iTraitUnitCombatMod;
+							iMultiplier += iTempMod;
+							GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_COMBAT_CLASS_PLAYER", iTempMod);
+						}
+					}
+					// Unit Domain Mod
+					int iTraitUnitDomainMod = pPlayerTraits->GetUnitDomainProductionModifier((DomainTypes)pUnitEntry->GetDomainType());
+					if (pUnitEntry->GetDomainType() != NO_DOMAIN && iTraitUnitDomainMod != 0)
+					{
+						if (iTraitUnitDomainMod != 0)
+						{
+							iTempMod = iTraitUnitDomainMod;
+							iMultiplier += iTempMod;
+							GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_DOMAIN_TRAIT_PLAYER", iTempMod);
+						}
+					}
 
+					// Populate the Unit Class Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+					int iTraitUnitClassProdChange = pPlayerTraits->GetUnitClassProductionChange((UnitClassTypes)pUnitEntry->GetUnitClassType());
+					if (pUnitEntry->GetUnitClassType() != NO_UNITCLASS && iTraitUnitClassProdChange != 0)
+					{
+						if (iTraitUnitClassProdChange != 0)
+						{
+							iTempMod = iTraitUnitClassProdChange;
+							GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_UNIT_CLASS_TRAIT_PLAYER", iTempMod);
+						}
+					}
+					// Populate the Unit Combat Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+					int iTraitUnitCombatProdChange = pPlayerTraits->GetUnitCombatProductionChange((UnitCombatTypes)pUnitEntry->GetUnitCombatType());
+					if (pUnitEntry->GetUnitCombatType() != NO_UNITCOMBAT && iTraitUnitCombatProdChange != 0)
+					{
+						if (iTraitUnitCombatProdChange != 0)
+						{
+							iTempMod = iTraitUnitCombatProdChange;
+							GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_UNIT_COMBAT_TRAIT_PLAYER", iTempMod);
+						}
+					}
+					// Populate the Unit Domain Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+					int iTraitUnitDomainProdChange = pPlayerTraits->GetUnitDomainProductionChange((DomainTypes)pUnitEntry->GetDomainType());
+					if (pUnitEntry->GetDomainType() != NO_DOMAIN && iTraitUnitDomainProdChange != 0)
+					{
+						if (iTraitUnitDomainProdChange != 0)
+						{
+							iTempMod = iTraitUnitDomainProdChange;
+							GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_UNIT_DOMAIN_TRAIT_PLAYER", iTempMod);
+						}
+					}
+				}
+				// Hell if I know but it was here before I got here so it stays I guess. I suspect it's a Scenarios thing.
+				iMultiplier += pUnitEntry->GetProductionTraits(iI);
+
+				if (pUnitEntry->GetSpecialUnitType() != NO_SPECIALUNIT)
+				{
+					CvSpecialUnitInfo* pkSpecialUnitInfo = GC.getSpecialUnitInfo((SpecialUnitTypes)pUnitEntry->GetSpecialUnitType());
+					if (pkSpecialUnitInfo)
+					{
+						iTempMod = pkSpecialUnitInfo->getProductionTraits(iI);
+						iMultiplier += iTempMod;
+						GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_TRAIT", iTempMod);
+					}
+				}
+			}
+		}
+	}
+#endif
 	return iMultiplier;
 }
 
@@ -10382,6 +10532,14 @@ int CvPlayer::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSi
 	// Normal Building
 	else
 	{
+#ifdef TRAITIFY //BuildingProd Mod
+	if (GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly() == false)
+	{
+		iTempMod = GetPlayerTraits()->GetBuildingProductionModifier();
+		iMultiplier += iTempMod;
+		kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_TRAIT_PLAYER", iTempMod);
+	}
+#endif
 		iTempMod = m_pPlayerPolicies->GetNumericModifier(POLICYMOD_BUILDING_PRODUCTION_MODIFIER);
 		iMultiplier += iTempMod;
 		kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_POLICY_PLAYER", iTempMod);
@@ -10394,6 +10552,19 @@ int CvPlayer::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSi
 		iMultiplier += iTempMod;
 		kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_RELIGION_PLAYER", iTempMod);
 	}
+
+#ifdef TRAITIFY // Building ProdMod, for all non wonder buildings in all cities not just the capital.
+	if (GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly() == false)
+	{
+		// Populate the Tooltip with the Building Class Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+		int iBuildingClassProdChange = GetPlayerTraits()->GetBuildingClassProductionChange((BuildingClassTypes)pkBuildingInfo->GetBuildingClassType());
+		if (iBuildingClassProdChange != 0)
+		{
+			iTempMod = iBuildingClassProdChange;
+			kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_BUILDING_CLASS_TRAIT_PLAYER", iTempMod);
+		}
+	}
+#endif
 
 	return iMultiplier;
 }
@@ -11852,7 +12023,11 @@ int CvPlayer::specialistYield(SpecialistTypes eSpecialist, YieldTypes eYield) co
 #else
 	int iRtnValue = pkSpecialistInfo->getYieldChange(eYield) + getSpecialistExtraYield(eSpecialist, eYield) + GetPlayerTraits()->GetSpecialistYieldChange(eSpecialist, eYield) + GetPlayerTraits()->GetAnySpecificSpecialistYieldChange(eSpecialist, eYield);
 #endif
+#ifndef TRAITIFY // Allow SpecialistYield to be called with SPECIALIST_CITIZEN
 	if (eSpecialist != GC.getDEFAULT_SPECIALIST())
+#else
+	if (eSpecialist != NO_SPECIALIST)
+#endif
 	{
 		iRtnValue += getSpecialistExtraYield(eYield);
 	}
@@ -12084,7 +12259,11 @@ long CvPlayer::getRealPopulation() const
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetNewCityExtraPopulation() const
 {
+#ifndef TRAITIFY // Increase the Starting Population of Cities in this janky way since we cant use the same methods as Policies and Techs
 	return m_iNewCityExtraPopulation;
+#else
+	return m_iNewCityExtraPopulation + GetPlayerTraits()->GetExtraPopulationNewCities();
+#endif
 }
 
 //	--------------------------------------------------------------------------------
@@ -14445,15 +14624,27 @@ int CvPlayer::GetHappinessFromPolicies() const
 /// Returns the amount of Local Happiness generated in the cities
 int CvPlayer::GetHappinessFromCities() const
 {
+#ifndef TRAITIFY
 	int iHappiness = 0;
 
 	const CvCity* pLoopCity;
 	int iLoop;
-	for(pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	for (pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 	{
 		iHappiness += pLoopCity->GetLocalHappiness();
 	}
+#else
+	int iHappiness = 0;
 
+	const CvCity* pLoopCity;
+	int iLoop;
+	for (pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		iHappiness += pLoopCity->GetLocalHappiness();
+		// Burma UA
+		iHappiness += GetPlayerTraits()->GetLocalHappinessPerCity();
+	}
+#endif 
 	return iHappiness;
 }
 
@@ -14506,6 +14697,34 @@ int CvPlayer::GetHappinessFromBuildings() const
 			}
 		}
 	}
+#ifdef TRAITIFY // Global Happiness from Buildings as defined by Traits (Currently Macedonia)
+	// Trait Mods
+	int iTraitBuildingHappiness = 0;
+
+	// Loop through all Building Classes and check for Trait-based Global Happiness
+	for (int iI = 0; iI < GC.getNumBuildingClassInfos(); iI++)
+	{
+		BuildingClassTypes eBuildingClass = (BuildingClassTypes)iI;
+		CvBuildingClassInfo* pkBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+		if (!pkBuildingClassInfo)
+		{
+			continue;
+		}
+
+		int iTraitHappiness = GetPlayerTraits()->GetBuildingClassGlobalHappiness(eBuildingClass);
+
+		if (iTraitHappiness > 0)
+		{
+			BuildingTypes eBuilding = (BuildingTypes)getCivilizationInfo().getCivilizationBuildings(eBuildingClass);
+			if (eBuilding != NO_BUILDING)
+			{
+				iTraitBuildingHappiness += iTraitHappiness * countNumBuildings(eBuilding);
+			}
+		}
+	}
+
+	iHappiness += iTraitBuildingHappiness;
+#endif
 	iHappiness += iSpecialBuildingHappiness;
 
 	const CvCity* pLoopCity;
@@ -15158,7 +15377,7 @@ int CvPlayer::GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed, CvCit
 				int iTraitMod = GetPlayerTraits()->GetUnhappinessModifierForPuppets();
 				if (iTraitMod != 0) // Ensure the trait has a valid modifier
 				{
-					iUnhappinessFromThisCity *= (100 - iTraitMod);
+					iUnhappinessFromThisCity *= (100 + iTraitMod);
 					iUnhappinessFromThisCity /= 100;
 				}
 			}
@@ -15733,7 +15952,16 @@ int CvPlayer::GetExtraLeagueVotes() const
 // No need to make a change function since this just returns the value found in the trait entry and there is no method to gain more. I think.
 int CvPlayer::GetTraitExtraLeagueVotes() const
 {
-	return GetPlayerTraits()->GetNumExtraLeagueVotes();
+	return m_iTraitExtraVotes;
+}
+void CvPlayer::ChangeTraitExtraLeagueVotes(int iChange)
+{
+	m_iTraitExtraVotes += iChange;
+	CvAssert(m_iTraitExtraVotes >= 0);
+	if (m_iTraitExtraVotes < 0)
+	{
+		m_iTraitExtraVotes = 0;
+	}
 }
 #endif
 #ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Getter
@@ -15773,25 +16001,39 @@ void CvPlayer::ChangePolicyExtraLeagueVotes(int iChange)
 		m_iPolicyExtraVotes = 0;
 	}
 }
-void CvPlayer::DoConsulates() 
+// Apply Extra Votes based on Era
+void CvPlayer::DoConsulates()
 {
-if (GetPolicyExtraLeagueVotes() > 0)
-{
-	const EraTypes eRenaissanceEra = (EraTypes)GC.getInfoTypeForString("ERA_RENAISSANCE", true);
-	int iCurrentEra = GetCurrentEra();
+	// Retrieve the number of additional votes granted per era
+	int iVotesPerEra = GetPlayerPolicies()->GetNumericModifier(POLICYMOD_VOTE_INCREASE_PER_ERA);
 
-	// Ensure the current era is beyond the Renaissance era
-	if (iCurrentEra > eRenaissanceEra)
+	// Check if the policy provides additional votes per era
+	if (iVotesPerEra > 0)
 	{
-		int iEraDifference = iCurrentEra - eRenaissanceEra;
+		// Retrieve the starting era from which additional votes begin to accumulate
+		int iStartingEra = GetPlayerPolicies()->GetNumericModifier(POLICYMOD_VOTE_INCREASE_STARTING_ERA);
 
-		// Reset votes to the base value before adding in the Era votes.
-		SetPolicyExtraLeagueVotes(1);
+		// Retrieve the player's current era
+		int iCurrentEra = GetCurrentEra();
 
-		ChangePolicyExtraLeagueVotes(iEraDifference);
+		if (iCurrentEra > iStartingEra)
+		{
+			int iErasBeyond = iCurrentEra - iStartingEra;
+
+			int iAdditionalVotes = iErasBeyond * iVotesPerEra;
+			// Set to 1 to keep the Consulate Vote
+			SetPolicyExtraLeagueVotes(1);
+
+			// Add the additional votes based on eras surpassed
+			ChangePolicyExtraLeagueVotes(iAdditionalVotes);
+		}
+		else
+		{
+			SetPolicyExtraLeagueVotes(1);
+		}
 	}
 }
-}
+
 #endif
 
 //	--------------------------------------------------------------------------------
@@ -15805,7 +16047,79 @@ void CvPlayer::ChangeExtraLeagueVotes(int iChange)
 		m_iExtraLeagueVotes = 0;
 	}
 }
+#ifdef TRAITIFY // Cuban Yield Steal. Again.
+//	--------------------------------------------------------------------------------
+/// Get the amount of X Yield per X Yield in other capitals
+int CvPlayer::GetCapitalYieldPerXForeignCapitalYield(YieldTypes eYieldType) const
+{
+	const CvCity* pCapital = getCapitalCity();
+	if (!pCapital)
+		return 0;
 
+	int iTotalForeignYield = 0;
+	int iYieldRatio = GetPlayerTraits()->GetCapitalYieldPerXForeignCapitalYield(eYieldType);
+
+	if (iYieldRatio <= 0)
+		return 0; // Avoid division by zero or negative values
+
+	// Loop through all major civilizations
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		if (GetID() == i)
+			continue; // Skip self
+
+		const CvPlayer& kOtherPlayer = GET_PLAYER((PlayerTypes)i);
+
+		if (kOtherPlayer.isAlive() && kOtherPlayer.getCapitalCity() != NULL)
+		{
+			const CvCity* pOtherCapital = kOtherPlayer.getCapitalCity();
+
+			// Check if they have met the current player
+			if (GET_TEAM(getTeam()).isHasMet(kOtherPlayer.getTeam()))
+			{
+				int iOtherYield = 0;
+
+				// Retrieve the correct base yield from the capital
+				switch (eYieldType)
+				{
+				case YIELD_CULTURE:
+					iOtherYield = pOtherCapital->GetBaseJONSCulturePerTurn();
+					break;
+				case YIELD_FAITH:
+					iOtherYield = pOtherCapital->GetFaithPerTurn();
+					break;
+				default:
+					iOtherYield = pOtherCapital->getBaseYieldRate(eYieldType);
+					break;
+				}
+
+				iTotalForeignYield += iOtherYield;
+			}
+		}
+	}
+
+	// Convert foreign yield into capital yield
+	int iCapitalYieldFinal = iTotalForeignYield / iYieldRatio;
+	return iCapitalYieldFinal;
+}
+// --------------------------------------------------------------------------------
+/// Apply the Cuban Yield Steal
+void CvPlayer::ApplyCapitalYieldFromForeignCapitals()
+{
+	CvCity* pCapital = getCapitalCity();
+	if (!pCapital)
+		return;
+
+	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+	{
+		YieldTypes eYieldType = (YieldTypes)iYield;
+		int iBonusYield = GetCapitalYieldPerXForeignCapitalYield(eYieldType);
+
+		// Store the new yield in StolenYield
+		pCapital->SetStolenYieldRate(eYieldType, iBonusYield);
+	}
+}
+#endif
 //	--------------------------------------------------------------------------------
 /// How much weaker do Units get when wounded?
 int CvPlayer::GetWoundedUnitDamageMod() const
@@ -16023,55 +16337,6 @@ void CvPlayer::doAdoptPolicy(PolicyTypes ePolicy)
 	{
 		GC.GetEngineUserInterface()->setDirty(Policies_DIRTY_BIT, true);
 	}
-
-#ifdef TRAITIFY // Italy UA 
-	if (GetPlayerTraits()->IsExpandedGoldenAge())
-	{
-		CvPolicyEntry* pPolicyInfo = GC.getPolicyInfo(ePolicy);
-		if (!pPolicyInfo) return;
-
-		PolicyBranchTypes eBranch = (PolicyBranchTypes)pPolicyInfo->GetPolicyBranchType();
-
-		
-		if (eBranch != NO_POLICY_BRANCH_TYPE && GetPlayerPolicies()->IsPolicyBranchFinished(eBranch))
-		{
-			
-			int iSpeedModifier = GC.getGame().getGameSpeedInfo().getGoldenAgePercent();
-
-			// Perform scaling in float, then convert to int for floating text
-			float fGoldenAgePointGrant = (GetPlayerTraits()->GetGivenGoldenAgePointsOnPolicy() * iSpeedModifier) / 100.0f;
-			int iGoldenAgePointGrant = static_cast<int>(fGoldenAgePointGrant);
-
-			int iGoldenAgeTurnChange = (GetPlayerTraits()->GetExtendGoldenAgeOnPolicy() * iSpeedModifier) / 100;
-
-			// Get capital city for later
-			CvCity* pCapital = getCapitalCity();
-			if (pCapital && pCapital->plot())
-			{
-				if (pCapital->plot()->GetActiveFogOfWarMode() == FOGOFWARMODE_OFF)
-				{
-					char text[256];
-
-					// If already in a Golden Age, extend it
-					if (isGoldenAge())
-					{
-						changeGoldenAgeTurns(iGoldenAgeTurnChange);
-						sprintf_s(text, "[ICON_GOLDEN_AGE] [COLOR_GREEN]+%d[ENDCOLOR] [ICON_GOLDEN_AGE]", iGoldenAgeTurnChange);
-					}
-					else // Otherwise, grant Golden Age Points
-					{
-						ChangeGoldenAgeProgressMeter(iGoldenAgePointGrant);
-						sprintf_s(text, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_GOLDEN_AGE]", iGoldenAgePointGrant);
-					}
-
-					// Display floating text over the capital
-					float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
-					GC.GetEngineUserInterface()->AddPopupText(pCapital->getX(), pCapital->getY(), text, fDelay);
-				}
-			}
-		}
-	}
-#endif
 
 
 
@@ -17091,6 +17356,9 @@ void CvPlayer::DoGreatPersonExpended(UnitTypes eGreatPersonUnit)
 	}
 
 #endif
+#ifdef TRAITIFY
+	SetLastGreatPersonExpended(eGreatPersonUnit);
+#endif
 
 	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
 	if (pkScriptSystem)
@@ -17115,7 +17383,19 @@ void CvPlayer::ChangeGreatPersonExpendGold(int ichange)
 {
 	m_iGreatPersonExpendGold += ichange;
 }
+#ifdef TRAITIFY
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetLastGreatPersonExpended() const
+{
+	return m_iLastGreatPersonExpended;
+}
 
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetLastGreatPersonExpended(int iValue)
+{
+	m_iLastGreatPersonExpended = iValue;
+}
+#endif
 //	--------------------------------------------------------------------------------
 void CvPlayer::recomputeGreatPeopleModifiers()
 {
@@ -17628,6 +17908,19 @@ void CvPlayer::changeMaxPlayerBuildingProductionModifier(int iChange)
 	m_iMaxPlayerBuildingProductionModifier = (m_iMaxPlayerBuildingProductionModifier + iChange);
 }
 
+#ifdef TRAITIFY
+//	--------------------------------------------------------------------------------
+int CvPlayer::getNormalBuildingProductionModifier() const
+{
+	return m_iNormalBuildingProductionModifier;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::changeNormalBuildingProductionModifier(int iChange)
+{
+	m_iNormalBuildingProductionModifier = (m_iNormalBuildingProductionModifier + iChange);
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 int CvPlayer::getFreeExperience() const
@@ -26776,38 +27069,6 @@ void CvPlayer::DoReformationNotification()
 	}
 }
 #endif
-#ifdef TRAITIFY  //ApplyFreshWaterToCityPlots
-void CvPlayer::ApplyFreshWaterToCityPlots(CvCity* pCity, bool bGrantFreshWater)
-{
-	if (!pCity || !GetPlayerTraits()->IsGiveFreshWaterAroundCities())
-		return;
-
-	// Iterate over all adjacent plots
-	for (int i = 0; i < NUM_CITY_PLOTS; i++)
-	{
-		CvPlot* pPlot = plotCity(pCity->getX(), pCity->getY(), i);
-
-		// Ensure plot is valid and is not a water tile
-		if (pPlot && !pPlot->isWater())
-		{
-			// If granting fresh water, apply only to player-owned plots
-			if (bGrantFreshWater)
-			{
-				if (pPlot->getOwner() == GetID())
-				{
-					pPlot->setFreshWater(true);
-				}
-			}
-			else
-			{
-				// Remove fresh water from all plots when the player loses the city
-				pPlot->setFreshWater(false);
-			}
-		}
-	}
-}
-#endif
-
 //	--------------------------------------------------------------------------------
 /// If we should see where the locations of all current Barb Camps are, do it
 void CvPlayer::doUpdateBarbarianCampVisibility()
@@ -27110,6 +27371,9 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_bMayaBoostArtists;
 	kStream >> m_bMayaBoostMusicians;
 #endif
+#ifdef TRAITIFY
+	kStream >> m_iTraitExtraVotes;
+#endif
 	if (uiVersion >= 14)
 	{
 		kStream >> m_iExtraLeagueVotes;
@@ -27215,6 +27479,10 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iMaxGlobalBuildingProductionModifier;
 	kStream >> m_iMaxTeamBuildingProductionModifier;
 	kStream >> m_iMaxPlayerBuildingProductionModifier;
+#ifdef TRAITIFY
+	kStream >> m_iLastGreatPersonExpended;
+	kStream >> m_iNormalBuildingProductionModifier;
+#endif
 	kStream >> m_iFreeExperience;
 	kStream >> m_iFreeExperienceFromBldgs;
 	kStream >> m_iFreeExperienceFromMinors;
@@ -27782,6 +28050,9 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_bMayaBoostArtists;
 	kStream << m_bMayaBoostMusicians;
 #endif
+#ifdef TRAITIFY
+	kStream << m_iTraitExtraVotes;
+#endif
 	kStream << m_iExtraLeagueVotes;
 #ifdef GLOBALIZATION_IS_USEFUL_MAYBE //Write
 	kStream << m_iTechExtraVotes;
@@ -27858,6 +28129,10 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iMaxGlobalBuildingProductionModifier;
 	kStream << m_iMaxTeamBuildingProductionModifier;
 	kStream << m_iMaxPlayerBuildingProductionModifier;
+#ifdef TRAITIFY
+	kStream << m_iLastGreatPersonExpended;
+	kStream << m_iNormalBuildingProductionModifier;
+#endif
 	kStream << m_iFreeExperience;
 	kStream << m_iFreeExperienceFromBldgs;
 	kStream << m_iFreeExperienceFromMinors;

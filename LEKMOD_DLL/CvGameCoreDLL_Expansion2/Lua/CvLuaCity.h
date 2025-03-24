@@ -368,7 +368,10 @@ protected:
 
 	static int lGetBaseYieldRateFromTerrain(lua_State* L);
 	static int lChangeBaseYieldRateFromTerrain(lua_State* L);
-
+#ifdef TRAITIFY // Lua export for Cuban Yield Trait effect
+	static int lGetStolenYieldRate(lua_State* L);
+	static int lSetStolenYieldRate(lua_State* L);
+#endif
 	static int lGetBaseYieldRateFromBuildings(lua_State* L);
 	static int lChangeBaseYieldRateFromBuildings(lua_State* L);
 

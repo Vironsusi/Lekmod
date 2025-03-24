@@ -77,6 +77,14 @@ CvTraitEntry::CvTraitEntry() :
 	m_eObsoleteEra(NO_ERA),
 	m_eRequiredIdeology(NO_POLICY_BRANCH_TYPE),
 	m_bAnyIdeology(false),
+	m_bFreshWaterOnlyImprovementChange(false),
+	m_bNonFreshWaterOnlyImprovementChange(false),
+	m_bYieldOnSettleToCapital(false),
+	m_bYieldOnConquestToCapital(false),
+	m_bNaturalWonderRewardToCapital(false),
+	m_bHalfMoreSpecialistUnhappiness(false),
+	m_bHalfSpecialistUnhappiness(false),
+	m_bProductionModsandChangesAreCapitalOnly(false),
 
 	m_iGoldenAgeCultureModifier(0),
 	m_iGoldenAgePointBurstOnCapture(0),
@@ -96,32 +104,18 @@ CvTraitEntry::CvTraitEntry() :
 	m_iInternalTradeRouteYieldModifier(0),
 	m_iInternalTradeRouteGoldChange(0),
 	m_iCapitalGreatPersonRateModifier(0),
-	m_iWonderGoldReward(0),
-	m_iWeLoveTheKingDayCount(0),
 	m_iForeignReligiousPressure(0),
-	m_iGoldFromTradeGuards(0),
-	m_iXPFromTradeGuards(0),
-	m_bNoBuyFaithBuilding(false),
-	m_bNoBuyFaithUnit(false),
-	m_iNoBuyProductionPercent(0),
 	m_iIdeologyUnhappinessModifier(0),
 	m_iFreeIdeologicalTenets(0),
-	m_bAutoConvertReligionOnFound(false),
-	m_bFreeCourthouse(false),
 	m_iUnhappinessModifierForPuppets(0),
-	m_bExpandedGoldenAge(false),
-	m_iExtendGoldenAgeOnPolicy(0),
-	m_fGivenGoldenAgePointsOnPolicy(0),
-	m_bGiveFreshWaterAroundCities(false),
 	m_iExtraPopulationNewCities(0),
-	m_iExtraPopulationCityCount(0),
 	m_iGoldBurstOnFound(0),
-	m_bFreshWaterOnlyImprovementChange(false),
-	m_bNonFreshWaterOnlyImprovementChange(false),
 	m_iPuppetGoldModifier(0),
 	m_iPuppetScienceModifier(0),
 	m_iPuppetProductionModifier(0),
 	m_iInternationalRouteGrowthModifier(0),
+	m_iNaturalWonderFinderRewardChange(0),
+	m_iLocalHappinessPerCity(0),
 #endif
 
 	//EAP: Natural wonder faith for the finder
@@ -219,13 +213,36 @@ CvTraitEntry::CvTraitEntry() :
 	m_ppiSpecialistYieldChanges(NULL),
 #ifdef TRAITIFY //Array init
 	m_piCityYieldChange(NULL),
+	m_piPuppetYieldModifiers(NULL),
 	m_piGreatWorkYieldChange(NULL),
-	m_ppaiBuildingClassRequiredTerrainRemoval(NULL),
+	m_piCityConnectionYieldChange(NULL),
+	m_piCapitalConnectionYieldChange(NULL),
+	m_piCapitalYieldPerXForeignCapitalYield(NULL),
+	m_piYieldOnSettle(NULL),
+	m_piYieldOnConquest(NULL),
+	m_piNaturalWonderFinderReward(NULL),
+	m_ppiFeatureYieldChanges(NULL),
+	m_paiSpecialistHappinessChanges(NULL),
 	m_ppaiTerrainYieldChange(NULL),
 	m_ppaiResourceYieldChange(NULL),
+	m_ppaiUnitClassForcedCapitalSpawn(NULL),
+	//Unit ProdChanges
+	m_paiUnitClassProductionChanges(NULL),
+	m_paiUnitCombatProductionChanges(NULL),
+	m_paiDomainProductionChanges(NULL),
+	//Unit ProdMods
+	m_paiUnitClassProductionModifiers(NULL),
+	m_paiUnitCombatProductionModifiers(NULL),
+	m_paiDomainProductionModifiers(NULL),
+	// BuildingClass Stuff
+	m_ppiBuildingClassYieldChanges(NULL),
+	m_ppiBuildingClassYieldModifiers(NULL),
+	m_ppaiBuildingClassRequiredTerrainRemoval(NULL),
 	m_paiBuildingClassProductionModifiers(NULL),
+	m_paiBuildingClassProductionChanges(NULL),
 	m_paiBuildingClassHappiness(NULL),
-	m_ppiFeatureYieldChanges(NULL),
+	m_paiBuildingClassGlobalHappiness(NULL),
+	m_ppiBuildingCostOverride(NULL),
 #endif
 #ifdef LEK_TRAIT_SPECIALIST_YIELD_MAX_ONE
 	m_ppiAnySpecificSpecialistYieldChanges(NULL),
@@ -247,13 +264,36 @@ CvTraitEntry::~CvTraitEntry()
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiSpecialistYieldChanges);
 #ifdef TRAITIFY //SafeDeleteArray
 	SAFE_DELETE_ARRAY(m_piCityYieldChange);
+	SAFE_DELETE_ARRAY(m_piPuppetYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
-	SAFE_DELETE_ARRAY(m_ppaiBuildingClassRequiredTerrainRemoval);
+	SAFE_DELETE_ARRAY(m_piCityConnectionYieldChange);
+	SAFE_DELETE_ARRAY(m_piCapitalConnectionYieldChange);
+	SAFE_DELETE_ARRAY(m_piCapitalYieldPerXForeignCapitalYield);
+	SAFE_DELETE_ARRAY(m_piYieldOnSettle);
+	SAFE_DELETE_ARRAY(m_piYieldOnConquest);
+	SAFE_DELETE_ARRAY(m_piNaturalWonderFinderReward);
+	SAFE_DELETE_ARRAY(m_paiSpecialistHappinessChanges);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiFeatureYieldChanges);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiTerrainYieldChange);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiResourceYieldChange);
+	SAFE_DELETE_ARRAY(m_ppaiUnitClassForcedCapitalSpawn);
+	//Unit ProdChanges
+	SAFE_DELETE_ARRAY(m_paiUnitClassProductionChanges);
+	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionChanges);
+	SAFE_DELETE_ARRAY(m_paiDomainProductionChanges);
+	//Unit ProdMods
+	SAFE_DELETE_ARRAY(m_paiUnitClassProductionModifiers);
+	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionModifiers);
+	SAFE_DELETE_ARRAY(m_paiDomainProductionModifiers);
+	// BuildingClass Stuff
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldChanges);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldModifiers);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingCostOverride);
+	SAFE_DELETE_ARRAY(m_ppaiBuildingClassRequiredTerrainRemoval);
 	SAFE_DELETE_ARRAY(m_paiBuildingClassProductionModifiers);
+	SAFE_DELETE_ARRAY(m_paiBuildingClassProductionChanges);
 	SAFE_DELETE_ARRAY(m_paiBuildingClassHappiness);
-	CvDatabaseUtility::SafeDelete2DArray(m_ppiFeatureYieldChanges);
+	SAFE_DELETE_ARRAY(m_paiBuildingClassGlobalHappiness);
 #endif
 #ifdef LEK_TRAIT_SPECIALIST_YIELD_MAX_ONE
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiAnySpecificSpecialistYieldChanges);
@@ -566,6 +606,54 @@ bool CvTraitEntry::IsAnyIdeology() const
 	return m_bAnyIdeology;
 }
 
+/// Accessor:: Does this Trait send the Yields from finding a Natural Wonder to the Capital?
+bool CvTraitEntry::IsNaturalWonderRewardToCapital() const
+{
+	return m_bNaturalWonderRewardToCapital;
+}
+
+/// Accessor:: Does this Trait increase Specialist Unhappiness by half?
+bool CvTraitEntry::IsHalfMoreSpecialistUnhappiness() const
+{
+	return m_bHalfMoreSpecialistUnhappiness;
+}
+
+/// Accessor:: Does this Trait decrease Specialist Unhappiness by half?
+bool CvTraitEntry::IsHalfSpecialistUnhappiness() const
+{
+	return m_bHalfSpecialistUnhappiness;
+}
+
+/// Accessor:: Are Production Mods and Changes Capital Only?
+bool CvTraitEntry::IsProductionModsandChangesAreCapitalOnly() const
+{
+	return m_bProductionModsandChangesAreCapitalOnly;
+}
+
+/// Accessor:: Fresh Water Only Improvement Change
+bool CvTraitEntry::IsFreshWaterOnlyImprovementChange() const
+{
+	return m_bFreshWaterOnlyImprovementChange;
+}
+
+/// Accessor:: Non-Fresh Water Only Improvement Change
+bool CvTraitEntry::IsNonFreshWaterOnlyImprovementChange() const
+{
+	return m_bNonFreshWaterOnlyImprovementChange;
+}
+
+/// Accessor:: Yield on Settle to Capital
+bool CvTraitEntry::IsYieldOnSettleToCapital() const
+{
+	return m_bYieldOnSettleToCapital;
+}
+
+/// Accessor:: Yield on Conquest to Capital
+bool CvTraitEntry::IsYieldOnConquestToCapital() const
+{
+	return m_bYieldOnConquestToCapital;
+}
+
 /// Accessor:: Enhanced Culture Modifier during Golden Ages
 int CvTraitEntry::GetGoldenAgeCultureModifier() const
 {
@@ -680,52 +768,10 @@ int CvTraitEntry::GetCapitalGreatPersonRateModifier() const
 	return m_iCapitalGreatPersonRateModifier;
 }
 
-/// Accessor:: Gold Reward for Completing a World Wonder
-int CvTraitEntry::GetWonderGoldReward() const
-{
-	return m_iWonderGoldReward;
-}
-
-/// Accessor:: Number of turns for We Love the King Day for Completing a World Wonder
-int CvTraitEntry::GetWeLoveTheKingDayCount() const
-{
-	return m_iWeLoveTheKingDayCount;
-}
-
 /// Accessor:: Foreign Religious Pressure
 int CvTraitEntry::GetForeignReligiousPressure() const
 {
 	return m_iForeignReligiousPressure;
-}
-
-/// Accessor:: Gold from Military Units on Trade Routes
-int CvTraitEntry::GetGoldFromTradeGuards() const
-{
-	return m_iGoldFromTradeGuards;
-}
-
-/// Accessor:: XP from Military Units on Trade Routes
-int CvTraitEntry::GetXPFromTradeGuards() const
-{
-	return m_iXPFromTradeGuards;
-}
-
-/// Accessor:: Can't buy Faith Buildings
-bool CvTraitEntry::IsNoBuyFaithBuilding() const
-{
-	return m_bNoBuyFaithBuilding;
-}
-
-/// Accessor:: Can't buy Faith Units
-bool CvTraitEntry::IsNoBuyFaithUnit() const
-{
-	return m_bNoBuyFaithUnit;
-}
-
-/// Accessor:: Percent of the Faith cost as Production for Faith NoBuys 
-int CvTraitEntry::GetNoBuyProductionPercent() const
-{
-	return m_iNoBuyProductionPercent;
 }
 
 /// Accessor:: Unhappiness% from Ideologies
@@ -740,46 +786,10 @@ int CvTraitEntry::GetFreeIdeologicalTenets() const
 	return m_iFreeIdeologicalTenets;
 }
 
-/// Accessor:: Automatically convert all cities to the players religion on founding a religion
-bool CvTraitEntry::IsAutoConvertReligionOnFound() const
-{
-	return m_bAutoConvertReligionOnFound;
-}
-
-/// Accessor:: Free Courthouse in Occupied Cities following your Religion
-bool CvTraitEntry::IsFreeCourthouse() const
-{
-	return m_bFreeCourthouse;
-}
-
 /// Accessor:: Unhappiness from Puppets
 int CvTraitEntry::GetUnhappinessModifierForPuppets() const
 {
 	return m_iUnhappinessModifierForPuppets;
-}
-
-/// Accessor:: Perform Italian UA?
-bool CvTraitEntry::IsExpandedGoldenAge() const
-{
-	return m_bExpandedGoldenAge;
-}
-
-/// Accessor:: Turns added to Golden Ages from Policies
-int CvTraitEntry::GetExtendGoldenAgeOnPolicy() const
-{
-	return m_iExtendGoldenAgeOnPolicy;
-}
-
-/// Accessor:: Golden Age Points from Policies
-int CvTraitEntry::GetGivenGoldenAgePointsOnPolicy() const
-{
-	return m_fGivenGoldenAgePointsOnPolicy;
-}
-
-/// Accessor:: Fresh Water around Cities
-bool CvTraitEntry::IsGiveFreshWaterAroundCities() const
-{
-	return m_bGiveFreshWaterAroundCities;
 }
 
 /// Accessor:: Extra Population in New Cities
@@ -788,28 +798,10 @@ int CvTraitEntry::GetExtraPopulationNewCities() const
 	return m_iExtraPopulationNewCities;
 }
 
-/// Accessor:: Extra Population in New Cities to a limit
-int CvTraitEntry::GetExtraPopulationCityCount() const
-{
-	return m_iExtraPopulationCityCount;
-}
-
 /// Accessor:: Gold Burst on Founding a City
 int CvTraitEntry::GetGoldBurstOnFound() const
 {
 	return m_iGoldBurstOnFound;
-}
-
-/// Accessor:: Fresh Water Only Improvement Change
-bool CvTraitEntry::IsFreshWaterOnlyImprovementChange() const
-{
-	return m_bFreshWaterOnlyImprovementChange;
-}
-
-/// Accessor:: Non-Fresh Water Only Improvement Change
-bool CvTraitEntry::IsNonFreshWaterOnlyImprovementChange() const
-{
-	return m_bNonFreshWaterOnlyImprovementChange;
 }
 
 /// Accessor:: Puppet Gold Modifier
@@ -834,6 +826,18 @@ int CvTraitEntry::GetPuppetProductionModifier() const
 int CvTraitEntry::GetInternationalRouteGrowthModifier() const
 {
 	return m_iInternationalRouteGrowthModifier;
+}
+
+/// Accessor:: Get Reward Change for finding Subsequent Natural Wonders
+int CvTraitEntry::GetNaturalWonderFinderRewardChange() const
+{
+	return m_iNaturalWonderFinderRewardChange;
+}
+
+/// Accessor:: Local Happiness per City
+int CvTraitEntry::GetLocalHappinessPerCity() const
+{
+	return m_iLocalHappinessPerCity;
 }
 #endif
 
@@ -1304,6 +1308,41 @@ int CvTraitEntry::GetCityYieldChange(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piCityYieldChange ? m_piCityYieldChange[i] : -1;
 }
+// Puppet City Yield Modifiers
+int CvTraitEntry::GetPuppetYieldModifiers(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piPuppetYieldModifiers ? m_piPuppetYieldModifiers[i] : -1;
+}
+// Yield on Settle
+int CvTraitEntry::GetYieldOnSettle(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piYieldOnSettle ? m_piYieldOnSettle[i] : -1;
+}
+// Yield on Conquest
+int CvTraitEntry::GetYieldOnConquest(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piYieldOnConquest ? m_piYieldOnConquest[i] : -1;
+}
+// Natural Wonder Finder Reward
+int CvTraitEntry::GetNaturalWonderFinderReward(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piNaturalWonderFinderReward ? m_piNaturalWonderFinderReward[i] : -1;
+}
+// Capital Yield Steal
+int CvTraitEntry::GetCapitalYieldPerXForeignCapitalYield(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piCapitalYieldPerXForeignCapitalYield ? m_piCapitalYieldPerXForeignCapitalYield[i] : -1;
+}
 // Great Work Yield Change from Traits
 int CvTraitEntry::GetGreatWorkYieldChange(int i) const
 {
@@ -1312,9 +1351,14 @@ int CvTraitEntry::GetGreatWorkYieldChange(int i) const
 	return m_piGreatWorkYieldChange ? m_piGreatWorkYieldChange[i] : -1;
 }
 // Remove Terrain Requirement
-bool CvTraitEntry::IsBuildingClassTerrainRemoval(int iTrait, int iBuildingClass) const
+bool CvTraitEntry::IsBuildingClassRequiredTerrainRemoval(int iTrait, int iBuildingClass) const
 {
 	return (m_ppaiBuildingClassRequiredTerrainRemoval != NULL && m_ppaiBuildingClassRequiredTerrainRemoval[iTrait][iBuildingClass] == 1);
+}
+// Make Defined UnitClasses spawn in the Capital when given by traits
+bool CvTraitEntry::IsUnitClassForcedCapitalSpawn(int iTrait, int iUnitClass) const
+{
+	return (m_ppaiUnitClassForcedCapitalSpawn != NULL && m_ppaiUnitClassForcedCapitalSpawn[iTrait][iUnitClass] == 1);
 }
 /// Change to Terrain yield by type
 int CvTraitEntry::GetTerrainYieldChange(int i, int j) const
@@ -1334,17 +1378,94 @@ int CvTraitEntry::GetResourceYieldChange(int i, int j) const
 	CvAssertMsg(j > -1, "Index out of bounds");
 	return m_ppaiResourceYieldChange ? m_ppaiResourceYieldChange[i][j] : -1;
 }
+/// Change Happiness from Specialist by a Static Amount
+int CvTraitEntry::GetSpecialistHappinessChanges(int i) const
+{
+	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiSpecialistHappinessChanges ? m_paiSpecialistHappinessChanges[i] : -1;
+}
+int CvTraitEntry::GetUnitClassProductionChange(int i) const
+{
+	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiUnitClassProductionChanges ? m_paiUnitClassProductionChanges[i] : -1;
+}
+int CvTraitEntry::GetUnitCombatProductionChange(int i) const
+{
+	CvAssertMsg(i < GC.getNumUnitCombatInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiUnitCombatProductionChanges ? m_paiUnitCombatProductionChanges[i] : -1;
+}
+int CvTraitEntry::GetUnitDomainProductionChange(int i) const
+{
+	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiDomainProductionChanges ? m_paiDomainProductionChanges[i] : -1;
+}
+int CvTraitEntry::GetUnitClassProductionModifier(int i) const
+{
+	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiUnitClassProductionModifiers ? m_paiUnitClassProductionModifiers[i] : -1;
+}
+int CvTraitEntry::GetUnitCombatProductionModifier(int i) const
+{
+	CvAssertMsg(i < GC.getNumUnitCombatInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiUnitCombatProductionModifiers ? m_paiUnitCombatProductionModifiers[i] : -1;
+}
+int CvTraitEntry::GetUnitDomainProductionModifier(int i) const
+{
+	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiDomainProductionModifiers ? m_paiDomainProductionModifiers[i] : -1;
+}
 int CvTraitEntry::GetBuildingClassProductionModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_paiBuildingClassProductionModifiers[i];
 }
+int CvTraitEntry::GetBuildingClassProductionChange(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiBuildingClassProductionChanges[i];
+}
 int CvTraitEntry::GetBuildingClassHappiness(int i) const
 {
 	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_paiBuildingClassHappiness ? m_paiBuildingClassHappiness[i] : -1;
+}
+int CvTraitEntry::GetBuildingClassGlobalHappiness(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_paiBuildingClassGlobalHappiness ? m_paiBuildingClassGlobalHappiness[i] : -1;
+}
+int CvTraitEntry::GetBuildingCostOverride(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumBuildingInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiBuildingCostOverride[i][j];
+}
+
+int CvTraitEntry::GetCityConnectionYieldChanges(int i, bool bCapitalOnly) const
+{
+	CvAssertMsg(i >= 0 && i < NUM_YIELD_TYPES, "Yield index out of bounds!");
+
+	if (bCapitalOnly)
+	{
+		return (m_piCapitalConnectionYieldChange ? m_piCapitalConnectionYieldChange[i] : 0);
+	}
+	else
+	{
+		return (m_piCityConnectionYieldChange ? m_piCityConnectionYieldChange[i] : 0);
+	}
 }
 
 int CvTraitEntry::GetBuildingClassYieldChanges(int i, int j) const
@@ -1353,7 +1474,7 @@ int CvTraitEntry::GetBuildingClassYieldChanges(int i, int j) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
 	CvAssertMsg(j > -1, "Index out of bounds");
-	return m_ppiBuildingClassYieldModifiers[i][j];
+	return m_ppiBuildingClassYieldChanges[i][j];
 }
 int CvTraitEntry::GetBuildingClassYieldModifiers(int i, int j) const
 {
@@ -1684,8 +1805,17 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iNaturalWonderSubsequentFinderGold    = kResults.GetInt("NaturalWonderSubsequentFinderGold");
 
 #ifdef TRAITIFY //CacheResults for new traits
-	m_bAnyIdeology							= kResults.GetBool("AnyIdeology");
-
+	// bools
+	m_bAnyIdeology								= kResults.GetBool("AnyIdeology");
+	m_bFreshWaterOnlyImprovementChange			= kResults.GetBool("FreshWaterOnlyImprovementChange");
+	m_bNonFreshWaterOnlyImprovementChange		= kResults.GetBool("NonFreshWaterOnlyImprovementChange");
+	m_bYieldOnSettleToCapital					= kResults.GetBool("YieldOnSettleToCapital");
+	m_bYieldOnConquestToCapital					= kResults.GetBool("YieldOnConquestToCapital");
+	m_bNaturalWonderRewardToCapital				= kResults.GetBool("NaturalWonderRewardToCapital");
+	m_bHalfMoreSpecialistUnhappiness			= kResults.GetBool("HalfMoreSpecialistUnhappiness");
+	m_bHalfSpecialistUnhappiness				= kResults.GetBool("HalfSpecialistUnhappiness");
+	m_bProductionModsandChangesAreCapitalOnly	= kResults.GetBool("ProductionModsandChangesAreCapitalOnly");
+	// ints
 	m_iGoldenAgeCultureModifier				= kResults.GetInt("GoldenAgeCultureModifier");
 	m_iGoldenAgePointBurstOnCapture			= kResults.GetInt("GoldenAgePointBurstOnCapture");
 	m_iGreatEngineerRateModifier			= kResults.GetInt("GreatEngineerRateModifier");
@@ -1700,37 +1830,23 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iMinorBullyModifier					= kResults.GetInt("MinorBullyModifier");
 	m_iBuildingProductionModifier			= kResults.GetInt("BuildingProductionModifier");
 	m_iCapitalBuildingProductionModifier	= kResults.GetInt("CapitalBuildingProductionModifier");
-	m_iUnitProductionModifier				= kResults.GetInt("UnitProductionModifier");
-	m_iCapitalUnitProductionModifier		= kResults.GetInt("CapitalUnitProductionModifier");
+	m_iUnitProductionModifier				= kResults.GetInt("MilitaryUnitProductionModifier");
+	m_iCapitalUnitProductionModifier		= kResults.GetInt("CapitalMilitaryUnitProductionModifier");
 	m_iInternalTradeRouteYieldModifier		= kResults.GetInt("InternalTradeRouteYieldModifier");
 	m_iInternalTradeRouteGoldChange			= kResults.GetInt("InternalTradeRouteGoldChange");
 	m_iCapitalGreatPersonRateModifier		= kResults.GetInt("CapitalGreatPersonRateModifier");
-	m_iWonderGoldReward						= kResults.GetInt("WonderGoldReward");
-	m_iWeLoveTheKingDayCount				= kResults.GetInt("WeLoveTheKingDayCount");
 	m_iForeignReligiousPressure				= kResults.GetInt("ForeignReligiousPressure");
-	m_iGoldFromTradeGuards					= kResults.GetInt("GoldFromTradeGuards");
-	m_iXPFromTradeGuards					= kResults.GetInt("XPFromTradeGuards");
-	m_bNoBuyFaithBuilding					= kResults.GetBool("NoBuyFaithBuilding");
-	m_bNoBuyFaithUnit						= kResults.GetBool("NoBuyFaithUnit");
-	m_iNoBuyProductionPercent				= kResults.GetInt("NoBuyProductionPercent");
 	m_iIdeologyUnhappinessModifier			= kResults.GetInt("IdeologyUnhappinessModifier");
 	m_iFreeIdeologicalTenets				= kResults.GetInt("FreeIdeologicalTenets");
-	m_bAutoConvertReligionOnFound			= kResults.GetBool("AutoConvertReligionOnFound");
-	m_bFreeCourthouse						= kResults.GetBool("FreeCourthouse");
 	m_iUnhappinessModifierForPuppets		= kResults.GetInt("UnhappinessModifierForPuppets");
-	m_bExpandedGoldenAge					= kResults.GetBool("ExpandedGoldenAge");
-	m_fGivenGoldenAgePointsOnPolicy			= kResults.GetFloat("GivenGoldenAgePointsOnPolicy");
-	m_iExtendGoldenAgeOnPolicy				= kResults.GetInt("ExtendGoldenAgeOnPolicy");
-	m_bGiveFreshWaterAroundCities			= kResults.GetBool("GiveFreshWaterAroundCities");
 	m_iExtraPopulationNewCities				= kResults.GetInt("ExtraPopulationNewCities");
-	m_iExtraPopulationCityCount				= kResults.GetInt("ExtraPopulationCityCount");
 	m_iGoldBurstOnFound						= kResults.GetInt("GoldBurstOnFound");
-	m_bFreshWaterOnlyImprovementChange		= kResults.GetBool("FreshWaterOnlyImprovementChange");
-	m_bNonFreshWaterOnlyImprovementChange	= kResults.GetBool("NonFreshWaterOnlyImprovementChange");
 	m_iPuppetGoldModifier					= kResults.GetInt("PuppetGoldModifier");
 	m_iPuppetProductionModifier				= kResults.GetInt("PuppetProductionModifier");
 	m_iPuppetScienceModifier				= kResults.GetInt("PuppetScienceModifier");
 	m_iInternationalRouteGrowthModifier		= kResults.GetInt("InternationalRouteGrowthModifier");
+	m_iNaturalWonderFinderRewardChange		= kResults.GetInt("NaturalWonderFinderRewardChange");
+	m_iLocalHappinessPerCity				= kResults.GetInt("LocalHappinessPerCity");
 #endif
 
 	//EAP: Faith for the Natural wonder findor
@@ -1885,11 +2001,66 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 #ifdef TRAITIFY // Arrays for new traits
 	kUtility.SetYields(m_piCityYieldChange, "Trait_CityYieldChanges", "TraitType", szTraitType);
 	kUtility.SetYields(m_piGreatWorkYieldChange, "Trait_GreatWorkYieldChanges", "TraitType", szTraitType);
+	kUtility.SetYields(m_piCityConnectionYieldChange, "Trait_CityConnectionYieldChanges", "TraitType", szTraitType);
+	kUtility.SetYields(m_piCapitalConnectionYieldChange, "Trait_CapitalConnectionYieldChanges", "TraitType", szTraitType);
+	kUtility.SetYields(m_piCapitalYieldPerXForeignCapitalYield, "Trait_CapitalYieldPerXForeignCapitalYield", "TraitType", szTraitType);
+	kUtility.SetYields(m_piPuppetYieldModifiers, "Trait_PuppetYieldModifiers", "TraitType", szTraitType);
+
+	kUtility.SetYields(m_piYieldOnSettle, "Trait_YieldOnSettle", "TraitType", szTraitType);
+	kUtility.SetYields(m_piYieldOnConquest, "Trait_YieldOnConquest", "TraitType", szTraitType);
+	
+	kUtility.SetYields(m_piNaturalWonderFinderReward, "Trait_NaturalWonderFinderReward", "TraitType", szTraitType);
 	//Populate By Value
+	//kUtility.PopulateArrayByValue(m_paiUnitClassYieldBurstBirth, "UnitClasses", "Trait_UnitClassYieldBurstOnBirth", "UnitClassType", "TraitType", szTraitType, "Yield");
+	//kUtility.PopulateArrayByValue(m_paiUnitClassYieldBurstExpended, "UnitClasses", "Trait_UnitClassYieldBurstOnDeath", "UnitClassType", "TraitType", szTraitType, "Yield");
+	
+	//kUtility.PopulateArrayByValue(m_paiSpecialistHappinessChanges, "Specialists", "Trait_SpecialistHappinessChanges", "SpecialistType", "TraitType", szTraitType, "Happiness");
+	// BuildingClass Happiness
 	kUtility.PopulateArrayByValue(m_paiBuildingClassHappiness, "BuildingClasses", "Trait_BuildingClassHappiness", "BuildingClassType", "TraitType", szTraitType, "Happiness");
+	kUtility.PopulateArrayByValue(m_paiBuildingClassGlobalHappiness, "BuildingClasses", "Trait_BuildingClassGlobalHappiness", "BuildingClassType", "TraitType", szTraitType, "GlobalHappiness");
+	// BuildingClassProduction Stuff
+	kUtility.PopulateArrayByValue(m_paiBuildingClassProductionChanges, "BuildingClasses", "Trait_BuildingClassProductionChanges", "BuildingClassType", "TraitType", szTraitType, "ProductionChange");
 	kUtility.PopulateArrayByValue(m_paiBuildingClassProductionModifiers, "BuildingClasses", "Trait_BuildingClassProductionModifiers", "BuildingClassType", "TraitType", szTraitType, "ProductionModifier");
+	// Unit Production Modifiers
+	kUtility.PopulateArrayByValue(m_paiUnitClassProductionModifiers, "UnitClasses", "Trait_UnitClassProductionModifiers", "UnitClassType", "TraitType", szTraitType, "ProductionModifier");
+	kUtility.PopulateArrayByValue(m_paiUnitCombatProductionModifiers, "UnitCombatInfos", "Trait_UnitCombatProductionModifiers", "UnitCombatType", "TraitType", szTraitType, "ProductionModifier");
+	kUtility.PopulateArrayByValue(m_paiDomainProductionModifiers, "Domains", "Trait_DomainProductionModifiers", "DomainType", "TraitType", szTraitType, "ProductionModifier", 0, NUM_DOMAIN_TYPES);
+	// Unit Production Changes
+	kUtility.PopulateArrayByValue(m_paiUnitClassProductionChanges, "UnitClasses", "Trait_UnitClassProductionChanges", "UnitClassType", "TraitType", szTraitType, "ProductionChange");
+	kUtility.PopulateArrayByValue(m_paiUnitCombatProductionChanges, "UnitCombatInfos", "Trait_UnitCombatProductionChanges", "UnitCombatType", "TraitType", szTraitType, "ProductionChange");
+	kUtility.PopulateArrayByValue(m_paiDomainProductionChanges, "Domains", "Trait_DomainProductionChanges", "DomainType", "TraitType", szTraitType, "ProductionChange", 0, NUM_DOMAIN_TYPES);
+	// Unit FreePromotions - Domain
+	// kUtility.PopulateArrayByValue(m_piDomainFreePromotions, "Domains", "Trait_DomainFreePromotions", "DomainType", "TraitType", szTraitType, "PromotionType", 0, NUM_DOMAIN_TYPES);
+	//Populate By Existence
 	//Custom Arrays
-		//UnimprovedFeatureYieldChanges
+	//Building Cost Override
+	{
+		kUtility.Initialize2DArray(m_ppiBuildingCostOverride, "Buildings", "Yields");
+
+		std::string strKey("Trait_BuildingCostOverride");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Buildings.ID AS BuildingID, Yields.ID AS YieldID, Trait_BuildingCostOverride.Cost "
+				"FROM Trait_BuildingCostOverride "
+				"INNER JOIN Buildings ON Buildings.Type = Trait_BuildingCostOverride.BuildingType "
+				"INNER JOIN Yields ON Yields.Type = Trait_BuildingCostOverride.YieldType "
+				"WHERE Trait_BuildingCostOverride.TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int iBuildingID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iCost = pResults->GetInt(2);
+
+			m_ppiBuildingCostOverride[iBuildingID][iYieldID] = iCost;
+		}
+	}
+	//FeatureYieldChanges
 	{
 
 		kUtility.Initialize2DArray(m_ppiFeatureYieldChanges, "Features", "Yields");
@@ -1914,7 +2085,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 
 		}
 	}
-// Trait_BuildingClassRequiredTerrainRemoval
+	// Trait_BuildingClassRequiredTerrainRemoval
 	{
 		kUtility.Initialize2DArray(m_ppaiBuildingClassRequiredTerrainRemoval, "Traits", "BuildingClasses");
 
@@ -1937,6 +2108,33 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 			CvAssert(BuildingClassID >= 0);
 
 			m_ppaiBuildingClassRequiredTerrainRemoval[TraitID][BuildingClassID] = 1; // Mark as allowed
+		}
+
+		pResults->Reset();
+	}
+	// Trait_UnitClassForceCapitalSpawn
+	{
+		kUtility.Initialize2DArray(m_ppaiUnitClassForcedCapitalSpawn, "Traits", "UnitClasses");
+
+		std::string strKey("Trait_UnitClassForceCapitalSpawn");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Traits.ID as TraitID, UnitClasses.ID as UnitClassID FROM Trait_UnitClassForceCapitalSpawn \
+             INNER JOIN Traits ON Traits.Type = TraitType \
+             INNER JOIN UnitClasses ON UnitClasses.Type = UnitClassType");
+		}
+
+		while (pResults->Step())
+		{
+			const int TraitID = pResults->GetInt(0);
+			const int UnitClassID = pResults->GetInt(1);
+
+			CvAssert(TraitID >= 0);
+			CvAssert(UnitClassID >= 0);
+
+			m_ppaiUnitClassForcedCapitalSpawn[TraitID][UnitClassID] = 1; // Mark as allowed
 		}
 
 		pResults->Reset();
@@ -2144,7 +2342,7 @@ inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner joi
 
 		pResults->Reset();
 	}
-
+#ifdef TRAITIFY // Old Improvement Yield Array, preprocessed out due to testing certain modifications to the array to insert new activation requirements into the array table itself.
 	//ImprovementYieldChanges
 	{
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
@@ -2176,7 +2374,32 @@ inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner joi
 #endif
 		}
 	}
+#else 
+	//ImprovementYieldChanges
+	{
+		kUtility.Initialize2DArray(m_ppiImprovementYieldChanges, "Improvements", "Yields");
 
+		std::string strKey("Trait_ImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Improvements.ID as ImprovementID, Yields.ID as YieldID, Yield from Trait_ImprovementYieldChanges\
+inner join Improvements on Improvements.Type = ImprovementType inner join Yields on Yields.Type = YieldType\
+where TraitType = ? ");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int ImprovementID = pResults->GetInt(0);
+			const int YieldID = pResults->GetInt(1);
+			const int yield = pResults->GetInt(2);
+
+			m_ppiImprovementYieldChanges[ImprovementID][YieldID] = yield;
+		}
+	}
+#endif
 	//SpecialistYieldChanges
 	{
 #ifdef AUI_DATABASE_UTILITY_PROPER_2D_ALLOCATION_AND_DESTRUCTION
@@ -2529,14 +2752,14 @@ void CvPlayerTraits::InitPlayerTraits()
 
 #ifdef TRAITIFY // CvPlayerTraits::InitPlayerTraits
 			if (trait->IsAnyIdeology()) {m_bAnyIdeology = true;}
-			if (trait->IsNoBuyFaithBuilding()) { m_bNoBuyFaithBuilding = true; }
-			if (trait->IsNoBuyFaithUnit()) { m_bNoBuyFaithUnit = true; }
-			if (trait->IsAutoConvertReligionOnFound()) { m_bAutoConvertReligionOnFound = true; }
-			if (trait->IsFreeCourthouse()) { m_bFreeCourthouse = true; }
-			if (trait->IsExpandedGoldenAge()) { m_bExpandedGoldenAge = true; }
-			if (trait->IsGiveFreshWaterAroundCities()) { m_bGiveFreshWaterAroundCities = true; }
 			if (trait->IsFreshWaterOnlyImprovementChange()) { m_bFreshWaterOnlyImprovementChange = true; }
 			if (trait->IsNonFreshWaterOnlyImprovementChange()) { m_bNonFreshWaterOnlyImprovementChange = true; }
+			if (trait->IsYieldOnSettleToCapital()) { m_bYieldOnSettleToCapital = true; }
+			if (trait->IsYieldOnConquestToCapital()) { m_bYieldOnConquestToCapital = true; }
+			if (trait->IsNaturalWonderRewardToCapital()) { m_bNaturalWonderRewardToCapital = true; }
+			if (trait->IsHalfMoreSpecialistUnhappiness()) { m_bHalfMoreSpecialistUnhappiness = true; }
+			if (trait->IsHalfSpecialistUnhappiness()) { m_bHalfSpecialistUnhappiness = true; }
+			if (trait->IsProductionModsandChangesAreCapitalOnly()) { m_bProductionModsandChangesAreCapitalOnly = true; }
 
 			m_iGoldenAgeCultureModifier += trait->GetGoldenAgeCultureModifier();
 			m_iGoldenAgePointBurstOnCapture += trait->GetGoldenAgePointBurstOnCapture();
@@ -2557,24 +2780,18 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iInternalTradeRouteYieldModifier += trait->GetInternalTradeRouteYieldModifier();
 			m_iInternalTradeRouteGoldChange += trait->GetInternalTradeRouteGoldChange();
 			m_iCapitalGreatPersonRateModifier += trait->GetCapitalGreatPersonRateModifier();
-			m_iWonderGoldReward += trait->GetWonderGoldReward();
-			m_iWeLoveTheKingDayCount += trait->GetWeLoveTheKingDayCount();
 			m_iForeignReligiousPressure += trait->GetForeignReligiousPressure();
-			m_iGoldFromTradeGuards += trait->GetGoldFromTradeGuards();
-			m_iXPFromTradeGuards += trait->GetXPFromTradeGuards();
-			m_iNoBuyProductionPercent += trait->GetNoBuyProductionPercent();
 			m_iIdeologyUnhappinessModifier += trait->GetIdeologyUnhappinessModifier();
 			m_iFreeIdeologicalTenets += trait->GetFreeIdeologicalTenets();
 			m_iUnhappinessModifierForPuppets += trait->GetUnhappinessModifierForPuppets();
-			m_iExtendGoldenAgeOnPolicy += trait->GetExtendGoldenAgeOnPolicy();
-			m_fGivenGoldenAgePointsOnPolicy += trait->GetGivenGoldenAgePointsOnPolicy();
 			m_iExtraPopulationNewCities += trait->GetExtraPopulationNewCities();
-			m_iExtraPopulationCityCount += trait->GetExtraPopulationCityCount();
 			m_iGoldBurstOnFound += trait->GetGoldBurstOnFound();
 			m_iPuppetGoldModifier += trait->GetPuppetGoldModifier();
 			m_iPuppetProductionModifier += trait->GetPuppetProductionModifier();
 			m_iPuppetScienceModifier += trait->GetPuppetScienceModifier();
 			m_iInternationalRouteGrowthModifier += trait->GetInternationalRouteGrowthModifier();
+			m_iNaturalWonderFinderRewardChange += trait->GetNaturalWonderFinderRewardChange();
+			m_iLocalHappinessPerCity += trait->GetLocalHappinessPerCity();
 #endif
 		
 			//EAP: Natural wonder faith for the finder
@@ -2949,6 +3166,14 @@ void CvPlayerTraits::Reset()
 
 #ifdef TRAITIFY //CvPlayerTraits Reset
 	m_bAnyIdeology = false;
+	m_bFreshWaterOnlyImprovementChange = false;
+	m_bNonFreshWaterOnlyImprovementChange = false;
+	m_bYieldOnSettleToCapital = false;
+	m_bYieldOnConquestToCapital = false;
+	m_bNaturalWonderRewardToCapital = false;
+	m_bHalfMoreSpecialistUnhappiness = false;
+	m_bHalfSpecialistUnhappiness = false;
+	m_bProductionModsandChangesAreCapitalOnly = false;
 
 	m_iGoldenAgeCultureModifier = 0;
 	m_iGoldenAgePointBurstOnCapture = 0;
@@ -2969,32 +3194,18 @@ void CvPlayerTraits::Reset()
 	m_iInternalTradeRouteYieldModifier = 0;
 	m_iInternalTradeRouteGoldChange = 0;
 	m_iCapitalGreatPersonRateModifier = 0;
-	m_iWonderGoldReward = 0;
-	m_iWeLoveTheKingDayCount = 0;
 	m_iForeignReligiousPressure = 0;
-	m_iGoldFromTradeGuards = 0;
-	m_iXPFromTradeGuards = 0;
-	m_bNoBuyFaithBuilding = false;
-	m_bNoBuyFaithUnit = false;
-	m_iNoBuyProductionPercent = 0;
 	m_iIdeologyUnhappinessModifier = 0;
 	m_iFreeIdeologicalTenets = 0;
-	m_bAutoConvertReligionOnFound = false;
-	m_bFreeCourthouse = false;
 	m_iUnhappinessModifierForPuppets = 0;
-	m_iExtendGoldenAgeOnPolicy = 0;
-	m_fGivenGoldenAgePointsOnPolicy = 0;
-	m_bExpandedGoldenAge = false;
-	m_bGiveFreshWaterAroundCities = false;
 	m_iExtraPopulationNewCities = 0;
-	m_iExtraPopulationCityCount = 0;
 	m_iGoldBurstOnFound = 0;
 	m_iPuppetGoldModifier = 0;
 	m_iPuppetProductionModifier = 0;
 	m_iPuppetScienceModifier = 0;
-	m_bFreshWaterOnlyImprovementChange = false;
-	m_bNonFreshWaterOnlyImprovementChange = false;
 	m_iInternationalRouteGrowthModifier = 0;
+	m_iNaturalWonderFinderRewardChange = 0;
+	m_iLocalHappinessPerCity = 0;
 #endif
 
 	//EAP: Natural wonder faith for the finder
@@ -3076,7 +3287,7 @@ void CvPlayerTraits::Reset()
 
 	m_ppaaiUnimprovedFeatureYieldChange.clear();
 	m_ppaaiUnimprovedFeatureYieldChange.resize(GC.getNumFeatureInfos());
-#ifdef TRAITIFY
+#ifdef TRAITIFY // Feature Array
 	m_ppaaiFeatureYieldChange.clear();
 	m_ppaaiFeatureYieldChange.resize(GC.getNumFeatureInfos());
 #endif
@@ -3346,6 +3557,19 @@ int CvPlayerTraits::GetCityYieldChange(YieldTypes eYieldType)
 	}
 	return rtnValue;
 }
+//PuppetCity Yield Modifier
+int CvPlayerTraits::GetPuppetYieldModifier(YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetPuppetYieldModifiers(eYieldType);
+		}
+	}
+	return rtnValue;
+}
 // Great Work Yield Changes
 int CvPlayerTraits::GetGreatWorkYieldChange(YieldTypes eYieldType)
 {
@@ -3360,34 +3584,92 @@ int CvPlayerTraits::GetGreatWorkYieldChange(YieldTypes eYieldType)
 	return rtnValue;
 }
 
+// Yield from settling new cities
+int CvPlayerTraits::GetYieldOnSettle(YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetYieldOnSettle(eYieldType);
+		}
+	}
+	return rtnValue;
+}
+
+// Yield from Conquest
+int CvPlayerTraits::GetYieldOnConquest(YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetYieldOnConquest(eYieldType);
+		}
+	}
+	return rtnValue;
+}
+// Natural Wonder Finder Reward
+int CvPlayerTraits::GetNaturalWonderFinderReward(YieldTypes eYieldType/*, bool bFirstFinder*/)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetNaturalWonderFinderReward(eYieldType/*, bFirstFinder*/);
+		}
+	}
+	return rtnValue;
+}
 // Remove Terrain Prerequisites
 bool CvPlayerTraits::IsBuildingClassRequiredTerrainRemoval(BuildingClassTypes eBuildingClass)
 {
 	bool rtnValue = false;
 
-	// Loop through all traits the player has
 	for (int i = 0; i < GC.getNumTraitInfos(); i++)
 	{
 		TraitTypes eTrait = (TraitTypes)i;
 
-		if (HasTrait(eTrait)) // Check if the player has this trait
+		if (HasTrait(eTrait))
 		{
 			CvTraitEntry* pTrait = GC.getTraitInfo(eTrait);
 			if (pTrait)
 			{
-				// Call the function with both parameters: TraitType and BuildingClassType
-				if (pTrait->IsBuildingClassTerrainRemoval(eTrait, eBuildingClass))
+				if (pTrait->IsBuildingClassRequiredTerrainRemoval(eTrait, eBuildingClass))
 				{
 					rtnValue = true;
-					break; // Stop checking once we find a match
+					break;
 				}
 			}
 		}
 	}
 	return rtnValue;
 }
-
-
+// Force Spawn UnitClass is Capital
+bool CvPlayerTraits::IsUnitClassForcedCapitalSpawn(UnitClassTypes eUnitClass)
+{
+	bool rtnValue = false;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		TraitTypes eTrait = (TraitTypes)i;
+		if (HasTrait(eTrait))
+		{
+			CvTraitEntry* pTrait = GC.getTraitInfo(eTrait);
+			if (pTrait)
+			{
+				if (pTrait->IsUnitClassForcedCapitalSpawn(eTrait, eUnitClass))
+				{
+					rtnValue = true;
+					break;
+				}
+			}
+		}
+	}
+	return rtnValue;
+}
 // Terrain Yield Changes
 int CvPlayerTraits::GetTerrainYieldChange(TerrainTypes eTerrain, YieldTypes eYieldType)
 {
@@ -3414,6 +3696,97 @@ int CvPlayerTraits::GetResourceYieldChange(ResourceTypes eResource, YieldTypes e
 	}
 	return rtnValue;
 }
+// Specialist Happiness Changes
+int CvPlayerTraits::GetSpecialistHappinessChanges(SpecialistTypes eSpecialist)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetSpecialistHappinessChanges(eSpecialist);
+		}
+	}
+	return rtnValue;
+}
+// UnitClass Production Discount
+int CvPlayerTraits::GetUnitClassProductionChange(UnitClassTypes eUnitClass)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetUnitClassProductionChange(eUnitClass);
+		}
+	}
+	return rtnValue;
+}
+// UnitCombat Production Discount
+int CvPlayerTraits::GetUnitCombatProductionChange(UnitCombatTypes eUnitCombat)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetUnitCombatProductionChange(eUnitCombat);
+		}
+	}
+	return rtnValue;
+}
+// UnitDomain Production Discount
+int CvPlayerTraits::GetUnitDomainProductionChange(DomainTypes eDomain)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetUnitDomainProductionChange(eDomain);
+		}
+	}
+	return rtnValue;
+}
+// UnitClass Production Modifier
+int CvPlayerTraits::GetUnitClassProductionModifier(UnitClassTypes eUnitClass)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetUnitClassProductionModifier(eUnitClass);
+		}
+	}
+	return rtnValue;
+}
+// UnitCombat Production Modifier
+int CvPlayerTraits::GetUnitCombatProductionModifier(UnitCombatTypes eUnitCombat)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetUnitCombatProductionModifier(eUnitCombat);
+		}
+	}
+	return rtnValue;
+}
+// UnitDomain Production Modifier
+int CvPlayerTraits::GetUnitDomainProductionModifier(DomainTypes eDomain)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetUnitDomainProductionModifier(eDomain);
+		}
+	}
+	return rtnValue;
+}
 // Building Class Production Modifier
 int CvPlayerTraits::GetBuildingClassProductionModifier(BuildingClassTypes eBuildingClass)
 {
@@ -3427,6 +3800,19 @@ int CvPlayerTraits::GetBuildingClassProductionModifier(BuildingClassTypes eBuild
 		}
 	}
 
+	return rtnValue;
+}
+// Building Class Production Change
+int CvPlayerTraits::GetBuildingClassProductionChange(BuildingClassTypes eBuildingClass)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassProductionChange(eBuildingClass);
+		}
+	}
 	return rtnValue;
 }
 // Building Class Happiness
@@ -3444,6 +3830,67 @@ int CvPlayerTraits::GetBuildingClassHappiness(BuildingClassTypes eBuildingClass)
 
 	return rtnValue;
 }
+//Building Class Global Happiness
+int CvPlayerTraits::GetBuildingClassGlobalHappiness(BuildingClassTypes eBuildingClass)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassGlobalHappiness(eBuildingClass);
+		}
+	}
+	return rtnValue;
+}
+// Building Cost Override (Gold Faith and Production)
+int CvPlayerTraits::GetBuildingCostOverride(BuildingTypes eBuilding, YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingCostOverride(eBuilding, eYieldType);
+		}
+	}
+	return rtnValue;
+}
+/// City Connection Yield Changes
+int CvPlayerTraits::GetCityConnectionYieldChange(YieldTypes eYieldType, bool bCapitalOnly)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			if (bCapitalOnly)
+			{
+				rtnValue += GC.getTraitInfo((TraitTypes)i)->GetCityConnectionYieldChanges(eYieldType, true);
+			}
+			else
+			{
+				rtnValue += GC.getTraitInfo((TraitTypes)i)->GetCityConnectionYieldChanges(eYieldType, false);
+			}
+		}
+	}
+	return rtnValue;
+}
+
+/// Capital Yield Steal
+int CvPlayerTraits::GetCapitalYieldPerXForeignCapitalYield(YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetCapitalYieldPerXForeignCapitalYield(eYieldType);
+		}
+	}
+	return rtnValue;
+}
+
 /// Get Yield Modifier from Traits for a specific building class
 int CvPlayerTraits::GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType)
 {
@@ -3453,7 +3900,7 @@ int CvPlayerTraits::GetBuildingClassYieldModifier(BuildingClassTypes eBuildingCl
 	{
 		if (HasTrait((TraitTypes)i))
 		{
-			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassYieldChanges(eBuildingClass, eYieldType);
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassYieldModifiers(eBuildingClass, eYieldType);
 		}
 	}
 
@@ -3468,7 +3915,7 @@ int CvPlayerTraits::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClas
 	{
 		if (HasTrait((TraitTypes)i))
 		{
-			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassYieldModifiers(eBuildingClass, eYieldType);
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetBuildingClassYieldChanges(eBuildingClass, eYieldType);
 		}
 	}
 
@@ -4349,6 +4796,15 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
 
 #ifdef TRAITIFY //Read
+	kStream >> m_bFreshWaterOnlyImprovementChange;
+	kStream >> m_bNonFreshWaterOnlyImprovementChange;
+	kStream >> m_bYieldOnSettleToCapital;
+	kStream >> m_bYieldOnConquestToCapital;
+	kStream >> m_bNaturalWonderRewardToCapital;
+	kStream >> m_bHalfMoreSpecialistUnhappiness;
+	kStream >> m_bHalfSpecialistUnhappiness;
+	kStream >> m_bProductionModsandChangesAreCapitalOnly;
+
 	kStream >> m_iGoldenAgeCultureModifier;
 	kStream >> m_iGoldenAgePointBurstOnCapture;
 	kStream >> m_iGreatEngineerRateModifier;
@@ -4368,32 +4824,18 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iInternalTradeRouteYieldModifier;
 	kStream >> m_iInternalTradeRouteGoldChange;
 	kStream >> m_iCapitalGreatPersonRateModifier;
-	kStream >> m_iWonderGoldReward;
-	kStream >> m_iWeLoveTheKingDayCount;
 	kStream >> m_iForeignReligiousPressure;
-	kStream >> m_iGoldFromTradeGuards;
-	kStream >> m_iXPFromTradeGuards;
-	kStream >> m_bNoBuyFaithBuilding;
-	kStream >> m_bNoBuyFaithUnit;
-	kStream >> m_iNoBuyProductionPercent;
 	kStream >> m_iIdeologyUnhappinessModifier;
 	kStream >> m_iFreeIdeologicalTenets;
-	kStream >> m_bAutoConvertReligionOnFound;
-	kStream >> m_bFreeCourthouse;
 	kStream >> m_iUnhappinessModifierForPuppets;
-	kStream >> m_bExpandedGoldenAge;
-	kStream >> m_fGivenGoldenAgePointsOnPolicy;
-	kStream >> m_iExtendGoldenAgeOnPolicy;
-	kStream >> m_bGiveFreshWaterAroundCities;
 	kStream >> m_iExtraPopulationNewCities;
-	kStream >> m_iExtraPopulationCityCount;
 	kStream >> m_iGoldBurstOnFound;
-	kStream >> m_bFreshWaterOnlyImprovementChange;
-	kStream >> m_bNonFreshWaterOnlyImprovementChange;
 	kStream >> m_iPuppetGoldModifier;
 	kStream >> m_iPuppetProductionModifier;
 	kStream >> m_iPuppetScienceModifier;
 	kStream >> m_iInternationalRouteGrowthModifier;
+	kStream >> m_iNaturalWonderFinderRewardChange;
+	kStream >> m_iLocalHappinessPerCity;
 #endif
 
 	//EAP: Natural wonder faith for the finder:
@@ -4797,6 +5239,15 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iNaturalWonderSubsequentFinderGold;
 
 #ifdef TRAITIFY //Write
+	kStream << m_bFreshWaterOnlyImprovementChange;
+	kStream << m_bNonFreshWaterOnlyImprovementChange;
+	kStream << m_bYieldOnSettleToCapital;
+	kStream << m_bYieldOnConquestToCapital;
+	kStream << m_bNaturalWonderRewardToCapital;
+	kStream << m_bHalfMoreSpecialistUnhappiness;
+	kStream << m_bHalfSpecialistUnhappiness;
+	kStream << m_bProductionModsandChangesAreCapitalOnly;
+
 	kStream << m_iGoldenAgeCultureModifier;
 	kStream << m_iGoldenAgePointBurstOnCapture;
 	kStream << m_iGreatEngineerRateModifier;
@@ -4816,32 +5267,18 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iInternalTradeRouteYieldModifier;
 	kStream << m_iInternalTradeRouteGoldChange;
 	kStream << m_iCapitalGreatPersonRateModifier;
-	kStream << m_iWonderGoldReward;
-	kStream << m_iWeLoveTheKingDayCount;
 	kStream << m_iForeignReligiousPressure;
-	kStream << m_iGoldFromTradeGuards;
-	kStream << m_iXPFromTradeGuards;
-	kStream << m_bNoBuyFaithBuilding;
-	kStream << m_bNoBuyFaithUnit;
-	kStream << m_iNoBuyProductionPercent;
 	kStream << m_iIdeologyUnhappinessModifier;
 	kStream << m_iFreeIdeologicalTenets;
-	kStream << m_bAutoConvertReligionOnFound;
-	kStream << m_bFreeCourthouse;
 	kStream << m_iUnhappinessModifierForPuppets;
-	kStream << m_bExpandedGoldenAge;
-	kStream << m_fGivenGoldenAgePointsOnPolicy;
-	kStream << m_iExtendGoldenAgeOnPolicy;
-	kStream << m_bGiveFreshWaterAroundCities;
 	kStream << m_iExtraPopulationNewCities;
-	kStream << m_iExtraPopulationCityCount;
 	kStream << m_iGoldBurstOnFound;
-	kStream << m_bFreshWaterOnlyImprovementChange;
-	kStream << m_bNonFreshWaterOnlyImprovementChange;
 	kStream << m_iPuppetGoldModifier;
 	kStream << m_iPuppetProductionModifier;
 	kStream << m_iPuppetScienceModifier;
 	kStream << m_iInternationalRouteGrowthModifier;
+	kStream << m_iNaturalWonderFinderRewardChange;
+	kStream << m_iLocalHappinessPerCity;
 #endif
 	//EAP: Natural wonder faith for the finder
 	

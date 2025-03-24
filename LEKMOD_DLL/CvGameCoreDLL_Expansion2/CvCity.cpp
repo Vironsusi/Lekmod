@@ -187,8 +187,14 @@ CvCity::CvCity() :
 	, m_iJONSCulturePerTurnFromPolicies("CvCity::m_iJONSCulturePerTurnFromPolicies", m_syncArchive)
 	, m_iJONSCulturePerTurnFromSpecialists("CvCity::m_iJONSCulturePerTurnFromSpecialists", m_syncArchive)
 	, m_iJONSCulturePerTurnFromReligion("CvCity::m_iJONSCulturePerTurnFromReligion", m_syncArchive)
+#ifdef TRAITIFY // New variable for tracking the culture gained from traits to make it more similar to the other yields
+	, m_iJONSCulturePerTurnFromTraits("CvCity::m_iJONSCulturePerTurnFromTraits", m_syncArchive)
+#endif
 	, m_iFaithPerTurnFromBuildings(0)
 	, m_iFaithPerTurnFromPolicies(0)
+#ifdef TRAITIFY // Nerw variable for tracking the faith gained from traits to make it more similar to the other yields
+	, m_iFaithPerTurnFromTraits(0)
+#endif
 	, m_iFaithPerTurnFromReligion(0)
 	, m_iCultureRateModifier("CvCity::m_iCultureRateModifier", m_syncArchive)
 	, m_iNumWorldWonders("CvCity::m_iNumWorldWonders", m_syncArchive)
@@ -256,6 +262,9 @@ CvCity::CvCity() :
 	, m_aiLakePlotYield("CvCity::m_aiLakePlotYield", m_syncArchive)
 	, m_aiSeaResourceYield("CvCity::m_aiSeaResourceYield", m_syncArchive)
 	, m_aiBaseYieldRateFromTerrain("CvCity::m_aiBaseYieldRateFromTerrain", m_syncArchive, true)
+#ifdef TRAITIFY // New variable for tracking the yield "stolen" from other cities to make it more similar to the other yields
+	, m_aiStolenYieldRate("CvCity::m_aiStolenYieldRate", m_syncArchive)
+#endif
 	, m_aiBaseYieldRateFromBuildings("CvCity::m_aiBaseYieldRateFromBuildings", m_syncArchive)
 	, m_aiBaseYieldRateFromSpecialists("CvCity::m_aiBaseYieldRateFromSpecialists", m_syncArchive)
 	, m_aiBaseYieldRateFromMisc("CvCity::m_aiBaseYieldRateFromMisc", m_syncArchive)
@@ -555,81 +564,12 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 	changePopulation(GC.getINITIAL_CITY_POPULATION() + GC.getGame().getStartEraInfo().getFreePopulation());
 	// Free population from things (e.g. Policies)
 	changePopulation(GET_PLAYER(getOwner()).GetNewCityExtraPopulation());
-#ifdef TRAITIFY // Palmyra FreshWater & Extra Population Handling
-	if (bInitialFounding)
+#ifdef TRAITIFY // New floating text for population increases for the player. Both Trait and Policy driven, excluding the initial population.
+	if (GET_PLAYER(getOwner()).GetNewCityExtraPopulation() > 0)
 	{
-		CvPlayer& kPlayer = GET_PLAYER(eOwner);
-		int iExtraPopulation = kPlayer.GetPlayerTraits()->GetExtraPopulationNewCities();
-		int iCityLimit = kPlayer.GetPlayerTraits()->GetExtraPopulationCityCount();
-		int iGoldBurst = kPlayer.GetPlayerTraits()->GetGoldBurstOnFound();
-		bool bPopulationIncreased = false;
-		bool bGoldGranted = false;
-
-		// 🚨 If there is a city limit, ensure the first city founded (capital) NEVER gets extra population 🚨
-		if (iCityLimit > 0 && kPlayer.getNumCities() == 1)
-		{
-			// This is the first city (capital), so skip the population increase
-		}
-		else if (iExtraPopulation > 0)
-		{
-			// Count number of non-capital cities
-			int iNonCapitalCityCount = 0;
-			int iLoop;
-			for (CvCity* pLoopCity = kPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iLoop))
-			{
-				if (!pLoopCity->isCapital() && pLoopCity != this) // Exclude capital and this new city from count
-				{
-					iNonCapitalCityCount++;
-				}
-			}
-
-			// If there's a city limit defined, apply only to the first X non-capital cities
-			if (iCityLimit > 0)
-			{
-				if (iNonCapitalCityCount < iCityLimit)
-				{
-					changePopulation(iExtraPopulation);
-					bPopulationIncreased = true;
-				}
-			}
-			else // If no limit, apply to all new cities and trigger GoldBurstOnFound
-			{
-				changePopulation(iExtraPopulation);
-				kPlayer.GetTreasury()->ChangeGold(iGoldBurst);
-				bPopulationIncreased = true;
-				bGoldGranted = true;
-			}
-		}
-
-		// Apply Fresh Water to City if the Trait is enabled
-		if (kPlayer.GetPlayerTraits()->IsGiveFreshWaterAroundCities())
-		{
-			kPlayer.ApplyFreshWaterToCityPlots(this, true);
-		}
-
-		// Show floating text over the city
-		if (bPopulationIncreased || bGoldGranted)
-		{
-			char text[256];
-
-			// Format based on whether gold is also granted
-			if (bGoldGranted)
-			{
-				sprintf_s(text, sizeof(text), "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_CITIZEN] [COLOR_YELLOW]+%d[ENDCOLOR] [ICON_GOLD]",
-					iExtraPopulation, iGoldBurst);
-			}
-			else
-			{
-				sprintf_s(text, sizeof(text), "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_CITIZEN]", iExtraPopulation);
-			}
-
-			// Ensure city is visible before displaying floating text
-			if (plot()->GetActiveFogOfWarMode() == FOGOFWARMODE_OFF)
-			{
-				float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 1.5f;
-				GC.GetEngineUserInterface()->AddPopupText(getX(), getY(), text, fDelay);
-			}
-		}
+		char szText[256] = { 0 };
+		sprintf_s(szText, "[COLOR_GREEN]+%d[ENDCOLOR] [ICON_CITIZEN]", GET_PLAYER(getOwner()).GetNewCityExtraPopulation());
+		GC.GetEngineUserInterface()->AddPopupText(getX(), getY(), szText, 1.5f);
 	}
 #endif
 	// Free food from things (e.g. Policies)
@@ -640,6 +580,111 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 	{
 		owningPlayer.setFoundedFirstCity(true);
 		owningPlayer.ChangeNumCitiesFounded(1);
+#ifdef TRAITIFY // For Yield on Settle Trait
+		CvTeam& owningTeam = GET_TEAM(getTeam());
+		float fDelay = 2.0f;
+		// Apply one-time yield bonuses on city settlement
+		for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+		{
+			YieldTypes eLoopYield = (YieldTypes)iYield;
+
+			// Get the yield bonus from the player's trait
+			int iSettleBonus = owningPlayer.GetPlayerTraits()->GetYieldOnSettle(eLoopYield);
+			int iGameSpeedModifier = GC.getGameSpeedInfo(GC.getGame().getGameSpeedType())->getGoldenAgePercent();
+			iSettleBonus = (iSettleBonus * iGameSpeedModifier) / 100;
+
+			if (iSettleBonus > 0)
+			{
+				// Get capital reference for possible yield redirection
+				CvCity* pCapital = owningPlayer.getCapitalCity();
+				bool bRedirectToCapital = owningPlayer.GetPlayerTraits()->IsYieldOnSettleToCapital();
+
+				switch (eLoopYield)
+				{
+				case YIELD_FOOD:
+					if (bRedirectToCapital && pCapital)
+						pCapital->changeFoodTimes100(iSettleBonus * 100);
+					else
+						changeFoodTimes100(iSettleBonus * 100);
+					break;
+
+				case YIELD_PRODUCTION:
+					if (bRedirectToCapital && pCapital)
+						pCapital->changeOverflowProduction(iSettleBonus);
+					else
+						changeOverflowProduction(iSettleBonus);
+					break;
+
+				case YIELD_CULTURE:
+					owningPlayer.changeJONSCulture(iSettleBonus);
+					break;
+
+				case YIELD_FAITH:
+					owningPlayer.ChangeFaith(iSettleBonus);
+					break;
+				case YIELD_SCIENCE:
+				{
+					TechTypes eCurrentTech = owningPlayer.GetPlayerTechs()->GetCurrentResearch();
+					if (eCurrentTech == NO_TECH)
+					{
+						owningPlayer.changeOverflowResearch(iSettleBonus);
+					}
+					else
+					{
+						owningTeam.GetTeamTechs()->ChangeResearchProgress(eCurrentTech, iSettleBonus, owningPlayer.GetID());
+					}
+				}
+				break;
+				case YIELD_GOLD:
+					owningPlayer.GetTreasury()->ChangeGold(iSettleBonus);
+					break;
+
+				default:
+					break;
+				}
+				// Create floating text for UI feedback
+				char szText[256] = { 0 };
+				switch (eLoopYield)
+				{
+				case YIELD_FOOD:
+					sprintf_s(szText, "[COLOR_GREEN]+%d[ENDCOLOR] [ICON_FOOD]", iSettleBonus);
+					break;
+				case YIELD_PRODUCTION:
+					sprintf_s(szText, "[COLOR_YIELD_PRODUCTION]+%d[ENDCOLOR] [ICON_PRODUCTION]", iSettleBonus);
+					break;
+				case YIELD_CULTURE:
+					sprintf_s(szText, "[COLOR_MAGENTA]+%d[ENDCOLOR] [ICON_CULTURE]", iSettleBonus);
+					break;
+				case YIELD_FAITH:
+					sprintf_s(szText, "[COLOR_WHITE]+%d[ENDCOLOR] [ICON_PEACE]", iSettleBonus);
+					break;
+				case YIELD_SCIENCE:
+					sprintf_s(szText, "[COLOR_BLUE]+%d[ENDCOLOR] [ICON_RESEARCH]", iSettleBonus);
+					break;
+				case YIELD_GOLD:
+					sprintf_s(szText, "[COLOR_YELLOW]+%d[ENDCOLOR] [ICON_GOLD]", iSettleBonus);
+					break;
+				default:
+					break;
+				}
+				if (strlen(szText) > 0)
+				{
+					if (owningPlayer.GetPlayerTraits()->IsYieldOnSettleToCapital())
+					{
+						// Send floating text to the capital if the trait applies
+						GC.GetEngineUserInterface()->AddPopupText(pCapital->getX(), pCapital->getY(), szText, fDelay);
+						fDelay += 0.5f;
+					}
+					else
+					{
+						// Otherwise, show floating text at the newly settled city
+						GC.GetEngineUserInterface()->AddPopupText(getX(), getY(), szText, fDelay);
+						fDelay += 0.5f;
+					}
+				}
+			}
+		}
+#endif
 
 		// Free resources under city?
 #ifdef AUI_WARNING_FIXES
@@ -1004,6 +1049,10 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_iJONSCulturePerTurnFromPolicies = 0;
 	m_iJONSCulturePerTurnFromSpecialists = 0;
 	m_iJONSCulturePerTurnFromReligion = 0;
+#ifdef TRAITIFY // Trait based culture and faith
+	m_iJONSCulturePerTurnFromTraits = 0;
+	m_iFaithPerTurnFromTraits = 0;
+#endif
 	m_iFaithPerTurnFromBuildings = 0;
 	m_iFaithPerTurnFromPolicies = 0;
 	m_iFaithPerTurnFromReligion = 0;
@@ -1077,6 +1126,9 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_aiSeaResourceYield.resize(NUM_YIELD_TYPES);
 	m_aiLakePlotYield.resize(NUM_YIELD_TYPES);
 	m_aiBaseYieldRateFromTerrain.resize(NUM_YIELD_TYPES);
+#ifdef TRAITIFY // Stolen yield rate
+	m_aiStolenYieldRate.resize(NUM_YIELD_TYPES);
+#endif
 	m_aiBaseYieldRateFromBuildings.resize(NUM_YIELD_TYPES);
 	m_aiBaseYieldRateFromSpecialists.resize(NUM_YIELD_TYPES);
 	m_aiBaseYieldRateFromMisc.resize(NUM_YIELD_TYPES);
@@ -1095,6 +1147,9 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 		m_aiLakePlotYield.setAt(iI, 0);
 		m_aiSeaResourceYield.setAt(iI, 0);
 		m_aiBaseYieldRateFromTerrain.setAt(iI, 0);
+#ifdef TRAITIFY // Stolen yield rate
+		m_aiStolenYieldRate.setAt(iI, 0);
+#endif
 		m_aiBaseYieldRateFromBuildings.setAt(iI, 0);
 		m_aiBaseYieldRateFromSpecialists.setAt(iI, 0);
 		m_aiBaseYieldRateFromMisc.setAt(iI, 0);
@@ -3046,7 +3101,7 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
-#ifndef TRAITIFY
+#ifndef TRAITIFY // New method of telling if a building can be made in a city based on the cities terrain, now accounts for Trait based exceptions.
 	if(!isValidBuildingLocation(eBuilding))
 	{
 		return false;
@@ -3077,23 +3132,24 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
-#ifdef TRAITIFY // Relgious Maj building Req
-	// Religious Majority requirement
-	if (pkBuildingInfo->IsCanNoBuy())
+#ifdef TRAITIFY // Religious Majority requirement
+
+	bool bRequiresReligion = pkBuildingInfo->IsUnlockedByBelief();
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	// If the building requires religion, apply the restriction
+	if (bRequiresReligion)
 	{
-		if (GET_PLAYER(getOwner()).GetPlayerTraits()->IsNoBuyFaithBuilding())
+		// The city must have a majority religion
+		if (eMajority <= RELIGION_PANTHEON)
 		{
-			ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
-			if (eMajority <= RELIGION_PANTHEON)
-			{
-				return false;
-			}
-			const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
-			if (pReligion == NULL || !pReligion->m_Beliefs.IsBuildingClassEnabled((BuildingClassTypes)pkBuildingInfo->GetBuildingClassType()))
-			{
-				return false;
-			}
-			return true;
+			return false;
+		}
+
+		// Check if the majority religion actually unlocks the building
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if (pReligion == NULL || !pReligion->m_Beliefs.IsBuildingClassEnabled((BuildingClassTypes)pkBuildingInfo->GetBuildingClassType()))
+		{
+			return false;
 		}
 	}
 #endif
@@ -3128,6 +3184,7 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 		}
 	}
 #ifdef LEKMOD_BUILDING_GOLD_COST
+#ifndef TRAITIFY // Added support to allow a building that can not normally be made, and has an override value that would make it so, able to be made.
 	// Does this building have no production cost, but has a gold cost?
 	if(pkBuildingInfo->GetProductionCost() <= 0 && pkBuildingInfo->GetGoldCost() <= 0)
 	{
@@ -3136,6 +3193,20 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 			return false;
 		}
 	}
+#else
+	int iBaseProductionCost = pkBuildingInfo->GetProductionCost();
+	int iOverrideProductionCost = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingCostOverride(eBuilding, YIELD_PRODUCTION);
+	int iOverrideGoldCost = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingCostOverride(eBuilding, YIELD_GOLD);
+
+	// If both base cost and override are <= 0, but has a gold cost?
+	if (iBaseProductionCost <= 0 && iOverrideProductionCost <= 0 && pkBuildingInfo->GetGoldCost() <= 0 && iOverrideGoldCost <= 0)
+	{
+		if (!bIgnoreCost)
+		{
+			return false;
+		}
+	}
+#endif
 #endif
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -5136,6 +5207,26 @@ int CvCity::getProductionNeeded(UnitTypes eUnit) const
 				}
 			}
 		}
+#ifdef TRAITIFY // Capital Only Production Change
+		if (isCapital() && GET_PLAYER(getOwner()).GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly())
+		{
+			int iUnitClassProductionChange = GET_PLAYER(getOwner()).GetPlayerTraits()->GetUnitClassProductionChange((UnitClassTypes)pGameUnit->GetUnitClassType());
+			if (iUnitClassProductionChange != 0 && pGameUnit->GetUnitClassType() != NO_UNITCLASS)
+			{
+				iCostMod += iUnitClassProductionChange;
+			}
+			int iUnitCombatProductionChange = GET_PLAYER(getOwner()).GetPlayerTraits()->GetUnitCombatProductionChange((UnitCombatTypes)pGameUnit->GetUnitCombatType());
+			if (iUnitCombatProductionChange != 0 && pGameUnit->GetUnitCombatType() != NO_UNITCOMBAT)
+			{
+				iCostMod += iUnitCombatProductionChange;
+			}
+			int iUnitDomainProductionChange = GET_PLAYER(getOwner()).GetPlayerTraits()->GetUnitDomainProductionChange((DomainTypes)pGameUnit->GetDomainType());
+			if (iUnitDomainProductionChange != 0 && pGameUnit->GetDomainType() != NO_DOMAIN)
+			{
+				iCostMod += iUnitDomainProductionChange;
+			}
+		}
+#endif
 
 		// Cost modifiers must be applied before the investment code
 		iNumProductionNeeded *= (iCostMod + 100);
@@ -5190,6 +5281,13 @@ int CvCity::getProductionNeeded(BuildingTypes eBuilding) const
 					}
 				}
 			}
+
+#ifdef TRAITIFY // Capital Only Production Change
+			if (isCapital() && GET_PLAYER(getOwner()).GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly())
+			{
+				iCostMod += GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassProductionChange(eBuildingClass);
+			}
+#endif
 
 			// Cost modifiers must be applied before the investment code
 			iNumProductionNeeded *= (iCostMod + 100);
@@ -5648,6 +5746,14 @@ int CvCity::GetPurchaseCost(BuildingTypes eBuilding)
 
 #ifdef LEKMOD_BUILDING_GOLD_COST
 	int iCost = pkBuildingInfo->GetGoldCost();
+#ifdef TRAITIFY // BuildingCostOverride Gold
+	int iOverrideCost = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingCostOverride(eBuilding, YIELD_GOLD);
+	if (iOverrideCost > 0) // Only apply override if a valid value exists
+	{
+		iCost = iOverrideCost;
+	}
+#endif
+
 	int iModifier = pkBuildingInfo->GetHurryCostModifier();
 	if (iModifier == -1)
 		return -1;
@@ -5715,6 +5821,14 @@ int CvCity::GetFaithPurchaseCost(BuildingTypes eBuilding)
 
 	// Cost goes up in later eras
 	iCost = pkBuildingInfo->GetFaithCost();
+#ifdef TRAITIFY // BuildingCostOverride Faith
+	int iOverrideCost = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingCostOverride(eBuilding, YIELD_FAITH);
+	if (iOverrideCost > 0) // Only apply override if a valid value exists
+	{
+		iCost = iOverrideCost;
+	}
+#endif
+
 	EraTypes eEra = GET_TEAM(GET_PLAYER(getOwner()).getTeam()).GetCurrentEra();
 	int iMultiplier = GC.getEraInfo(eEra)->getFaithCostMultiplier();
 	iCost = iCost * iMultiplier / 100;
@@ -6001,23 +6115,80 @@ int CvCity::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) const
 	int iTempMod;
 
 #ifdef TRAITIFY // IsMilitary UnitProdMod and CapitalUnitProdMod
-	if (pkUnitInfo->IsMilitaryProduction())
+	if (isCapital() && thisPlayer.GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly())
 	{
-		iTempMod = thisPlayer.GetPlayerTraits()->GetUnitProductionModifier();
-		iMultiplier += iTempMod;
-		if (toolTipSink && iTempMod)
+		// Military Production Modifier
+		if(pkUnitInfo->IsMilitaryProduction())
 		{
-			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_TRAIT", iTempMod);
+			iTempMod = thisPlayer.GetPlayerTraits()->GetCapitalUnitProductionModifier();
+			iMultiplier += iTempMod;
+			if (toolTipSink && iTempMod)
+			{
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_CAPITAL_TRAIT", iTempMod);
+			}
 		}
-	}
-
-	if (isCapital() && pkUnitInfo->IsMilitaryProduction())
-	{
-		iTempMod = thisPlayer.GetPlayerTraits()->GetCapitalUnitProductionModifier();
-		iMultiplier += iTempMod;
-		if (toolTipSink && iTempMod)
+		// Unit Class Modifier
+		if(pkUnitInfo->GetUnitClassType() != NO_UNITCLASS)
 		{
-			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_CAPITAL_TRAIT", iTempMod);
+			int iTraitUnitClassMod = thisPlayer.GetPlayerTraits()->GetUnitClassProductionModifier((UnitClassTypes)pkUnitInfo->GetUnitClassType());
+			if (iTraitUnitClassMod != 0)
+			{
+				iTempMod = iTraitUnitClassMod;
+				iMultiplier += iTempMod;
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_CLASS_TRAIT_PLAYER", iTempMod);
+			}
+			// Populate the Unit Class Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+			int iTraitUnitClassProdChange = thisPlayer.GetPlayerTraits()->GetUnitClassProductionChange((UnitClassTypes)pkUnitInfo->GetUnitClassType());
+			if (pkUnitInfo->GetUnitClassType() != NO_UNITCLASS && iTraitUnitClassProdChange != 0)
+			{
+				if (iTraitUnitClassProdChange != 0)
+				{
+					iTempMod = iTraitUnitClassProdChange;
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_UNIT_CLASS_TRAIT_PLAYER", iTempMod);
+				}
+			}
+		}
+		// Unit Combat Modifier
+		if (pkUnitInfo->GetUnitCombatType() != NO_UNITCOMBAT)
+		{
+			int iTraitUnitCombatMod = thisPlayer.GetPlayerTraits()->GetUnitCombatProductionModifier((UnitCombatTypes)pkUnitInfo->GetUnitCombatType());
+			if (iTraitUnitCombatMod != 0)
+			{
+				iTempMod = iTraitUnitCombatMod;
+				iMultiplier += iTempMod;
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_COMBAT_CLASS_CAPITAL", iTempMod);
+			}
+			// Populate the Unit Combat Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+			int iTraitUnitCombatProdChange = thisPlayer.GetPlayerTraits()->GetUnitCombatProductionChange((UnitCombatTypes)pkUnitInfo->GetUnitCombatType());
+			if (pkUnitInfo->GetUnitCombatType() != NO_UNITCOMBAT && iTraitUnitCombatProdChange != 0)
+			{
+				if (iTraitUnitCombatProdChange != 0)
+				{
+					iTempMod = iTraitUnitCombatProdChange;
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_UNIT_COMBAT_TRAIT_CAPITAL", iTempMod);
+				}
+			}
+		}
+		// Unit Domain Modifier
+		if (pkUnitInfo->GetDomainType() != NO_DOMAIN)
+		{
+			int iTraitUnitDomainMod = thisPlayer.GetPlayerTraits()->GetUnitDomainProductionModifier((DomainTypes)pkUnitInfo->GetDomainType());
+			if (iTraitUnitDomainMod != 0)
+			{
+				iTempMod = iTraitUnitDomainMod;
+				iMultiplier += iTempMod;
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_DOMAIN_TRAIT_CAPITAL", iTempMod);
+			}
+			// Populate the Unit Domain Prod Changes numbers, DOES NOT ADD TO iMultiplier !!!
+			int iTraitUnitDomainProdChange = thisPlayer.GetPlayerTraits()->GetUnitDomainProductionChange((DomainTypes)pkUnitInfo->GetDomainType());
+			if (pkUnitInfo->GetDomainType() != NO_DOMAIN && iTraitUnitDomainProdChange != 0)
+			{
+				if (iTraitUnitDomainProdChange != 0)
+				{
+					iTempMod = iTraitUnitDomainProdChange;
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_UNIT_DOMAIN_TRAIT_PLAYER", iTempMod);
+				}
+			}
 		}
 	}
 #endif
@@ -6218,29 +6389,48 @@ int CvCity::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSink
 	}
 
 	// From traits
-#ifdef TRAITIFY // GeneralBuildingProductionModifier in ALL cities
-	iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingProductionModifier();
-	iMultiplier += iTempMod;
-	if (toolTipSink && iTempMod)
+#ifdef TRAITIFY // For a Specific BuildingClass
+	iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassProductionModifier((BuildingClassTypes)kBuildingClassInfo.GetID());
+	if(iTempMod != 0)
 	{
-		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_TRAIT", iTempMod);
-	}
-	// Production bonus for buildings in the capital ONLY 
-	if (isCapital())
-	{
-		iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetCapitalBuildingProductionModifier();
 		iMultiplier += iTempMod;
 		if (toolTipSink && iTempMod)
 		{
-			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_CAPITAL_TRAIT", iTempMod);
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_TRAIT", iTempMod);
 		}
 	}
-	// For a Specific BuildingClass
-	iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassProductionModifier((BuildingClassTypes)kBuildingClassInfo.GetID());
-	iMultiplier += iTempMod;
-	if (toolTipSink && iTempMod)
+	if (isCapital() && GET_PLAYER(getOwner()).GetPlayerTraits()->IsProductionModsandChangesAreCapitalOnly())
 	{
-		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_TRAIT", iTempMod);
+		// For all buildings
+		int iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetCapitalBuildingProductionModifier();
+		if (iTempMod != 0)
+		{
+			iMultiplier += iTempMod;
+			if (toolTipSink && iTempMod)
+			{
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_CAPITAL_TRAIT", iTempMod);
+			}
+		}
+		// For a Specific BuildingClass
+		iTempMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassProductionModifier((BuildingClassTypes)kBuildingClassInfo.GetID());
+		if (iTempMod != 0)
+		{
+			iMultiplier += iTempMod;
+			if (toolTipSink && iTempMod)
+			{
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_CLASS_CAPITAL_TRAIT", iTempMod);
+			}
+		}
+		// Populate the Tooltip, DO NOT ADD TO iMultiplier !!!
+		int iTraitBuildingClassProductionChange = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassProductionChange((BuildingClassTypes)kBuildingClassInfo.GetID());
+		if (iTraitBuildingClassProductionChange != 0)
+		{
+			if (iTraitBuildingClassProductionChange != 0)
+			{
+				iTempMod = iTraitBuildingClassProductionChange;
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODCOST_BUILDING_CLASS_TRAIT", iTempMod);
+			}
+		}
 	}
 #endif
 	// Production bonus for buildings that exist in the Capital in non capital cities
@@ -6884,39 +7074,6 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		// One-shot items
 		if(bFirst && iChange > 0)
 		{
-#ifdef TRAITIFY //UAE Bonus
-			if(owningPlayer.GetPlayerTraits()->GetWonderGoldReward() || owningPlayer.GetPlayerTraits()->GetWeLoveTheKingDayCount() > 0)
-			{
-				CvBuildingClassInfo* pBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
-				if (pBuildingClassInfo && pBuildingClassInfo->getMaxGlobalInstances() == 1)
-				{
-					int iBaseGoldReward = owningPlayer.GetPlayerTraits()->GetWonderGoldReward();
-					int iBaseWLTKDBonus = owningPlayer.GetPlayerTraits()->GetWeLoveTheKingDayCount();
-					int iGameSpeedModifier = GC.getGame().getGameSpeedInfo().getGoldPercent();
-					int iScaledGoldReward = (iBaseGoldReward * iGameSpeedModifier) / 100;
-					int iScaledWLTKDBonus = (iBaseWLTKDBonus * iGameSpeedModifier) / 100 + 3;
-					if (iScaledGoldReward > 0)
-					{
-						owningPlayer.GetTreasury()->ChangeGold(iScaledGoldReward);
-					}
-					if (iScaledWLTKDBonus > 0)
-					{
-						ChangeWeLoveTheKingDayCounter(iScaledWLTKDBonus);
-					}
-					if ((iScaledGoldReward > 0 || iScaledWLTKDBonus > 0) && owningPlayer.isHuman())
-					{
-						Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_WONDER_COMPLETED_SUMMARY");
-						Localization::String strMessage = Localization::Lookup("TXT_KEY_TRAIT_UAE_WONDER_BUILT");
-						strMessage << getName() << iScaledGoldReward << iScaledWLTKDBonus;
-						CvNotifications* pNotifications = owningPlayer.GetNotifications();
-						if (pNotifications)
-						{
-							pNotifications->Add(NOTIFICATION_WONDER_COMPLETED_ACTIVE_PLAYER, strMessage.toUTF8(), strSummary.toUTF8(), getX(), getY(), -1);
-						}
-					}
-				}
-			}
-#endif	
 			// Capital
 			if(pBuildingInfo->IsCapital())
 				owningPlayer.setCapitalCity(this);
@@ -7651,17 +7808,17 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			CvPlayerTraits* pTraits = GET_PLAYER(getOwner()).GetPlayerTraits();
 			if (eYield == YIELD_CULTURE) // For Culture
 			{
-				ChangeJONSCulturePerTurnFromBuildings(pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield)* iChange);
+				ChangeJONSCulturePerTurnFromBuildings(pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield) * iChange);
 				changeCultureRateModifier(pTraits->GetBuildingClassYieldModifier(eBuildingClass, eYield) * iChange);
 			}
 			else if (eYield == YIELD_FAITH) // For Faith
 			{
-				ChangeFaithPerTurnFromBuildings(pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield)* iChange);
+				ChangeFaithPerTurnFromBuildings(pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield) * iChange);
 			}
 			else // For Food, Production, Gold, Science... why did firaxis do this?
 			{
-				changeYieldRateModifier(eYield, pTraits->GetBuildingClassYieldModifier(eBuildingClass, eYield)* iChange);
-				ChangeBaseYieldRateFromBuildings(eYield, pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield)* iChange);
+				changeYieldRateModifier(eYield, pTraits->GetBuildingClassYieldModifier(eBuildingClass, eYield) * iChange);
+				ChangeBaseYieldRateFromBuildings(eYield, pTraits->GetBuildingClassYieldChange(eBuildingClass, eYield) * iChange);
 			}
 #endif
 #ifdef AUI_WARNING_FIXES
@@ -8326,7 +8483,7 @@ int CvCity::foodDifferenceTimes100(bool bBottom, CvString* toolTipSink) const
 			iTotalMod += iMod;
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_FOODMOD_WLTKD", iMod);
 		}
-#ifdef TRAITIFY // Kilwa International Route Food Mod
+#ifdef TRAITIFY // Kilwa International Route Food Mod, Will be moved one day when I get to the mess of the trade route code.
 		// Trait Growth Mod per International Trade Route
 		int iTradeRouteGrowthMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetInternationalRouteGrowthModifier();
 		int iNumInternationalTradeRoutes = GC.getGame().GetGameTrade()->GetNumTimesOriginCity(const_cast<CvCity*>(this), true); // Safe since this just reads the trade route data
@@ -9260,7 +9417,9 @@ int CvCity::getJONSCulturePerTurnTimes100() const
 #endif
 {
 	VALIDATE_OBJECT
-
+#ifdef TRAITIFY // Traitmod for Puppet Culture
+	int iTraitMod = 0;
+#endif
 	// No culture during Resistance
 	if(IsResistance() || IsRazing())
 	{
@@ -9279,13 +9438,19 @@ int CvCity::getJONSCulturePerTurnTimes100() const
 	// Wonder here?
 	if(getNumWorldWonders() > 0)
 		iModifier += GET_PLAYER(getOwner()).GetCultureWonderMultiplier();
-
+#ifndef TRAITIFY // adjust the culture modifier for puppets.
 	// Puppet?
 	if(IsPuppet())
 	{
 		iModifier += GC.getPUPPET_CULTURE_MODIFIER();
 	}
-
+#else
+	if (IsPuppet())
+	{
+		iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetYieldModifier(YIELD_CULTURE);
+		iModifier += (GC.getPUPPET_CULTURE_MODIFIER() + iTraitMod);
+	}
+#endif
 	iCulture *= iModifier;
 #ifndef AUI_PLAYER_FIX_JONS_CULTURE_IS_T100
 	iCulture /= 100;
@@ -9308,6 +9473,9 @@ int CvCity::GetBaseJONSCulturePerTurn() const
 	iCulturePerTurn += GetJONSCulturePerTurnFromTraits();
 	iCulturePerTurn += GetJONSCulturePerTurnFromReligion();
 	iCulturePerTurn += GetJONSCulturePerTurnFromLeagues();
+#ifdef TRAITIFY // Stolen Yields gets added here to maintain the same effects of the current to allow for it to be modified by the culture % mod and to stack infinitely based on how many of the same effect is in the game.
+	iCulturePerTurn += GetStolenYieldRate(YIELD_CULTURE);
+#endif
 
 	return iCulturePerTurn;
 }
@@ -9379,13 +9547,31 @@ int CvCity::GetJONSCulturePerTurnFromGreatWorks() const
 {
 	return GetCityBuildings()->GetCultureFromGreatWorks();
 }
-
+#ifndef TRAITIFY // Refactored to not just return the City Culture Yield for GetJONSCulturePerTurnFromTraits, allows for more than just the City Culture Yield to be added.
 //	--------------------------------------------------------------------------------
 int CvCity::GetJONSCulturePerTurnFromTraits() const
 {
 	VALIDATE_OBJECT
 	return GET_PLAYER(m_eOwner).GetPlayerTraits()->GetCityCultureBonus();
 }
+#else
+//	--------------------------------------------------------------------------------
+int CvCity::GetJONSCulturePerTurnFromTraits() const
+{
+	VALIDATE_OBJECT
+	int iCultureTraits = GET_PLAYER(m_eOwner).GetPlayerTraits()->GetCityCultureBonus();
+
+	return m_iJONSCulturePerTurnFromTraits + iCultureTraits;
+}
+//	--------------------------------------------------------------------------------
+void CvCity::ChangeJONSCulturePerTurnFromTraits(int iChange)
+{
+	if (iChange != 0)
+	{
+		m_iJONSCulturePerTurnFromTraits = (m_iJONSCulturePerTurnFromTraits + iChange);
+	}
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 int CvCity::GetJONSCulturePerTurnFromReligion() const
@@ -9431,7 +9617,10 @@ int CvCity::GetFaithPerTurn() const
 	iFaith += GetFaithPerTurnFromPolicies();
 	iFaith += GetFaithPerTurnFromTraits();
 	iFaith += GetFaithPerTurnFromReligion();
-
+#ifdef TRAITIFY // Stolen Yields gets added here to maintain the same effects of the current to allow for it to be modified by the faith % mod and to stack infinitely based on how many of the same effect is in the game.
+	iFaith += GetStolenYieldRate(YIELD_FAITH);
+#endif
+#ifndef TRAITIFY // Puppet Faith mod, which is not normally in the game but is now supported and effected by the Trait based PuppetYieldModifier.
 	// Puppet?
 	int iModifier = 0;
 #ifdef AUI_CITY_FIX_VENICE_PUPPETS_GET_NO_YIELD_PENALTIES_BESIDES_CULTURE
@@ -9444,7 +9633,18 @@ int CvCity::GetFaithPerTurn() const
 		iFaith *= (100 + iModifier);
 		iFaith /= 100;
 	}
-
+#else
+	// Puppet?
+	int iModifier = 0;
+	int iTraitMod = 0;
+	if (IsPuppet())
+	{
+		iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetYieldModifier(YIELD_FAITH);
+		iModifier = GC.getPUPPET_FAITH_MODIFIER() + iTraitMod;
+		iFaith *= (100 + iModifier);
+		iFaith /= 100;
+	}
+#endif
 	return iFaith;
 }
 
@@ -9486,8 +9686,11 @@ void CvCity::ChangeFaithPerTurnFromPolicies(int iChange)
 int CvCity::GetFaithPerTurnFromTraits() const
 {
 	VALIDATE_OBJECT
-
+#ifndef TRAITIFY // Refactored to return m_iFaithPerTurnFromTraits, instead of 0;
 	int iRtnValue = 0;
+#else
+	int iRtnValue = m_iFaithPerTurnFromTraits;
+#endif
 	
 	if(GET_PLAYER(m_eOwner).GetPlayerTraits()->IsFaithFromUnimprovedForest())
 	{
@@ -9519,6 +9722,16 @@ int CvCity::GetFaithPerTurnFromTraits() const
 
 	return iRtnValue;
 }
+#ifdef TRAITIFY // New value to allow for outside modification to the GetFaithPerTurnFromTraits value.
+//	--------------------------------------------------------------------------------
+void CvCity::ChangeFaithPerTurnFromTraits(int iChange)
+{
+	if (iChange != 0)
+	{
+		m_iFaithPerTurnFromTraits = (m_iFaithPerTurnFromTraits + iChange);
+	}
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 int CvCity::GetFaithPerTurnFromReligion() const
@@ -10575,7 +10788,7 @@ int CvCity::GetLocalHappiness() const
 						continue;
 					}
 					BuildingTypes eBuilding = (BuildingTypes)kPlayer.getCivilizationInfo().getCivilizationBuildings(eBuildingClass);
-					if (eBuilding != NO_BUILDING && GetCityBuildings()->GetNumBuilding(eBuilding) > 0) // slewis - added the NO_BUILDING check for the ConquestDLX scenario which has civ specific wonders
+					if (eBuilding != NO_BUILDING && GetCityBuildings()->GetNumBuilding(eBuilding) > 0) //Maintain the NO_BUILDING check for the ConquestDLX scenario which has civ specific wonders
 					{
 						if (pkTraitInfo->GetBuildingClassHappiness(eBuildingClass) != 0)
 						{
@@ -10586,8 +10799,6 @@ int CvCity::GetLocalHappiness() const
 			}
 		}
 	}
-
-
 	iLocalHappiness += iSpecialTraitBuildingHappiness;
 #endif
 	iLocalHappiness += iSpecialPolicyBuildingHappiness;
@@ -11413,16 +11624,23 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 #else
 		switch (eIndex)
 		{
+		case YIELD_FOOD:
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetYieldModifier(YIELD_FOOD);
+			//iTempMod = GC.getPUPPET_FOOD_MODIFIER(); // Does not exist
+			iModifier += iTempMod + iTraitMod;
+			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_PUPPET", iTraitMod);
+			break;
 		case YIELD_PRODUCTION:
-			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetProductionModifier();
-			// iTempMod; Not affected by puppet status
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetYieldModifier(YIELD_PRODUCTION);
+			//iTempMod = GC.getPUPPET_PRODUCTION_MODIFIER(); // Does not exist
 			iModifier += iTraitMod;
 			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
 				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_PUPPET", iTraitMod); 
 			break;
 
 		case YIELD_SCIENCE:
-			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetScienceModifier();
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetYieldModifier(YIELD_SCIENCE);
 			iTempMod = GC.getPUPPET_SCIENCE_MODIFIER();
 			iModifier += iTempMod + iTraitMod;
 			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
@@ -11430,7 +11648,7 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 			break;
 
 		case YIELD_GOLD:
-			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetGoldModifier();
+			iTraitMod = GET_PLAYER(getOwner()).GetPlayerTraits()->GetPuppetYieldModifier(YIELD_GOLD);
 			iTempMod = GC.getPUPPET_GOLD_MODIFIER();
 			iModifier += iTempMod + iTraitMod;
 			if ((iTempMod != 0 || iTraitMod != 0) && toolTipSink)
@@ -11557,6 +11775,9 @@ int CvCity::getBaseYieldRate(YieldTypes eIndex) const
 	iValue += GetBaseYieldRateFromMisc(eIndex);
 	iValue += GetBaseYieldRateFromReligion(eIndex);
 	iValue += GetBaseYieldRateFromGreatWorks(eIndex); // NQMP GJS - Artistic Genius fix to add science to Great Works
+#ifdef TRAITIFY // Trait Yield Steal added to the base output of the city for City yield% reasons.
+	iValue += GetStolenYieldRate(eIndex);
+#endif
 #ifdef AUI_PLOT_FIX_CITY_YIELD_CHANGE_RELOCATED
 	// Coastal City Mod
 	if (isCoastal())
@@ -11617,7 +11838,23 @@ void CvCity::ChangeBaseYieldRateFromTerrain(YieldTypes eIndex, int iChange)
 		}
 	}
 }
+#ifdef TRAITIFY // Stolen Yield get and setters for less janky code
+int CvCity::GetStolenYieldRate(YieldTypes eIndex) const
+{
+	VALIDATE_OBJECT
+		CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
+	CvAssertMsg(eIndex < NUM_YIELD_TYPES, "eIndex expected to be < NUM_YIELD_TYPES");
+	return m_aiStolenYieldRate[eIndex];
+}
 
+void CvCity::SetStolenYieldRate(YieldTypes eIndex, int iValue)
+{
+	VALIDATE_OBJECT
+		CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
+	CvAssertMsg(eIndex < NUM_YIELD_TYPES, "eIndex expected to be < NUM_YIELD_TYPES");
+	m_aiStolenYieldRate.setAt(eIndex, iValue);
+}
+#endif
 //	--------------------------------------------------------------------------------
 /// Base yield rate from Buildings
 int CvCity::GetBaseYieldRateFromBuildings(YieldTypes eIndex) const
@@ -15277,6 +15514,13 @@ bool CvCity::IsCanPurchase(bool bTestPurchaseCost, bool bTestTrainable, UnitType
 				//can't purchase this building
 				return false;
 			}
+#ifdef TRAITIFY // Setting a Building to be unpurchaseable via gold. 
+			if (GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingCostOverride(eBuildingType, YIELD_GOLD) < 0)
+			{
+				//Can' Purchase if the trait says so
+				return false;
+			}
+#endif
 			else if(!canConstruct(eBuildingType, false, !bTestTrainable))
 			{
 				bool bAlreadyUnderConstruction = canConstruct(eBuildingType, true, !bTestTrainable) && getFirstBuildingOrder(eBuildingType) != -1;
@@ -15483,12 +15727,13 @@ bool CvCity::IsCanPurchase(bool bTestPurchaseCost, bool bTestTrainable, UnitType
 				{
 					return false;
 				}
-
-				if (pkBuildingInfo->IsCanNoBuy() && GET_PLAYER(getOwner()).GetPlayerTraits()->IsNoBuyFaithBuilding())
+#ifdef TRAITIFY // Setting a Building to be unpurchaseable via faith.
+				if (GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingCostOverride(eBuildingType, YIELD_FAITH) < 0)
 				{
+					//Can' Purchase if the trait says so
 					return false;
 				}
-
+#endif
 #ifdef LEKMOD_FAITH_PURCHASE_NO_RELIGION
 			}
 
@@ -16625,6 +16870,10 @@ void CvCity::read(FDataStream& kStream)
 	kStream >> m_iJONSCulturePerTurnFromPolicies;
 	kStream >> m_iJONSCulturePerTurnFromSpecialists;
 	kStream >> m_iJONSCulturePerTurnFromReligion;
+#ifdef TRAITIFY // Read, Faith and Culture from Traits
+	kStream >> m_iJONSCulturePerTurnFromTraits;
+	kStream >> m_iFaithPerTurnFromTraits;
+#endif
 	kStream >> m_iFaithPerTurnFromBuildings;
 
 	kStream >> m_iFaithPerTurnFromPolicies;
@@ -16722,6 +16971,9 @@ void CvCity::read(FDataStream& kStream)
 	kStream >> m_aiLakePlotYield;
 	kStream >> m_aiSeaResourceYield;
 	kStream >> m_aiBaseYieldRateFromTerrain;
+#ifdef TRAITIFY // Read, YieldSteal
+	kStream >> m_aiStolenYieldRate;
+#endif
 	kStream >> m_aiBaseYieldRateFromBuildings;
 	kStream >> m_aiBaseYieldRateFromSpecialists;
 	kStream >> m_aiBaseYieldRateFromMisc;
@@ -16893,6 +17145,7 @@ void CvCity::read(FDataStream& kStream)
 
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_ppaiTerrainYieldChange, NUM_YIELD_TYPES, GC.getNumTerrainInfos());
 
+
 	kStream >> m_iPopulationRank;
 	kStream >> m_bPopulationRankValid;
 	kStream >> m_aiBaseYieldRank;
@@ -16992,6 +17245,10 @@ void CvCity::write(FDataStream& kStream) const
 	kStream << m_iJONSCulturePerTurnFromPolicies;
 	kStream << m_iJONSCulturePerTurnFromSpecialists;
 	kStream << m_iJONSCulturePerTurnFromReligion;
+#ifdef TRAITIFY // Write, Faith and Culture from Traits
+	kStream << m_iJONSCulturePerTurnFromTraits;
+	kStream << m_iFaithPerTurnFromTraits;
+#endif
 	kStream << m_iFaithPerTurnFromBuildings;
 	kStream << m_iFaithPerTurnFromPolicies;
 	kStream << m_iFaithPerTurnFromReligion;
@@ -17063,6 +17320,9 @@ void CvCity::write(FDataStream& kStream) const
 	kStream << m_aiLakePlotYield;
 	kStream << m_aiSeaResourceYield;
 	kStream << m_aiBaseYieldRateFromTerrain;
+#ifdef TRAITIFY	// Write, YieldSteal
+	kStream << m_aiStolenYieldRate;
+#endif
 	kStream << m_aiBaseYieldRateFromBuildings;
 	kStream << m_aiBaseYieldRateFromSpecialists;
 	kStream << m_aiBaseYieldRateFromMisc;
