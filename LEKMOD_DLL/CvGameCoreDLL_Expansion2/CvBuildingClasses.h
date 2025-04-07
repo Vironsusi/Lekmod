@@ -313,6 +313,9 @@ public:
 	int GetNumFreeUnits(int i) const;
 
 	int GetResourceYieldChange(int i, int j) const;
+#if defined(RESOURCECLASS_BUILDINGS)
+	int GetResourceClassYieldChange(int i, int j) const;
+#endif
 	int* GetResourceYieldChangeArray(int i) const;
 	int GetFeatureYieldChange(int i, int j) const;
 	int* GetFeatureYieldChangeArray(int i) const;
@@ -566,6 +569,9 @@ private:
 	std::pair<int**, size_t> m_ppiBuildingClassYieldChanges;
 #else
 	int** m_ppaiResourceYieldChange;
+#if defined(RESOURCECLASS_BUILDINGS)
+	int** m_ppaiResourceClassYieldChange;
+#endif
 	int** m_ppaiFeatureYieldChange;
 	std::map<int, std::map<int, int>> m_ppiResourceYieldChangeGlobal;
 	int** m_ppaiImprovementYieldChange;

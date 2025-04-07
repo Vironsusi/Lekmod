@@ -221,6 +221,9 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_ppiBuildingClassYieldChanges(std::pair<int**, size_t>(NULL, 0)),
 #else
 	m_ppaiResourceYieldChange(NULL),
+#if defined (RESOURCECLASS_BUILDINGS)
+	m_ppaiResourceClassYieldChange(NULL),
+#endif
 	m_ppaiFeatureYieldChange(NULL),
 	m_ppiResourceYieldChangeGlobal(),
 	m_ppaiImprovementYieldChange(NULL),
@@ -295,6 +298,9 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldChanges.first, m_ppiBuildingClassYieldChanges.second);
 #else
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiResourceYieldChange);
+#if defined (RESOURCECLASS_BUILDINGS)
+	CvDatabaseUtility::SafeDelete2DArray(m_ppaiResourceClassYieldChange);
+#endif
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiFeatureYieldChange);
 	m_ppiResourceYieldChangeGlobal.clear();
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiImprovementYieldChange);
@@ -612,6 +618,35 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 #endif
 		}
 	}
+#if defined (RESOURCECLASS_BUILDINGS)
+	{
+
+		kUtility.Initialize2DArray(m_ppaiResourceClassYieldChange, "ResourceClasses", "Yields");
+
+		std::string strKey("Building_ResourceClassYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT ResourceClasses.ID AS ResourceClassID, Yields.ID AS YieldID, Building_ResourceClassYieldChanges.Yield \
+			 FROM Building_ResourceClassYieldChanges \
+			 INNER JOIN ResourceClasses ON ResourceClasses.Type = ResourceClassType \
+			 INNER JOIN Yields ON Yields.Type = YieldType \
+			 WHERE BuildingType = ?");
+		}
+
+		pResults->Bind(1, szBuildingType);
+
+		while (pResults->Step())
+		{
+			const int iResourceClassID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iYield = pResults->GetInt(2);
+
+			m_ppaiResourceClassYieldChange[iResourceClassID][iYieldID] = iYield;
+		}
+	}
+#endif
 	//Building_ResourceYieldChangesGlobal
 	{
 		std::string strKey("Building_ResourceYieldChangesGlobal");
@@ -2242,7 +2277,17 @@ int CvBuildingEntry::GetResourceYieldChange(int i, int j) const
 	return m_ppaiResourceYieldChange ? m_ppaiResourceYieldChange[i][j] : -1;
 #endif
 }
-
+#if defined(RESOURCECLASS_BUILDINGS)
+/// Change to Yield based on ResourceClass
+int CvBuildingEntry::GetResourceClassYieldChange(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumResourceClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppaiResourceClassYieldChange ? m_ppaiResourceClassYieldChange[i][j] : -1;
+}
+#endif
 /// Array of changes to Resource yield
 int* CvBuildingEntry::GetResourceYieldChangeArray(int i) const
 {

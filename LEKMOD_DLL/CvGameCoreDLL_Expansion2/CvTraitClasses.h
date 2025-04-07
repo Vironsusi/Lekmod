@@ -262,6 +262,7 @@ public:
 	int GetYieldOnConquest(int i) const;
 	int GetSpecialistHappinessChanges(int i) const;
 	bool IsUnitClassForcedCapitalSpawn(int i, int j) const;
+	int GetResourceClassYieldChanges(int i, int j) const;
 	//Unit ProdChanges
 	int GetUnitClassProductionChange(int i) const;
 	int GetUnitCombatProductionChange(int i) const;
@@ -503,6 +504,7 @@ protected:
 	int** m_ppaiTerrainYieldChange;
 	int** m_ppaiResourceYieldChange;
 	int** m_ppiFeatureYieldChanges;
+	int** m_ppiResourceClassYieldChanges;
 	int** m_ppaiUnitClassForcedCapitalSpawn;
 	//Unit ProdChanges
 	int* m_paiUnitClassProductionChanges;
@@ -1281,6 +1283,7 @@ public:
 	int GetResourceYieldChange(ResourceTypes eResource, YieldTypes eYieldType);
 	int GetSpecialistHappinessChanges(SpecialistTypes eSpecialist);
 	bool IsUnitClassForcedCapitalSpawn(UnitClassTypes eUnitClass);
+	int GetResourceClassYieldChange(ResourceClassTypes eResourceClass, YieldTypes eYieldType);
 	// Unit ProdChanges
 	int GetUnitClassProductionChange(UnitClassTypes eUnitClass);
 	int GetUnitCombatProductionChange(UnitCombatTypes eUnitCombat);
@@ -1298,7 +1301,6 @@ public:
 	int GetBuildingCostOverride(BuildingTypes eBuilding, YieldTypes eYieldType);
 	int GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
 	int GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
-	
 #endif
 	// Inserted Table Entries from CMP DLL ~EAP
 	TechTypes GetFreeBuildingPrereqTech() const;

@@ -1182,6 +1182,7 @@ CIVS LEFT
 Bolivia
 Timurids - Trait Lost Effect
 END LIST*/
+#define RESOURCECLASS_BUILDINGS // new arraytable to Change the yield of a resource based on the resource class (Porc and Haciendas)
 #define UNIT_IDEOLOGY_UNLOCK // AnyIdeology BOOL
 #define GREAT_WALL_DELUA // GlobalCityDefenseChange INT GlobalCityHitPointChange INT
 #define POLICY_TRADE_ROUTES // NumTradeRouteBonus INT

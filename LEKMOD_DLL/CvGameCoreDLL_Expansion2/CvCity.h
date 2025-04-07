@@ -147,6 +147,9 @@ public:
 
 	int GetResourceExtraYield(ResourceTypes eResource, YieldTypes eYield) const;
 	void ChangeResourceExtraYield(ResourceTypes eResource, YieldTypes eYield, int iChange);
+#if defined(RESOURCECLASS_BUILDINGS)
+	void ChangeResourceClassExtraYield(ResourceClassTypes eResourceClass, YieldTypes eYield, int iChange);
+#endif
 
 	int GetFeatureExtraYield(FeatureTypes eFeature, YieldTypes eYield) const;
 	void ChangeFeatureExtraYield(FeatureTypes eFeature, YieldTypes eYield, int iChange);

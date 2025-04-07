@@ -226,6 +226,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_ppaiTerrainYieldChange(NULL),
 	m_ppaiResourceYieldChange(NULL),
 	m_ppaiUnitClassForcedCapitalSpawn(NULL),
+	m_ppiResourceClassYieldChanges(NULL),
 	//Unit ProdChanges
 	m_paiUnitClassProductionChanges(NULL),
 	m_paiUnitCombatProductionChanges(NULL),
@@ -277,6 +278,7 @@ CvTraitEntry::~CvTraitEntry()
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiTerrainYieldChange);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiResourceYieldChange);
 	SAFE_DELETE_ARRAY(m_ppaiUnitClassForcedCapitalSpawn);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceClassYieldChanges);
 	//Unit ProdChanges
 	SAFE_DELETE_ARRAY(m_paiUnitClassProductionChanges);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionChanges);
@@ -1360,6 +1362,15 @@ bool CvTraitEntry::IsUnitClassForcedCapitalSpawn(int iTrait, int iUnitClass) con
 {
 	return (m_ppaiUnitClassForcedCapitalSpawn != NULL && m_ppaiUnitClassForcedCapitalSpawn[iTrait][iUnitClass] == 1);
 }
+// Change Yield based on ResourceClassType (Netherlands, Russia and Jerusalem)
+int CvTraitEntry::GetResourceClassYieldChanges(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumResourceClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiResourceClassYieldChanges ? m_ppiResourceClassYieldChanges[i][j] : -1;
+}
 /// Change to Terrain yield by type
 int CvTraitEntry::GetTerrainYieldChange(int i, int j) const
 {
@@ -2112,6 +2123,35 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 
 		pResults->Reset();
 	}
+	// Trait_ResourceClassYieldChange
+	{
+		kUtility.Initialize2DArray(m_ppiResourceClassYieldChanges, "ResourceClasses", "Yields");
+
+		std::string strKey("Trait_ResourceClassYieldChange");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT ResourceClasses.ID AS ResourceClassID, Yields.ID AS YieldID, Trait_ResourceClassYieldChange.Yield \
+			 FROM Trait_ResourceClassYieldChange \
+			 INNER JOIN ResourceClasses ON ResourceClasses.Type = Trait_ResourceClassYieldChange.ResourceClassType \
+			 INNER JOIN Yields ON Yields.Type = Trait_ResourceClassYieldChange.YieldType \
+			 WHERE Trait_ResourceClassYieldChange.TraitType = ?");
+		}
+
+		pResults->Bind(1, szTraitType);
+
+		while (pResults->Step())
+		{
+			const int ResourceClassID = pResults->GetInt(0);
+			const int YieldID = pResults->GetInt(1);
+			const int yield = pResults->GetInt(2);
+			m_ppiResourceClassYieldChanges[ResourceClassID][YieldID] = yield;
+		}
+
+		pResults->Reset();
+	}
+
 	// Trait_UnitClassForceCapitalSpawn
 	{
 		kUtility.Initialize2DArray(m_ppaiUnitClassForcedCapitalSpawn, "Traits", "UnitClasses");
@@ -3666,6 +3706,19 @@ bool CvPlayerTraits::IsUnitClassForcedCapitalSpawn(UnitClassTypes eUnitClass)
 					break;
 				}
 			}
+		}
+	}
+	return rtnValue;
+}
+// Change the Yield of a ResourceClass
+int CvPlayerTraits::GetResourceClassYieldChange(ResourceClassTypes eResourceClass, YieldTypes eYieldType)
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			rtnValue += GC.getTraitInfo((TraitTypes)i)->GetResourceClassYieldChanges(eResourceClass, eYieldType);
 		}
 	}
 	return rtnValue;

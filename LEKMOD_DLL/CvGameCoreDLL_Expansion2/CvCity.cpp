@@ -3531,7 +3531,31 @@ void CvCity::ChangeResourceExtraYield(ResourceTypes eResource, YieldTypes eYield
 		updateYield();
 	}
 }
+#if defined(RESOURCECLASS_BUILDINGS)
+//	--------------------------------------------------------------------------------
+void CvCity::ChangeResourceClassExtraYield(ResourceClassTypes eClass, YieldTypes eYield, int iChange)
+{
+	VALIDATE_OBJECT;
+	CvAssertMsg(eClass >= 0 && eClass < GC.getNumResourceClassInfos(), "Invalid resource class index.");
+	CvAssertMsg(eYield >= 0 && eYield < NUM_YIELD_TYPES, "Invalid yield index.");
 
+	if (iChange != 0)
+	{
+		for (int i = 0; i < GC.getNumResourceInfos(); ++i)
+		{
+			ResourceTypes eResource = (ResourceTypes)i;
+			const CvResourceInfo* pResource = GC.getResourceInfo(eResource);
+			if (pResource && pResource->getResourceClassType() == eClass)
+			{
+				m_ppaiResourceYieldChange[eResource][eYield] += iChange;
+			}
+		}
+
+		updateYield();
+	}
+}
+
+#endif
 //	--------------------------------------------------------------------------------
 /// Extra yield for a Feature this city is working?
 int CvCity::GetFeatureExtraYield(FeatureTypes eFeature, YieldTypes eYield) const
@@ -7829,6 +7853,12 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			{
 				ChangeResourceExtraYield(((ResourceTypes)iJ), eYield, (GC.getBuildingInfo(eBuilding)->GetResourceYieldChange(iJ, eYield) * iChange));
 			}
+#ifdef RESOURCECLASS_BUILDINGS
+			for (int iJ = 0; iJ < GC.getNumResourceClassInfos(); iJ++)
+			{
+					ChangeResourceClassExtraYield(((ResourceClassTypes)iJ), eYield, (GC.getBuildingInfo(eBuilding)->GetResourceClassYieldChange(iJ, eYield) * iChange));
+			}
+#endif
 			//for(int iJ = 0; iJ < GC.getNumResourceInfos(); iJ++)
 			//{
 			//	ChangeResourceExtraYield(((ResourceTypes)iJ), eYield, (GC.getBuildingInfo(eBuilding)->GetResourceYieldChangeGlobal(iJ, eYield) * iChange));
