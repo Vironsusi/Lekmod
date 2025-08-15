@@ -146254,6 +146254,27 @@
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<TechType>TECH_ARCHERY</TechType> 
 		</Row>
+		<!-- Deity AI Parity -->
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_MINING</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_ANIMAL_HUSBANDRY</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_THE_WHEEL</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_POTTERY</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_ARCHERY</TechType> 
+		</Row>
 	</HandicapInfo_AIFreeTechs> 
 
 	<Table name="HandicapInfo_FreeTechs">
@@ -146263,6 +146284,26 @@
 	<HandicapInfo_FreeTechs>
 		<Delete />
 
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_MINING</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_ANIMAL_HUSBANDRY</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_THE_WHEEL</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_POTTERY</TechType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<TechType>TECH_ARCHERY</TechType> 
+		</Row>
 	</HandicapInfo_FreeTechs> 
 	<Table name="HandicapInfo_Goodies">
 		<Column name="HandicapType" type="text"  />
@@ -146792,7 +146833,51 @@
 			<HandicapType>HANDICAP_DEITY</HandicapType> 
 			<GoodyType>GOODY_EXPERIENCE_MOVE</GoodyType> 
 		</Row>
-		
+		<!-- GodKing -->
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_TILE_GROW</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_RANDOM_FAITH</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_IMPROVEMENT</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_FOOD</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_EXPERIENCE_MOVE</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_CULTURE</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_PROPHET_FAITH</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_GOLD</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_MAP</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_TECH</GoodyType> 
+		</Row>
+		<Row> 
+			<HandicapType>HANDICAP_GODKING</HandicapType> 
+			<GoodyType>GOODY_UPGRADE_UNIT</GoodyType> 
+		</Row>
 	</HandicapInfo_Goodies> 
 
 	<Table name="HandicapInfos">
@@ -146859,6 +146944,26 @@
 		<Column name="AIAdvancedStartPercent" type="integer"  default="0"/>
 		<Column name="AIFreeXP" type="integer"  default="0"/>
 		<Column name="AIFreeXPPercent" type="integer"  default="0"/>
+		<!-- God-King changes -->
+		<Column name="HumanStartingUnitMultiplier" type="integer"  default="0"/> <!-- Extra -->
+		<Column name="HumanWorkRateModifier" type="integer"  default="0"/> <!-- Worker Improvement Speed -->
+		<Column name="HumanUnhappinessPercent" type="integer"  default="0"/> <!-- 100 Means standard Unhappiness -->
+		<Column name="HumanGrowthPercent" type="integer"  default="0"/> <!-- 100 Means standard Growth Bucket -->
+		<Column name="HumanTrainPercent" type="integer"  default="0"/> <!-- Cost percent for making Units -->
+		<Column name="HumanWorldTrainPercent" type="integer"  default="0"/> <!-- Cost percent making "World Units" -->
+		<Column name="HumanConstructPercent" type="integer"  default="0"/> <!-- Cost percent for making buildings -->
+		<Column name="HumanWorldConstructPercent" type="integer"  default="0"/> <!-- Cost percent for making World Wonders -->
+		<Column name="HumanCreatePercent" type="integer"  default="0"/> <!-- Cost percent for WC Projects -->
+		<Column name="HumanWorldCreatePercent" type="integer"  default="0"/> <!-- cost percent for "world projects" -->
+		<Column name="HumanBuildingCostPercent" type="integer"  default="0"/> <!-- Building Maintenance discount -->
+		<Column name="HumanUnitCostPercent" type="integer"  default="0"/> <!-- Unit Maintenance discount -->
+		<Column name="HumanUnitSupplyPercent" type="integer"  default="0"/> <!-- Doesn't Need to be Used -->
+		<Column name="HumanUnitUpgradePercent" type="integer"  default="0"/> <!-- Upgrade Cost Mod -->
+		<Column name="HumanPerEraModifier" type="integer"  default="0"/> <!-- Usually Negitive, positive number will increase cost instead of reducing it -->
+		<Column name="HumanAdvancedStartPercent" type="integer"  default="0"/> <!-- idk kek -->
+		<Column name="HumanFreeXP" type="integer"  default="0"/> <!-- Free XP that units get -->
+		<Column name="HumanFreeXPPercent" type="integer"  default="0"/> <!-- XP modifier from combat -->
+		<!-- God-King changes end -->
 		<Column name="PortraitIndex" type="integer"  default="-1"/>
 		<Column name="IconAtlas" type="text"  default="NULL"/>
 	</Table> 
@@ -147403,6 +147508,91 @@
 		</Row>
 		<Row> 
 			<ID>8</ID> 
+			<Type>HANDICAP_GODKING</Type> 
+			<Description>God-King</Description> 
+			<Help>Gives the Player Deity Bonuses</Help> 
+			<StartingLocPercent>50</StartingLocPercent> 
+			<AdvancedStartPointsMod>100</AdvancedStartPointsMod> 
+			<StartingPolicyPoints>0</StartingPolicyPoints> 
+			<HappinessDefault>15</HappinessDefault> 
+			<ExtraHappinessPerLuxury>0</ExtraHappinessPerLuxury> 
+			<NumCitiesUnhappinessMod>90</NumCitiesUnhappinessMod> 
+			<PopulationUnhappinessMod>90</PopulationUnhappinessMod> 
+			<Gold>0</Gold> 
+			<GoldFreeUnits>0</GoldFreeUnits> 
+			<ProductionFreeUnits>99999</ProductionFreeUnits> 
+			<ProductionFreeUnitsPerCity>3</ProductionFreeUnitsPerCity> 
+			<ProductionFreeUnitsPopulationPercent>50</ProductionFreeUnitsPopulationPercent> 
+			<RouteCostPercent>50</RouteCostPercent> 
+			<UnitCostPercent>75</UnitCostPercent> 
+			<BuildingCostPercent>75</BuildingCostPercent> 
+			<ResearchPercent>85</ResearchPercent> 
+			<PolicyPercent>75</PolicyPercent> 
+			<ImprovementCostPercent>100</ImprovementCostPercent> 
+			<CityProductionNumOptionsConsidered>2</CityProductionNumOptionsConsidered> 
+			<TechNumOptionsConsidered>2</TechNumOptionsConsidered> 
+			<PolicyNumOptionsConsidered>2</PolicyNumOptionsConsidered> 
+			<InflationPercent>100</InflationPercent> 
+			<FreeCulturePerTurn>0</FreeCulturePerTurn> 
+			<AttitudeChange>-1</AttitudeChange> 
+			<NoTechTradeModifier>70</NoTechTradeModifier> 
+			<TechTradeKnownModifier>0</TechTradeKnownModifier> 
+			<BarbCampGold>25</BarbCampGold> 
+			<BarbSpawnMod>0</BarbSpawnMod> 
+			<BarbarianBonus>60</BarbarianBonus> 
+			<AIBarbarianBonus>60</AIBarbarianBonus> 
+			<EarliestBarbarianReleaseTurn>0</EarliestBarbarianReleaseTurn> 
+			<BarbarianLandTargetRange>5</BarbarianLandTargetRange> 
+			<BarbarianSeaTargetRange>10</BarbarianSeaTargetRange> 
+			<StartingDefenseUnits>2</StartingDefenseUnits> 
+			<StartingWorkerUnits>2</StartingWorkerUnits> 
+			<StartingExploreUnits>1</StartingExploreUnits> 
+			<AIStartingUnitMultiplier>1</AIStartingUnitMultiplier> 
+			<AIStartingDefenseUnits>2</AIStartingDefenseUnits> 
+			<AIStartingWorkerUnits>2</AIStartingWorkerUnits> 
+			<AIStartingExploreUnits>1</AIStartingExploreUnits> 
+			<AIDeclareWarProb>100</AIDeclareWarProb> 
+			<AIWorkRateModifier>100</AIWorkRateModifier> 
+			<AIUnhappinessPercent>75</AIUnhappinessPercent> 
+			<AIGrowthPercent>55</AIGrowthPercent> 
+			<AITrainPercent>50</AITrainPercent> 
+			<AIWorldTrainPercent>100</AIWorldTrainPercent> 
+			<AIConstructPercent>50</AIConstructPercent> 
+			<AIWorldConstructPercent>100</AIWorldConstructPercent> 
+			<AICreatePercent>50</AICreatePercent> 
+			<AIWorldCreatePercent>100</AIWorldCreatePercent> 
+			<AIBuildingCostPercent>50</AIBuildingCostPercent> 
+			<AIUnitCostPercent>50</AIUnitCostPercent> 
+			<AIUnitSupplyPercent>50</AIUnitSupplyPercent> 
+			<AIUnitUpgradePercent>30</AIUnitUpgradePercent> 
+			<AIInflationPercent>100</AIInflationPercent> 
+			<AIPerEraModifier>-5</AIPerEraModifier> 
+			<AIAdvancedStartPercent>170</AIAdvancedStartPercent> 
+			<AIFreeXP>30</AIFreeXP> 
+			<AIFreeXPPercent>100</AIFreeXPPercent> 
+			<HumanStartingUnitMultiplier>1</HumanStartingUnitMultiplier> <!-- Extra -->
+			<HumanWorkRateModifier>100</HumanWorkRateModifier> 
+			<HumanUnhappinessPercent>75</HumanUnhappinessPercent> 
+			<HumanGrowthPercent>55</HumanGrowthPercent> 
+			<HumanTrainPercent>50</HumanTrainPercent> 
+			<HumanWorldTrainPercent>100</HumanWorldTrainPercent> 
+			<HumanConstructPercent>50</HumanConstructPercent> 
+			<HumanWorldConstructPercent>100</HumanWorldConstructPercent> 
+			<HumanCreatePercent>50</HumanCreatePercent> 
+			<HumanWorldCreatePercent>100</HumanWorldCreatePercent> 
+			<HumanBuildingCostPercent>50</HumanBuildingCostPercent> 
+			<HumanUnitCostPercent>50</HumanUnitCostPercent> 
+			<HumanUnitSupplyPercent>50</HumanUnitSupplyPercent> 
+			<HumanUnitUpgradePercent>30</HumanUnitUpgradePercent> 
+			<HumanPerEraModifier>-5</HumanPerEraModifier> 
+			<HumanAdvancedStartPercent>170</HumanAdvancedStartPercent> 
+			<HumanFreeXP>30</HumanFreeXP> 
+			<HumanFreeXPPercent>100</HumanFreeXPPercent> 
+			<PortraitIndex>7</PortraitIndex> 
+			<IconAtlas>DIFFICULTY_ATLAS</IconAtlas> 
+		</Row>
+		<Row> 
+			<ID>9</ID> 
 			<Type>HANDICAP_AI_DEFAULT</Type> 
 			<Description>TXT_KEY_HANDICAP_AI_DEFAULT</Description> 
 			<Help>TXT_KEY_HANDICAP_AI_DEFAULT_HELP</Help> 

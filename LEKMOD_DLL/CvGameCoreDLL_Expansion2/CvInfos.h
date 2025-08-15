@@ -891,6 +891,26 @@ public:
 	int getAIAdvancedStartPercent() const;
 	int getAIFreeXP() const;
 	int getAIFreeXPPercent() const;
+#if defined(PLAYER_BONUS_HANDICAP)
+	int getHumanStartingUnitMultiplier() const; // Might be how extra starting settlers are given
+	int getHumanWorkRateModifier() const; // Tile Improvement construction rate modifier
+	int getHumanUnhappinessPercent() const; // Total Unhappiness modifier
+	int getHumanGrowthPercent() const; // Growth Bucket size modifier
+	int getHumanTrainPercent() const; // Unit Production cost modifier
+	int getHumanWorldTrainPercent() const; // World Unit Production cost modifier
+	int getHumanConstructPercent() const; // Building Production cost modifier and maybe faith cost modifier?
+	int getHumanWorldConstructPercent() const; // World Wonder Building Production cost modifier
+	int getHumanCreatePercent() const; // Project Production cost modifier?? Not sure what this is
+	int getHumanWorldCreatePercent() const; //World Project Production cost modifier
+	int getHumanBuildingCostPercent() const; // Building maintenance cost modifier
+	int getHumanUnitCostPercent() const; // Unit maintenance cost modifier
+	int getHumanUnitSupplyPercent() const; // Unneeded due to extremely high supply given by default
+	int getHumanUnitUpgradePercent() const; // Cost to Upgrade Units modifer
+	int getHumanPerEraModifier() const; // If negitive, then the places this is used get cheaper as eras progress like with Units and Buildings, if positive then the places this is used get more expensive as eras progress
+	int getHumanAdvancedStartPercent() const; // Not Sure
+	int getHumanFreeXP() const; // Modifier on XP units start with
+	int getHumanFreeXPPercent() const; // Modifier on XP gained from combat
+#endif
 	int getNumGoodies() const;
 
 	// Arrays
@@ -961,6 +981,26 @@ protected:
 	int m_iAIAdvancedStartPercent;
 	int m_iAIFreeXP;
 	int m_iAIFreeXPPercent;
+#if defined(PLAYER_BONUS_HANDICAP)
+	int m_iHumanStartingUnitMultiplier;
+	int m_iHumanWorkRateModifier;
+	int m_iHumanUnhappinessPercent;
+	int m_iHumanGrowthPercent;
+	int m_iHumanTrainPercent;
+	int m_iHumanWorldTrainPercent;
+	int m_iHumanConstructPercent;
+	int m_iHumanWorldConstructPercent;
+	int m_iHumanCreatePercent;
+	int m_iHumanWorldCreatePercent;
+	int m_iHumanBuildingCostPercent;
+	int m_iHumanUnitCostPercent;
+	int m_iHumanUnitSupplyPercent;
+	int m_iHumanUnitUpgradePercent;
+	int m_iHumanPerEraModifier;
+	int m_iHumanAdvancedStartPercent;
+	int m_iHumanFreeXP;
+	int m_iHumanFreeXPPercent;
+#endif
 	int m_iNumGoodies;
 
 	CvString m_strHandicapName;

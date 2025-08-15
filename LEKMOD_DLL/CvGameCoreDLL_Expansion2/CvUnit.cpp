@@ -664,6 +664,15 @@ void CvUnit::initWithNameOffset(int iID, UnitTypes eUnit, int iNameOffset, UnitA
 		changeExperiencePercent(iXPPercent);
 	}
 
+#if defined(PLAYER_BONUS_HANDICAP) // FreeXP and FreeXPPercent from handicap
+	int iHumanXP = GC.getGame().getHandicapInfo().getHumanFreeXP();
+	if (iHumanXP && kPlayer.isHuman() && /*kPlayer.GetID() < MAX_MAJOR_CIVS &&*/ canAcquirePromotionAny())
+		changeExperience(iHumanXP);
+
+	int iHumanXPPercent = GC.getGame().getHandicapInfo().getHumanFreeXPPercent();
+	if (iHumanXPPercent && kPlayer.isHuman() && /*kPlayer.GetID() < MAX_MAJOR_CIVS &&*/ canAcquirePromotionAny())
+		changeExperiencePercent(iHumanXPPercent);
+#endif
 
 	// Is this Unit immobile?
 	if(getUnitInfo().IsImmobile())
@@ -11156,6 +11165,17 @@ int CvUnit::upgradePrice(UnitTypes eUnit) const
 		iPrice /= 100;
 	}
 
+#if defined(PLAYER_BONUS_HANDICAP) // Human Unit Upgrade Cost Mod
+	if (kPlayer.isHuman())
+	{
+		iPrice *= GC.getGame().getHandicapInfo().getHumanUnitUpgradePercent();
+		iPrice /= 100;
+
+		iPrice *= std::max(0, ((GC.getGame().getHandicapInfo().getHumanPerEraModifier() * GET_TEAM(getTeam()).GetCurrentEra()) + 100));
+		iPrice /= 100;
+	}
+#endif
+
 	// Discount
 	iPrice -= (iPrice * getUpgradeDiscount()) / 100;
 
@@ -11767,6 +11787,13 @@ int CvUnit::workRate(bool bMax, BuildTypes /*eBuild*/) const
 		iRate *= std::max(0, (GC.getGame().getHandicapInfo().getAIWorkRateModifier() + 100));
 		iRate /= 100;
 	}
+#if defined(PLAYER_BONUS_HANDICAP) // Human work rate bonus
+	if (kPlayer.isHuman())
+	{
+		iRate *= std::max(0, (GC.getGame().getHandicapInfo().getHumanWorkRateModifier() + 100));
+		iRate /= 100;
+	}
+#endif
 
 	return iRate;
 }

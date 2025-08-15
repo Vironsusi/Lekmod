@@ -2865,6 +2865,13 @@ int CvPlayerReligions::GetCostNextProphet(bool bIncludeBeliefDiscounts, bool bAd
 			iCost *= GC.getGame().getHandicapInfo().getAITrainPercent();
 			iCost /= 100;
 		}
+#if defined(PLAYER_BONUS_HANDICAP) //Unit Train Percent, Faith
+		if (m_pPlayer->isHuman())
+		{
+			iCost *= GC.getGame().getHandicapInfo().getHumanTrainPercent();
+			iCost /= 100;
+		}
+#endif
 	}
 
 #ifdef NQ_SPAWN_PROPHETS_REMOVE_ONLY_REQUIRED_FAITH

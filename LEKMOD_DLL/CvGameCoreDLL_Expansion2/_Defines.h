@@ -1012,7 +1012,8 @@
 
 //Added a notification step mid-turn when you found a religion after having the reformation policy
 //#define LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
-
+// Allow the handicap system to give the player AI bonuses.
+#define PLAYER_BONUS_HANDICAP
 
 // Loup's changes for importation step 1
 #define TRAITIFY
