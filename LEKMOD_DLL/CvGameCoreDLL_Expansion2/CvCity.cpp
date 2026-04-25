@@ -637,39 +637,10 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 		if(owningPlayer.GetPlayerPolicies()->HasPolicy(ePolicy) && !owningPlayer.GetPlayerPolicies()->IsPolicyBlocked(ePolicy))
 		{
 			// Free Culture-per-turn in every City from Policies
-#ifdef FRUITY_TRADITION_ARISTOCRACY
-			CvPolicyEntry* pkPolicyInfo = GC.getPolicyInfo(ePolicy);
-			if (pkPolicyInfo)
-			{
-				int iExtraCulture = pkPolicyInfo->GetCulturePerCity();
-				if (pkPolicyInfo->GetCapitalCulturePerUniqueLuxury() != 0 && isCapital())
-				{
-					int iNumLuxuries = 0;
-					ResourceTypes eResource = NO_RESOURCE;
-					const CvResourceInfo* pkResourceInfo = NULL;
-#ifdef AUI_WARNING_FIXES
-					for (uint iResourceLoop = 0; iResourceLoop < GC.getNumResourceInfos(); iResourceLoop++)
-#else
-					for (int iResourceLoop = 0; iResourceLoop < GC.getNumResourceInfos(); iResourceLoop++)
-#endif
-					{
-						eResource = static_cast<ResourceTypes>(iResourceLoop);
-						pkResourceInfo = GC.getResourceInfo(eResource);
-						if (pkResourceInfo && pkResourceInfo->getResourceUsage() == RESOURCEUSAGE_LUXURY && owningPlayer.getNumResourceAvailable(eResource) > 0)
-						{
-							iNumLuxuries++;
-						}
-					}
-					iExtraCulture += pkPolicyInfo->GetCapitalCulturePerUniqueLuxury() * iNumLuxuries;
-				}
-				ChangeJONSCulturePerTurnFromPolicies(iExtraCulture);
-			}
-#else
 #if !defined(STANDARDIZE_YIELDS) // BaseYieldRateFromPolicies
 			ChangeJONSCulturePerTurnFromPolicies(GC.getPolicyInfo(ePolicy)->GetCulturePerCity());
 #else
 			ChangeBaseYieldRateFromPolicies(YIELD_CULTURE, GC.getPolicyInfo(ePolicy)->GetCulturePerCity());
-#endif
 #endif
 #if defined(LEKMOD_GARRISON_YIELD_EFFECTS)
 			ChangeGarrisonYieldBonus(YIELD_CULTURE, GC.getPolicyInfo(ePolicy)->GetCulturePerGarrisonedUnit());
@@ -678,7 +649,6 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 		}
 	}
 
-#ifndef FRUITY_TRADITION_ARISTOCRACY
 	// Add Resource Quantity to total
 	if(plot()->getResourceType() != NO_RESOURCE)
 	{
@@ -687,11 +657,8 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 			owningPlayer.changeNumResourceTotal(plot()->getResourceType(), plot()->getNumResourceForPlayer(getOwner()));
 		}
 	}
-#endif
 
-#ifndef AUI_HEXSPACE_DX_LOOPS
 	CvPlot* pLoopPlot;
-#endif
 
 	// We may need to link Resources to this City if it's constructed within previous borders and the Resources were too far away for another City to link to
 	for(int iJ = 0; iJ < NUM_CITY_PLOTS; iJ++)
@@ -6933,6 +6900,9 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 	CvPlayerPolicies* pPolicies = GET_PLAYER(getOwner()).GetPlayerPolicies();
 	CvPlayerTraits* pTraits = GET_PLAYER(getOwner()).GetPlayerTraits();
 #endif
+#if defined(BEYOND_EARTH)
+	CvPlayerPerks* pPerks = GET_PLAYER(getOwner()).GetPlayerPerks();
+#endif
 	const CvCivilizationInfo& thisCiv = getCivilizationInfo();
 
 	if(!(owningTeam.isObsoleteBuilding(eBuilding)) || bObsolete)
@@ -7092,76 +7062,6 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			CvUnit* pFreeUnit;
 
 			int iFreeUnitLoop;
-
-			// NQMP GJS - New France UA begin
-			if(pBuildingInfo->IsGrantsFreeCulturalGreatPersonWithTrait() && isCapital() && owningPlayer.GetPlayerTraits()->IsEarnsGreatPersonOnSlotOrGuild())
-			{
-				bool bGetWriter = false;
-				bool bGetArtist = false;
-				bool bGetMusician = false;
-				if (pBuildingInfo->GetGreatWorkCount() > 0) // it has great work slots and is marked as something that gives France the bonus
-				{
-					GreatWorkSlotType slotType = pBuildingInfo->GetGreatWorkSlotType();
-					if (slotType == CvTypes::getGREAT_WORK_SLOT_LITERATURE())
-					{
-						bGetWriter = true;
-					}
-					else if (slotType == CvTypes::getGREAT_WORK_SLOT_ART_ARTIFACT())
-					{
-						bGetArtist = true;
-					}
-					else if (slotType == CvTypes::getGREAT_WORK_SLOT_MUSIC())
-					{
-						bGetMusician = true;
-					}
-				}
-				else // check for guilds, they also give France the bonus
-				{
-					int buildingType = pBuildingInfo->GetBuildingClassType();
-					if (buildingType == GC.getInfoTypeForString("BUILDINGCLASS_WRITERS_GUILD") && !owningPlayer.GetPlayerTraits()->IsHasBuiltWritersGuild())
-					{
-						owningPlayer.GetPlayerTraits()->SetHasBuiltWritersGuild(true);
-						bGetWriter = true;
-					}
-					else if (buildingType == GC.getInfoTypeForString("BUILDINGCLASS_ARTISTS_GUILD") && !owningPlayer.GetPlayerTraits()->IsHasBuiltArtistsGuild())
-					{
-						owningPlayer.GetPlayerTraits()->SetHasBuiltArtistsGuild(true);
-						bGetArtist = true;
-					}
-					else if (buildingType == GC.getInfoTypeForString("BUILDINGCLASS_MUSICIANS_GUILD") && !owningPlayer.GetPlayerTraits()->IsHasBuiltMusiciansGuild())
-					{
-						owningPlayer.GetPlayerTraits()->SetHasBuiltMusiciansGuild(true);
-						bGetMusician = true;
-					}
-				}
-
-				if (bGetWriter || bGetArtist || bGetMusician)
-				{
-#ifdef AUI_WARNING_FIXES
-					for (uint iUnitLoop = 0; iUnitLoop < GC.getNumUnitInfos(); iUnitLoop++)
-#else
-					for (int iUnitLoop = 0; iUnitLoop < GC.getNumUnitInfos(); iUnitLoop++)
-#endif
-					{
-						const UnitTypes eUnit = static_cast<UnitTypes>(iUnitLoop);
-						CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnit);
-						if (pkUnitInfo)
-						{
-							const UnitTypes eFreeUnitType = (UnitTypes)thisCiv.getCivilizationUnits((UnitClassTypes)pkUnitInfo->GetUnitClassType());
-							if ((bGetWriter && pkUnitInfo->GetUnitClassType() == GC.getInfoTypeForString("UNITCLASS_WRITER")) ||
-								(bGetArtist && pkUnitInfo->GetUnitClassType() == GC.getInfoTypeForString("UNITCLASS_ARTIST")) ||
-								(bGetMusician && pkUnitInfo->GetUnitClassType() == GC.getInfoTypeForString("UNITCLASS_MUSICIAN")))
-							{
-								pFreeUnit = owningPlayer.initUnit(eFreeUnitType, getX(), getY());
-								if (!pFreeUnit->jumpToNearestValidPlot())
-									pFreeUnit->kill(false);	// Could not find a valid spot!
-							}
-						}
-					}
-				}
-			}
-			// NQMP GJS - New France UA end
-
 			// regular free units
 #ifdef AUI_WARNING_FIXES
 			for (uint iUnitLoop = 0; iUnitLoop < GC.getNumUnitInfos(); iUnitLoop++)
@@ -7564,8 +7464,13 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		ChangeMaxAirUnits(pBuildingInfo->GetAirModifier() * iChange);
 		changeNukeModifier(pBuildingInfo->GetNukeModifier() * iChange);
 		changeHealRate(pBuildingInfo->GetHealRateChange() * iChange);
-		ChangeExtraHitPoints(pBuildingInfo->GetExtraCityHitPoints() * iChange);
-
+#if !defined(BEYOND_EARTH)
+		ChangeExtraHitPoints(pBuildingInfo->GetExtraCityHitPoints()* iChange);
+#else
+		int iBuildingHitPointChange = pBuildingInfo->GetExtraCityHitPoints() * iChange;
+		iBuildingHitPointChange += pPerks->GetBuildingCityHitPointsChange(eBuilding) * iChange;
+		ChangeExtraHitPoints(iBuildingHitPointChange);
+#endif
 		ChangeNoOccupiedUnhappinessCount(pBuildingInfo->IsNoOccupiedUnhappiness() * iChange);
 
 		if(pBuildingInfo->GetHappiness() > 0)
@@ -7976,7 +7881,13 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 	if(!bObsolete)
 	{
-		m_pCityBuildings->ChangeBuildingDefense(pBuildingInfo->GetDefenseModifier() * iChange);
+#if defined(BEYOND_EARTH)
+		int iBuildingDefenseChange = pBuildingInfo->GetDefenseModifier() * iChange;
+		iBuildingDefenseChange += pPerks->GetBuildingCityStrengthChange(eBuilding) * iChange;
+		m_pCityBuildings->ChangeBuildingDefense(iBuildingDefenseChange);
+#else
+		m_pCityBuildings->ChangeBuildingDefense(pBuildingInfo->GetDefenseModifier()* iChange);
+#endif
 #if defined(LEKMOD_GARRISON_YIELD_EFFECTS) // Add the garrison strength bonus NOTE: this is not inside of a if(GetGarrisonedUnit()) since that would make it only apply if the city is garrisoned on construction
 		m_pCityBuildings->ChangeGarrisonStrengthBonus(pBuildingInfo->GetGarrisonStrengthBonus()* iChange);
 #endif
@@ -7992,9 +7903,6 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 	owningPlayer.DoUpdateHappiness();
 
-#ifdef AUI_CITIZENS_MID_TURN_ASSIGN_RUNS_SELF_CONSISTENCY
-	GetPlayer()->doSelfConsistencyCheckAllCities();
-#endif
 	setLayoutDirty(true);
 }
 

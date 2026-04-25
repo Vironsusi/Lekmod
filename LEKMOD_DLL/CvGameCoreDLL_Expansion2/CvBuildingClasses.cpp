@@ -3445,11 +3445,17 @@ void CvCityBuildings::SetNumRealBuildingTimed(BuildingTypes eIndex, int iNewValu
 		}
 
 		// Maintenance cost
-		if(buildingEntry->GetGoldMaintenance() != 0)
+#if defined(BEYOND_EARTH)
+		if (buildingEntry->GetGoldMaintenance() != 0 && !GET_PLAYER(m_pCity->getOwner()).GetPlayerPerks()->IsBuildingMaintenanceFree(eIndex))
 		{
 			pPlayer->GetTreasury()->ChangeBaseBuildingGoldMaintenance(buildingEntry->GetGoldMaintenance() * iChangeNumRealBuilding);
 		}
-
+#else
+		if (buildingEntry->GetGoldMaintenance() != 0)
+		{
+			pPlayer->GetTreasury()->ChangeBaseBuildingGoldMaintenance(buildingEntry->GetGoldMaintenance() * iChangeNumRealBuilding);
+		}
+#endif
 		//Achievement for Temples
 		const char* szBuildingTypeC = buildingEntry->GetType();
 		CvString szBuildingType = szBuildingTypeC;

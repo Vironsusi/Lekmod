@@ -166,6 +166,9 @@ template<class T> inline T FastMin(const T& _Left, const T& _Right) { return (_D
 #include "CvCityConnections.h"
 #include "CvAdvisorCounsel.h"
 #include "CvAdvisorRecommender.h"
+#if defined(BEYOND_EARTH)
+#include "CvBeyondEarthInfos.h"
+#endif
 
 using namespace fastdelegate;
 

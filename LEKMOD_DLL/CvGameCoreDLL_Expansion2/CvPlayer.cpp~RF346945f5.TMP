@@ -62,7 +62,7 @@
 // Version 1 
 //	 * CvPlayer save version reset for expansion pack 2.
 //------------------------------------------------------------------------------
-const int g_CurrentCvPlayerVersion = 16;
+const int g_CurrentCvPlayerVersion = 17;
 
 //Simply empty check utility.
 bool isEmpty(const char* szString)
@@ -430,8 +430,14 @@ CvPlayer::CvPlayer() :
 	, m_eConqueror(NO_PLAYER)
 	, m_bHasAdoptedStateReligion("CvPlayer::m_bHasAdoptedStateReligion", m_syncArchive)
 	, m_bAlliesGreatPersonBiasApplied("CvPlayer::m_bAlliesGreatPersonBiasApplied", m_syncArchive)
+#if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION) && defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+	, m_aiConversionMajorityOnceUsedKeys("CvPlayer::m_aiConversionMajorityOnceUsedKeys", m_syncArchive)
+#endif
 	, m_eID("CvPlayer::m_eID", m_syncArchive)
 	, m_ePersonalityType("CvPlayer::m_ePersonalityType", m_syncArchive)
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+	, m_aiWorldWonderYieldChanges("CvPlayer::m_aiWorldWonderYieldChanges", m_syncArchive)
+#endif
 	, m_aiCityYieldChange("CvPlayer::m_aiCityYieldChange", m_syncArchive)
 	, m_aiCoastalCityYieldChange("CvPlayer::m_aiCoastalCityYieldChange", m_syncArchive)
 	, m_aiCapitalYieldChange("CvPlayer::m_aiCapitalYieldChange", m_syncArchive)
@@ -451,6 +457,9 @@ CvPlayer::CvPlayer() :
 	, m_strScriptData("CvPlayer::m_strScriptData", m_syncArchive)
 	, m_paiNumResourceUsed("CvPlayer::m_paiNumResourceUsed", m_syncArchive)
 	, m_paiNumResourceTotal("CvPlayer::m_paiNumResourceTotal", m_syncArchive)
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+	, m_paiMinorStrategicResourceFromBuildings("CvPlayer::m_paiMinorStrategicResourceFromBuildings", m_syncArchive)
+#endif
 	, m_paiResourceGiftedToMinors("CvPlayer::m_paiResourceGiftedToMinors", m_syncArchive)
 	, m_paiResourceExport("CvPlayer::m_paiResourceExport", m_syncArchive)
 	, m_paiResourceImport("CvPlayer::m_paiResourceImport", m_syncArchive)
@@ -461,10 +470,6 @@ CvPlayer::CvPlayer() :
 	, m_paiFreePromotionCount("CvPlayer::m_paiFreePromotionCount", m_syncArchive)
 #ifdef LEKMOD_UNITCOMBAT_FREE_PROMOTION
 	, m_paiUnitCombatFreePromotionCount("CvPlayer::m_paiFreeUnitCombatPromotionCount", m_syncArchive)
-#endif
-#ifdef LEKMOD_v34
-	, m_aiSameLandMassYieldChange("CvPlayer::m_aiSameLandMassYieldChange", m_syncArchive)
-    , m_aiDifferentLandMassYieldChange("CvPlayer::m_aiDifferentLandMassYieldChange", m_syncArchive)
 #endif
 	, m_paiUnitCombatProductionModifiers("CvPlayer::m_paiUnitCombatProductionModifiers", m_syncArchive)
 	, m_paiUnitCombatFreeExperiences("CvPlayer::m_paiUnitCombatFreeExperiences", m_syncArchive)
@@ -480,9 +485,6 @@ CvPlayer::CvPlayer() :
 	, m_ppaaiSpecialistExtraYield("CvPlayer::m_ppaaiSpecialistExtraYield", m_syncArchive)
 	, m_ppaaiImprovementYieldChange("CvPlayer::m_ppaaiImprovementYieldChange", m_syncArchive)
 	, m_ppaaiBuildingClassYieldMod("CvPlayer::m_ppaaiBuildingClassYieldMod", m_syncArchive)
-#if defined(BEYOND_EARTH)
-	, m_ppaaiBuildingClassYieldChange("CvPlayer::m_ppaaiBuildingClassYieldChange", m_syncArchive)
-#endif
 	, m_UnitCycle(this)
 	, m_bEverPoppedGoody("CvPlayer::m_bEverPoppedGoody", m_syncArchive)
 	, m_bEverTrainedBuilder("CvPlayer::m_bEverTrainedBuilder", m_syncArchive)
@@ -532,9 +534,6 @@ CvPlayer::CvPlayer() :
 
 {
 	m_pPlayerPolicies = FNEW(CvPlayerPolicies, c_eCiv5GameplayDLL, 0);
-#if defined(BEYOND_EARTH)
-	m_pPlayerPerks = FNEW(CvPlayerPerks, c_eCiv5GameplayDLL, 0);
-#endif
 	m_pEconomicAI = FNEW(CvEconomicAI, c_eCiv5GameplayDLL, 0);
 	m_pMilitaryAI = FNEW(CvMilitaryAI, c_eCiv5GameplayDLL, 0);
 	m_pCitySpecializationAI = FNEW(CvCitySpecializationAI, c_eCiv5GameplayDLL, 0);
@@ -583,9 +582,6 @@ CvPlayer::~CvPlayer()
 
 	SAFE_DELETE(m_pDangerPlots);
 	delete m_pPlayerPolicies;
-#if defined(BEYOND_EARTH)
-	delete m_pPlayerPerks;
-#endif
 	delete m_pEconomicAI;
 	delete m_pMilitaryAI;
 	delete m_pCitySpecializationAI;
@@ -746,10 +742,14 @@ void CvPlayer::init(PlayerTypes eID)
 #endif
 		for(iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
 		{
+			YieldTypes eYield = static_cast<YieldTypes>(iJ);
 #if !defined(LEKMOD_CITY_YIELDS_TRAITS)
-			ChangeCityYieldChange((YieldTypes)iJ, 100 * GetPlayerTraits()->GetFreeCityYield((YieldTypes)iJ));
+			ChangeCityYieldChange(eYield, 100 * GetPlayerTraits()->GetFreeCityYield(eYield));
 #endif
-			changeYieldRateModifier((YieldTypes)iJ, GetPlayerTraits()->GetYieldRateModifier((YieldTypes)iJ));
+			changeYieldRateModifier(eYield, GetPlayerTraits()->GetYieldRateModifier(eYield));
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+			ChangeWorldWonderYieldChanges(eYield, GetPlayerTraits()->GetWorldWonderYieldChange(eYield));
+#endif
 		}
 
 		recomputeGreatPeopleModifiers();
@@ -801,6 +801,9 @@ void CvPlayer::uninit()
 {
 	m_paiNumResourceUsed.clear();
 	m_paiNumResourceTotal.clear();
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+	m_paiMinorStrategicResourceFromBuildings.clear();
+#endif
 	m_paiResourceGiftedToMinors.clear();
 	m_paiResourceExport.clear();
 	m_paiResourceImport.clear();
@@ -843,9 +846,6 @@ void CvPlayer::uninit()
 #endif
 
 	m_pPlayerPolicies->Uninit();
-#if defined(BEYOND_EARTH)
-	m_pPlayerPerks->uninit();
-#endif
 	m_pEconomicAI->Uninit();
 	m_pMilitaryAI->Uninit();
 	m_pCitySpecializationAI->Uninit();
@@ -888,9 +888,6 @@ void CvPlayer::uninit()
 	m_ppaaiImprovementYieldChange.clear();
 	m_ppiResourceYieldChange.clear();
 	m_ppaaiBuildingClassYieldMod.clear();
-#if defined(BEYOND_EARTH)
-	m_ppaaiBuildingClassYieldChange.clear();
-#endif
 
 	m_UnitCycle.Clear();
 
@@ -901,7 +898,9 @@ void CvPlayer::uninit()
 	m_cities.Uninit();
 
 	m_units.Uninit();
-
+#if defined(LEKMOD_AREA_BASED_CITY_YIELD)
+	m_aPlotExtraYields.clear();
+#endif
 	// loop through all entries freeing them up
 	std::map<int , CvAIOperation*>::iterator iter;
 	for(iter = m_AIOperations.begin(); iter != m_AIOperations.end(); ++iter)
@@ -1255,6 +1254,10 @@ void CvPlayer::uninit()
 	m_bAlliesGreatPersonBiasApplied = false;
 	m_lastGameTurnInitialAIProcessed = -1;
 
+#if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION) && defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+	m_aiConversionMajorityOnceUsedKeys.clear();
+#endif
+
 	m_eID = NO_PLAYER;
 }
 
@@ -1281,7 +1284,10 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 	// tutorial info
 	m_bEverPoppedGoody = false;
-
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+	m_aiWorldWonderYieldChanges.clear();
+	m_aiWorldWonderYieldChanges.resize(NUM_YIELD_TYPES, 0);
+#endif
 	m_aiCityYieldChange.clear();
 	m_aiCityYieldChange.resize(NUM_YIELD_TYPES, 0);
 
@@ -1330,6 +1336,14 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	m_aiSiphonLuxuryCount.clear();
 	m_aiSiphonLuxuryCount.resize(MAX_PLAYERS, 0);
 
+#if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION) && defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+	m_aiConversionMajorityOnceUsedKeys.clear();
+#endif
+
+#if defined(LEKMOD_CITY_YIELDS_TRAITS) && defined(LEKMOD_TRACK_CITY_SETTLER_UNITTYPE) && defined(LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX) && (LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX > 0)
+	m_aiYieldSettleUnitCityOrder.clear();
+#endif
+
 	m_aOptions.clear();
 
 	m_strReligionKey = "";
@@ -1344,6 +1358,11 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 		m_paiNumResourceTotal.clear();
 		m_paiNumResourceTotal.resize(GC.getNumResourceInfos(), 0);
+
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+		m_paiMinorStrategicResourceFromBuildings.clear();
+		m_paiMinorStrategicResourceFromBuildings.resize(GC.getNumResourceInfos(), 0);
+#endif
 
 		m_paiResourceGiftedToMinors.clear();
 		m_paiResourceGiftedToMinors.resize(GC.getNumResourceInfos(), 0);
@@ -1480,9 +1499,6 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		m_pReligionAI->Init(GC.GetGameBeliefs(), this);
 		m_pPlayerTechs->Init(GC.GetGameTechs(), this, false);
 		m_pPlayerPolicies->Init(GC.GetGamePolicies(), this, false);
-#if defined(BEYOND_EARTH)
-		m_pPlayerPerks->init(GC.GetGamePlayerPerks(), this);
-#endif
 		m_pTacticalAI->Init(this);
 		m_pHomelandAI->Init(this);
 		m_pMinorCivAI->Init(this);
@@ -1519,9 +1535,6 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 			{
 				m_pFlavorManager->AddFlavorRecipient(m_pPlayerTechs);
 				m_pFlavorManager->AddFlavorRecipient(m_pPlayerPolicies);
-#if defined(BEYOND_EARTH)
-				//m_pFlavorManager->AddFlavorRecipient(m_pPlayerPerks);
-#endif
 				m_pFlavorManager->AddFlavorRecipient(m_pWonderProductionAI);
 			}
 		}
@@ -1545,14 +1558,6 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		{
 			m_ppaaiImprovementYieldChange.setAt(i, yield);
 		}
-#if defined(BEYOND_EARTH)
-		m_ppaaiBuildingClassYieldChange.clear();
-		m_ppaaiBuildingClassYieldChange.resize(GC.getNumBuildingClassInfos());
-		for(unsigned int i = 0; i < m_ppaaiBuildingClassYieldChange.size(); ++i)
-		{
-			m_ppaaiBuildingClassYieldChange.setAt(i, yield);
-		}
-#endif
 
 		m_ppiImprovementYieldChange.clear();
 		m_ppiImprovementYieldChange.resize(GC.getNumImprovementInfos());
@@ -2595,6 +2600,10 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool bP
 
 	iBattleDamage = pOldCity->getDamage();
 
+#ifdef LEKMOD_TRACK_CITY_SETTLER_UNITTYPE
+	UnitTypes eAcquiredCitySettlerUnit = pOldCity->SettlerUnit();
+#endif
+
 	// Traded cities between humans don't heal (an exploit would be to trade a city back and forth between teammates to get an instant heal.)
 	if(!bGift || !isHuman() || !GET_PLAYER(pOldCity->getOwner()).isHuman())
 	{
@@ -2850,6 +2859,13 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool bP
 		pNewCity->setGameTurnFounded(iGameTurnFounded);
 		pNewCity->SetEverCapital(bEverCapital);
 	}
+
+#ifdef LEKMOD_TRACK_CITY_SETTLER_UNITTYPE
+	if (!bIsMinorCivBuyout)
+	{
+		pNewCity->SetSettlerUnit(eAcquiredCitySettlerUnit);
+	}
+#endif
 
 	// Population change for capturing a city
 	if(!bRecapture && bConquest)	// Don't drop it if we're recapturing our own City
@@ -3502,6 +3518,21 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool bP
 #ifdef AUI_CITIZENS_MID_TURN_ASSIGN_RUNS_SELF_CONSISTENCY
 	doSelfConsistencyCheckAllCities();
 	GET_PLAYER(eOldOwner).doSelfConsistencyCheckAllCities();
+#endif
+
+#if defined(LEKMOD_CITY_YIELDS_TRAITS) && defined(LEKMOD_TRACK_CITY_SETTLER_UNITTYPE) && defined(LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX) && (LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX > 0)
+	{
+		const bool bYieldSettleKeyed =
+			(GetPlayerTraits()->GetYieldSettleUnit() != NO_UNIT) ||
+			(eOldOwner != NO_PLAYER && GET_PLAYER(eOldOwner).isAlive() && GET_PLAYER(eOldOwner).GetPlayerTraits()->GetYieldSettleUnit() != NO_UNIT);
+		if (bYieldSettleKeyed)
+		{
+			updateYield();
+			if (eOldOwner != NO_PLAYER && GET_PLAYER(eOldOwner).isAlive())
+				GET_PLAYER(eOldOwner).updateYield();
+			GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
+		}
+	}
 #endif
 
 #ifdef _MSC_VER
@@ -8797,6 +8828,75 @@ void CvPlayer::found(int iX, int iY, UnitTypes eSettlerUnit)
 	}
 }
 
+#if defined(LEKMOD_CITY_YIELDS_TRAITS) && defined(LEKMOD_TRACK_CITY_SETTLER_UNITTYPE) && defined(LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX) && (LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX > 0)
+
+// Non-capitals with SettlerUnit == trait unit. Order by founding turn then city ID — ID alone is wrong after
+// acquireCity(), which recreates the city and assigns a new ID while preserving getGameTurnFounded().
+void CvPlayer::RebuildYieldSettleUnitCityOrder()
+{
+	m_aiYieldSettleUnitCityOrder.clear();
+	UnitTypes eTraitUnit = GetPlayerTraits()->GetYieldSettleUnit();
+	if (eTraitUnit == NO_UNIT)
+		return;
+
+	std::vector<std::pair<int, int> > v;
+	int iLoop;
+	for (CvCity* pLoop = firstCity(&iLoop); pLoop != NULL; pLoop = nextCity(&iLoop))
+	{
+		if (pLoop->isCapital())
+			continue;
+		if (pLoop->SettlerUnit() != eTraitUnit)
+			continue;
+		v.push_back(std::make_pair(pLoop->getGameTurnFounded(), pLoop->GetID()));
+	}
+	std::sort(v.begin(), v.end());
+	m_aiYieldSettleUnitCityOrder.reserve(v.size());
+	for (size_t i = 0; i < v.size(); ++i)
+		m_aiYieldSettleUnitCityOrder.push_back(v[i].second);
+}
+
+bool CvPlayer::IsCityReceivingYieldSettleUnitEraBonus(const CvCity* pCity)
+{
+	CvAssert(pCity != NULL);
+	if (!pCity)
+		return true;
+
+	UnitTypes eTraitUnit = GetPlayerTraits()->GetYieldSettleUnit();
+	if (eTraitUnit == NO_UNIT)
+		return true;
+	if (pCity->getOwner() != GetID())
+		return true;
+	if (pCity->SettlerUnit() != eTraitUnit)
+		return true;
+	if (pCity->isCapital())
+		return true;
+
+	RebuildYieldSettleUnitCityOrder();
+
+	const int iMax = LEKMOD_YIELD_SETTLE_UNIT_NON_CAP_MAX;
+	int iRemaining = iMax;
+	const int iTargetID = pCity->GetID();
+
+	for (size_t i = 0; i < m_aiYieldSettleUnitCityOrder.size(); ++i)
+	{
+		CvCity* pLoop = getCity(m_aiYieldSettleUnitCityOrder[i]);
+		if (pLoop == NULL)
+			continue;
+		if (pLoop->getOwner() != GetID())
+			continue;
+		if (pLoop->isCapital())
+			continue;
+		if (pLoop->SettlerUnit() != eTraitUnit)
+			continue;
+
+		if (pLoop->GetID() == iTargetID)
+			return (iRemaining > 0);
+		if (iRemaining > 0)
+			--iRemaining;
+	}
+	return false;
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 bool CvPlayer::canTrain(UnitTypes eUnit, bool bContinue, bool bTestVisible, bool bIgnoreCost, bool bIgnoreUniqueUnitStatus, CvString* toolTipSink) const
@@ -10374,7 +10474,10 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 	CvBuildingEntry* pBuildingInfo = GC.getBuildingInfo(eBuilding);
 	if(pBuildingInfo == NULL)
 		return;
-
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)// Make the code for Belem less heavy in the plot calc
+	CvArea* pLoopArea;
+	CvMap& map = GC.getMap();
+#endif
 	// One-shot items
 	if(bFirst && iChange > 0)
 	{
@@ -10576,13 +10679,13 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 
 	for(iI = 0; iI < NUM_YIELD_TYPES; iI++)
 	{
-		pArea->changeYieldRateModifier(GetID(), ((YieldTypes)iI), (pBuildingInfo->GetAreaYieldModifier(iI) * iChange));
-		changeYieldRateModifier(((YieldTypes)iI), (pBuildingInfo->GetGlobalYieldModifier(iI) * iChange));
+		YieldTypes eYield = static_cast<YieldTypes>(iI);
+		pArea->changeYieldRateModifier(GetID(), eYield, (pBuildingInfo->GetAreaYieldModifier(iI) * iChange));
+		changeYieldRateModifier(eYield, (pBuildingInfo->GetGlobalYieldModifier(iI) * iChange));
 		for (iJ = 0; iJ < GC.getNumResourceInfos(); iJ++)
 		{
-			changeResourceYieldChange(((ResourceTypes)iJ), ((YieldTypes)iI), (pBuildingInfo->GetResourceYieldChangeGlobal((ResourceTypes)iJ, (YieldTypes)iI) * iChange));
+			changeResourceYieldChange(((ResourceTypes)iJ), eYield, (pBuildingInfo->GetResourceYieldChangeGlobal((ResourceTypes)iJ, eYield) * iChange));
 		}
-		
 	}
 
 	for(iI = 0; iI < GC.getNumSpecialistInfos(); iI++)
@@ -10625,19 +10728,6 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 				}
 			}
 		}
-#if defined(BEYOND_EARTH)
-		for (int i = 0; i < GC.getNumBuildingClassInfos(); i++)
-		{
-			BuildingClassTypes eBuildingClass = (BuildingClassTypes)i;
-			if(NO_BUILDINGCLASS == eBuildingClass)
-				continue;
-			int yield = pBuildingInfo->GetBuildingClassYieldChange(eBuildingClass, eYield);
-			if (yield != 0)
-			{
-				ChangeBuildingClassYieldChange(eBuildingClass, eYield, (yield * iChange));
-			}
-		}
-#endif
 	}
 
 	// Loop through Cities
@@ -10784,10 +10874,100 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 			}
 		}
 #endif
+#if defined(LEKMOD_AREA_BASED_CITY_YIELD)
+		CvCityBuildings* pCityBuildings = pLoopCity->GetCityBuildings();
+		YieldTypes eYield;
+		for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+		{
+			eYield = static_cast<YieldTypes>(iYield);
+			if (pCityBuildings->GetSameLandMassYieldChange(eYield) > 0)
+			{
+				
+			}
+			else if (pCityBuildings->GetDifferentLandMassYieldChange(eYield) > 0)
+			{
+
+			}
+		}
+#endif
 	}
 }
-#if !defined(BEYOND_EARTH)
-// --------------------------------------------------------------------------------
+#if defined(LEKMOD_AREA_BASED_CITY_YIELD)
+//	--------------------------------------------------------------------------------
+int CvPlayer::getPlotExtraYield(int iX, int iY, YieldTypes eYield, bool bCity) const
+{
+	for (std::vector<PlotExtraYield>::const_iterator it = m_aPlotExtraYields.begin(); it != m_aPlotExtraYields.end(); ++it)
+	{
+		if ((*it).m_iX == iX && (*it).m_iY == iY)
+		{
+			return (*it).m_aeExtraYield[eYield];
+		}
+	}
+
+	return 0;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::setPlotExtraYield(int iX, int iY, YieldTypes eYield, bool bCity, int iExtraYield)
+{
+	bool bFound = false;
+
+	for (std::vector<PlotExtraYield>::iterator it = m_aPlotExtraYields.begin(); it != m_aPlotExtraYields.end(); ++it)
+	{
+		if ((*it).m_iX == iX && (*it).m_iY == iY)
+		{
+			(*it).m_aeExtraYield[eYield] += iExtraYield;
+			bFound = true;
+			break;
+		}
+	}
+
+	if (!bFound)
+	{
+		PlotExtraYield kExtraYield;
+		kExtraYield.m_iX = iX;
+		kExtraYield.m_iY = iY;
+		for (int i = 0; i < NUM_YIELD_TYPES; ++i)
+		{
+			if (eYield == i)
+			{
+				kExtraYield.m_aeExtraYield.push_back(iExtraYield);
+			}
+			else
+			{
+				kExtraYield.m_aeExtraYield.push_back(0);
+			}
+		}
+		m_aPlotExtraYields.push_back(kExtraYield);
+	}
+
+	CvPlot* pPlot = GC.getMap().plot(iX, iY);
+	if (NULL != pPlot)
+	{
+		pPlot->updateYield();
+	}
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::removePlotExtraYield(int iX, int iY)
+{
+	for (std::vector<PlotExtraYield>::iterator it = m_aPlotExtraYields.begin(); it != m_aPlotExtraYields.end(); ++it)
+	{
+		if ((*it).m_iX == iX && (*it).m_iY == iY)
+		{
+			m_aPlotExtraYields.erase(it);
+			break;
+		}
+	}
+
+	CvPlot* pPlot = GC.getMap().plot(iX, iY);
+	if (NULL != pPlot)
+	{
+		pPlot->updateYield();
+	}
+}
+#endif
+//	--------------------------------------------------------------------------------
 /// Get yield change from buildings for a specific building class
 int CvPlayer::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType)
 {
@@ -10795,19 +10975,19 @@ int CvPlayer::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, Yie
 
 	CvBuildingXMLEntries* pBuildings = GC.GetGameBuildings();
 
-	if (pBuildings)
+	if(pBuildings)
 	{
 #ifdef AUI_WARNING_FIXES
 		for (uint i = 0; i < pBuildings->GetNumBuildings(); i++)
 #else
-		for (int i = 0; i < pBuildings->GetNumBuildings(); i++)
+		for(int i = 0; i < pBuildings->GetNumBuildings(); i++)
 #endif
 		{
 			// Do we have this building anywhere in empire?
-			if (countNumBuildings((BuildingTypes)i) > 0)
+			if(countNumBuildings((BuildingTypes)i) > 0)
 			{
 				CvBuildingEntry* pEntry = pBuildings->GetEntry(i);
-				if (pEntry)
+				if(pEntry)
 				{
 					rtnValue += pEntry->GetBuildingClassYieldChange(eBuildingClass, eYieldType);
 				}
@@ -10817,28 +10997,7 @@ int CvPlayer::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, Yie
 
 	return rtnValue;
 }
-#else
-// --------------------------------------------------------------------------------
-/// Get yield change from buildings for a specific building class
-int CvPlayer::GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType)
-{
-	if (eBuildingClass == NO_BUILDINGCLASS || eYieldType == NO_YIELD)
-	{
-		return 0;
-	}
-	return m_ppaaiBuildingClassYieldChange[eBuildingClass][eYieldType];
-}
-// Change the YieldChange of BuildingClass for the Player.
-void CvPlayer::ChangeBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType, int iChange)
-{
-	if (iChange != 0)
-	{
-		Firaxis::Array<int, NUM_YIELD_TYPES> yields = m_ppaaiBuildingClassYieldChange[eBuildingClass];
-		yields[eYieldType] = (m_ppaaiBuildingClassYieldChange[eBuildingClass][eYieldType] + iChange);
-		m_ppaaiBuildingClassYieldChange.setAt(eBuildingClass, yields);
-	}
-}
-#endif
+
 //	--------------------------------------------------------------------------------
 /// Can we eBuild on pPlot?
 bool CvPlayer::canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra, bool bTestVisible, bool bTestGold, bool bTestPlotOwner) const
@@ -11845,6 +12004,23 @@ int CvPlayer::specialistYield(SpecialistTypes eSpecialist, YieldTypes eYield, bo
 		iRtnValue += getSpecialistExtraYield(eYield);
 	}
 	return (iRtnValue);
+}
+#endif
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+int CvPlayer::GetWorldWonderYieldChanges(YieldTypes eYield) const
+{
+	CvAssertMsg(eYield >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eYield < NUM_YIELD_TYPES, "eIndex is expected to be within maximum bounds (invalid Index)");
+	return m_aiWorldWonderYieldChanges[eYield];
+}
+void CvPlayer::ChangeWorldWonderYieldChanges(YieldTypes eYield, int iChange)
+{
+	CvAssertMsg(eYield >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eYield < NUM_YIELD_TYPES, "eIndex is expected to be within maximum bounds (invalid Index)");
+	if(iChange != 0)
+	{
+		m_aiWorldWonderYieldChanges.setAt(eYield, m_aiWorldWonderYieldChanges[eYield] + iChange);
+	}
 }
 #endif
 //	--------------------------------------------------------------------------------
@@ -13352,6 +13528,29 @@ void CvPlayer::DoYieldBonusFromKill(YieldTypes eYield, CvUnit* pAttackingUnit, C
 	}
 }
 #endif
+#if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION) && defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+bool CvPlayer::IsConversionMajorityYieldOnceUsed(int iCityID, PromotionTypes ePromotion, YieldTypes eYield) const
+{
+	const std::vector<int>& v = m_aiConversionMajorityOnceUsedKeys;
+	for (size_t i = 0; i + 2 < v.size(); i += 3)
+	{
+		if (v[i] == iCityID && v[i + 1] == (int)ePromotion && v[i + 2] == (int)eYield)
+			return true;
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::MarkConversionMajorityYieldOnceUsed(int iCityID, PromotionTypes ePromotion, YieldTypes eYield)
+{
+	if (IsConversionMajorityYieldOnceUsed(iCityID, ePromotion, eYield))
+		return;
+	std::vector<int>& v = m_aiConversionMajorityOnceUsedKeys.dirtyGet();
+	v.push_back(iCityID);
+	v.push_back((int)ePromotion);
+	v.push_back((int)eYield);
+}
+#endif
 #if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION)
 void CvPlayer::DoYieldsFromConversion(CvUnit* pConvertingUnit, CvCity* pPressuredCity,int iFollowerDelta, bool bMajority, int iX, int iY, int iExistingDelay)
 {
@@ -13381,6 +13580,10 @@ void CvPlayer::DoYieldBonusFromConversion(YieldTypes eYield, CvUnit* pConverting
 		return; // No change in followers, so no yields to give
 	int iPerFollower = 0;
 	int iPerFollowerMajority = 0;
+#if defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+	std::vector<PromotionTypes> aePromotionsToMarkOnce;
+	const int iCityID = pPressuredCity->GetID();
+#endif
 	// sum across all promotions the unit has
 	for (int iP = 0; iP < GC.getNumPromotionInfos(); iP++)
 	{
@@ -13390,7 +13593,24 @@ void CvPlayer::DoYieldBonusFromConversion(YieldTypes eYield, CvUnit* pConverting
 			if (pEntry)
 			{
 				iPerFollower += pEntry->GetYieldFromFollowerConversion(eYield);
+#if defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+				if (bMajority)
+				{
+					const int iMajAmt = pEntry->GetYieldFromFollowerConversionMajority(eYield);
+					if (iMajAmt > 0)
+					{
+						if (pEntry->GetYieldFromFollowerConversionMajorityOnlyOnce(eYield))
+						{
+							if (IsConversionMajorityYieldOnceUsed(iCityID, (PromotionTypes)iP, eYield))
+								continue;
+							aePromotionsToMarkOnce.push_back((PromotionTypes)iP);
+						}
+						iPerFollowerMajority += iMajAmt;
+					}
+				}
+#else
 				iPerFollowerMajority += pEntry->GetYieldFromFollowerConversionMajority(eYield);
+#endif
 			}
 		}
 	}
@@ -13430,6 +13650,15 @@ void CvPlayer::DoYieldBonusFromConversion(YieldTypes eYield, CvUnit* pConverting
 #endif
 		iNumBonuses++;
 		ReportYieldFromKill(eYield, iTotalValue, iX, iY, iNumBonuses);
+#if defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+		if (bMajority)
+		{
+			for (size_t iMu = 0; iMu < aePromotionsToMarkOnce.size(); iMu++)
+			{
+				MarkConversionMajorityYieldOnceUsed(iCityID, aePromotionsToMarkOnce[iMu], eYield);
+			}
+		}
+#endif
 	}
 }
 #endif
@@ -16347,12 +16576,7 @@ CvPlayerPolicies* CvPlayer::GetPlayerPolicies() const
 {
 	return m_pPlayerPolicies;
 }
-#if defined(BEYOND_EARTH)
-CvPlayerPerks* CvPlayer::GetPlayerPerks() const
-{
-	return m_pPlayerPerks;
-}
-#endif
+
 //	--------------------------------------------------------------------------------
 CvPlayerTraits* CvPlayer::GetPlayerTraits() const
 {
@@ -22803,6 +23027,101 @@ int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) con
 }
 
 //	--------------------------------------------------------------------------------
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+void CvPlayer::changeNumResourceTotal(ResourceTypes eIndex, int iChange, bool bIgnoreResourceWarning, bool bMinorStrategicFromBuilding)
+{
+	CvAssert(eIndex >= 0);
+	CvAssert(eIndex < GC.getNumResourceInfos());
+
+	if(iChange != 0)
+	{
+		m_paiNumResourceTotal.setAt(eIndex, m_paiNumResourceTotal[eIndex] + iChange);
+
+		if(bMinorStrategicFromBuilding && isMinorCiv())
+		{
+			const CvResourceInfo* pkResourceInfo = GC.getResourceInfo(eIndex);
+			if(pkResourceInfo != NULL && pkResourceInfo->getResourceUsage() == RESOURCEUSAGE_STRATEGIC)
+			{
+				m_paiMinorStrategicResourceFromBuildings.setAt(eIndex, m_paiMinorStrategicResourceFromBuildings[eIndex] + iChange);
+				CvAssert(m_paiMinorStrategicResourceFromBuildings[eIndex] >= 0);
+			}
+		}
+
+		// Minors with an Ally give their Resources to their friend (awww)
+		if(isMinorCiv())
+		{
+			PlayerTypes eBestRelationsPlayer = GetMinorCivAI()->GetAlly();
+
+			if(eBestRelationsPlayer != NO_PLAYER)
+			{
+				ResourceUsageTypes eUsage = GC.getResourceInfo(eIndex)->getResourceUsage();
+
+				const bool bSkipAllyShare = (bMinorStrategicFromBuilding && eUsage == RESOURCEUSAGE_STRATEGIC);
+
+				if(!bSkipAllyShare && (eUsage == RESOURCEUSAGE_STRATEGIC || eUsage == RESOURCEUSAGE_LUXURY))
+				{
+					// Someone new is getting the bonus
+					if(eBestRelationsPlayer != NO_PLAYER)
+					{
+						GET_PLAYER(eBestRelationsPlayer).changeResourceFromMinors(eIndex, iChange);
+						changeResourceExport(eIndex, iChange);
+
+						CvNotifications* pNotifications = GET_PLAYER(eBestRelationsPlayer).GetNotifications();
+						if(pNotifications && !GetMinorCivAI()->IsDisableNotifications())
+						{
+							Localization::String strMessage;
+							Localization::String strSummary;
+
+							// Adding Resources
+							if(iChange > 0)
+							{
+								strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_MINOR_BFF_NEW_RESOURCE");
+								strMessage << getNameKey() << GC.getResourceInfo(eIndex)->GetDescriptionKey();
+								strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_MINOR_BFF_NEW_RESOURCE");
+								strSummary << getNameKey() << GC.getResourceInfo(eIndex)->GetDescriptionKey();
+							}
+							// Lost Resources
+							else
+							{
+								strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_MINOR_BFF_LOST_RESOURCE");
+								strMessage << getNameKey() << GC.getResourceInfo(eIndex)->GetDescriptionKey();
+								strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_MINOR_BFF_LOST_RESOURCE");
+								strSummary << getNameKey() << GC.getResourceInfo(eIndex)->GetDescriptionKey();
+							}
+
+							int iX = -1;
+							int iY = -1;
+
+							CvCity* capCity = getCapitalCity();
+
+							if(capCity != NULL)
+							{
+								iX = capCity->getX();
+								iY = capCity->getY();
+							}
+
+							pNotifications->Add(NOTIFICATION_MINOR, strMessage.toUTF8(), strSummary.toUTF8(), iX, iY, -1);
+						}
+					}
+				}
+			}
+		}
+
+		// Any players siphoning resources from us need to be updated as well
+		for (int iPlayerLoop = 0; iPlayerLoop < MAX_PLAYERS; iPlayerLoop++)
+		{
+			GET_PLAYER((PlayerTypes)iPlayerLoop).UpdateResourcesSiphoned();
+		}
+	}
+
+	if(iChange < 0 && !bIgnoreResourceWarning)
+		DoTestOverResourceNotification(eIndex);
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+
+	CvAssert(m_paiNumResourceTotal[eIndex] >= 0);
+}
+#else
 void CvPlayer::changeNumResourceTotal(ResourceTypes eIndex, int iChange, bool bIgnoreResourceWarning)
 {
 	CvAssert(eIndex >= 0);
@@ -22884,6 +23203,7 @@ void CvPlayer::changeNumResourceTotal(ResourceTypes eIndex, int iChange, bool bI
 
 	CvAssert(m_paiNumResourceTotal[eIndex] >= 0);
 }
+#endif
 
 //	--------------------------------------------------------------------------------
 /// Do we get copies of each type of luxury connected by eFromPlayer?
@@ -23011,6 +23331,16 @@ int CvPlayer::getNumResourceAvailable(ResourceTypes eIndex, bool bIncludeImport)
 	CvAssertMsg(eIndex < GC.getNumResourceInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
 	return getNumResourceTotal(eIndex, bIncludeImport) - getNumResourceUsed(eIndex);
 }
+
+//	--------------------------------------------------------------------------------
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+int CvPlayer::getNumMinorStrategicResourceFromBuildings(ResourceTypes eIndex) const
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < GC.getNumResourceInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
+	return m_paiMinorStrategicResourceFromBuildings[eIndex];
+}
+#endif
 
 
 //	--------------------------------------------------------------------------------
@@ -24015,7 +24345,6 @@ void CvPlayer::changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes
 		updateYield();
 	}
 }
-
 //	--------------------------------------------------------------------------------
 bool CvPlayer::removeFromArmy(int iArmyID, int iID)
 {
@@ -26526,6 +26855,11 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		iMod = pPolicy->GetSpecialistExtraYield(iI) * iChange;
 		if(iMod != 0)
 			changeSpecialistExtraYield(eYield, iMod);
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+		iMod = pPolicy->GetWorldWonderYieldChange(iI) * iChange;
+		if (iMod != 0)
+			ChangeWorldWonderYieldChanges(eYield, iMod);
+#endif
 	}
 #if defined(LEKMOD_v34) // Grant free resources from this policy
 	for (int i = 0; i < GC.getNumResourceInfos(); ++i)
@@ -26781,6 +27115,28 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 
 		// Free Culture-per-turn in every City
 		int iCityCultureChange = pPolicy->GetCulturePerCity() * iChange;
+#ifdef FRUITY_TRADITION_ARISTOCRACY
+		if (pPolicy->GetCapitalCulturePerUniqueLuxury() != 0 && pLoopCity->isCapital())
+		{
+			int iNumLuxuries = 0;
+			ResourceTypes eResource = NO_RESOURCE;
+			const CvResourceInfo* pkResourceInfo = NULL;
+#ifdef AUI_WARNING_FIXES
+			for (uint iResourceLoop = 0; iResourceLoop < GC.getNumResourceInfos(); iResourceLoop++)
+#else
+			for (int iResourceLoop = 0; iResourceLoop < GC.getNumResourceInfos(); iResourceLoop++)
+#endif
+			{
+				eResource = static_cast<ResourceTypes>(iResourceLoop);
+				pkResourceInfo = GC.getResourceInfo(eResource);
+				if (pkResourceInfo && pkResourceInfo->getResourceUsage() == RESOURCEUSAGE_LUXURY && getNumResourceAvailable(eResource) > 0)
+				{
+					iNumLuxuries++;
+				}
+			}
+			iCityCultureChange += pPolicy->GetCapitalCulturePerUniqueLuxury() * iNumLuxuries * iChange;
+		}
+#endif
 		if(pLoopCity->GetGarrisonedUnit() != NULL)
 		{
 #ifndef FIX_POLICY_CULTURE_PER_GARRISONED_UNIT
@@ -26924,7 +27280,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 				{
 					eYield = (YieldTypes)iJ;
 					iYieldMod = pPolicy->GetBuildingClassYieldModifiers(eBuildingClass, eYield);
-					if (iYieldMod > 0)
+					if (iYieldMod != 0)
 					{
 						pLoopCity->changeYieldRateModifier(eYield, iYieldMod * iBuildingCount * iChange);
 					}
@@ -26933,6 +27289,13 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 					{
 						pLoopCity->ChangeBaseYieldRateFromBuildings(eYield, iYieldChange * iBuildingCount * iChange);
 					}
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)// World Wonder Yield Change
+					iYieldChange = pPolicy->GetWorldWonderYieldChange(eYield);
+					if (iYieldChange != 0 && ::isWorldWonderClass(*pkBuildingClassInfo))
+					{
+						pLoopCity->ChangeBaseYieldRateFromBuildings(eYield, iYieldChange * iBuildingCount * iChange);
+					}
+#endif
 				}
 #endif
 			}
@@ -27345,172 +27708,14 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	recomputeFreeExperience();
 
 	doUpdateBarbarianCampVisibility();
+#ifdef AUI_CITIZENS_MID_TURN_ASSIGN_RUNS_SELF_CONSISTENCY
+	doSelfConsistencyCheckAllCities();
+#endif
 
 	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 }
-#if defined(BEYOND_EARTH)
-void CvPlayer::processPerks(PlayerPerkType ePerk, int iChange)
-{
-	CvPlayerPerkEntry* pPerk = GC.getPlayerPerkInfo(ePerk);
-	if (pPerk == NULL)
-		return;
-	const CvPlayerPerkEntry& kPerk = (*pPerk);
 
-	int iI, iJ, yield, iLoop, iBuildingCount, change, iYieldChange;
-	BuildingClassTypes eBuildingClass;
-	BuildingTypes eBuilding;
-	int iNumCities = getNumCities();
-	std::vector <int> cityOneShotYields(NUM_YIELD_TYPES, 0);
-	//ChangeNumExtraExpeditions(kPerk.GetNumExtraExpeditions() * iChange);
-	changeMilitaryProductionModifier(kPerk.GetMilitaryProductionModifier() * iChange);
-	changeWorkerSpeedModifier(kPerk.GetWorkerWorkRateChange() * iChange);
-
-	int spies = kPerk.GetNumCovertAgents() * iChange;
-	if (spies > 0 && !GAMEOPTION_NO_ESPIONAGE)
-	{
-		CvPlayerEspionage* pEspionage = GetEspionage();
-		if (pEspionage)
-		{
-			for (int i = 0; i < spies; i++)
-			{
-				pEspionage->CreateSpy();
-			}
-		}
-	}
-	for (yield = 0; yield < NUM_YIELD_TYPES; yield++)
-	{
-		YieldTypes eYield = (YieldTypes)yield;
-		
-		for (iI = 0; iI < GC.getNumBuildingClassInfos(); iI++)
-		{
-			eBuildingClass = (BuildingClassTypes)iI;
-			if (eBuildingClass == NO_BUILDINGCLASS)
-				continue;
-			CvBuildingClassInfo* pkBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
-			if (!pkBuildingClassInfo)
-				continue;
-			// For Future Buildings.
-			ChangeBuildingClassYieldChange(eBuildingClass, eYield, kPerk.GetBuildingClassYieldChange(eBuildingClass, eYield) * iChange);
-		}
-		// One Shot Yields!
-		if (!GetPlayerPerks()->hasEverHadPerk(ePerk))
-		{
-			iYieldChange = kPerk.GetYieldBurst(eYield);
-			iYieldChange += (kPerk.GetYieldBurstPerCity(eYield) * iNumCities);
-			cityOneShotYields[eYield] = (kPerk.GetYieldBurstPerCity(eYield) * iNumCities);
-			if (iYieldChange)
-			{
-				switch (eYield)
-				{
-				case YIELD_CULTURE:
-					changeJONSCulture(iYieldChange);
-#if defined(UPDATE_CULTURE_NOTIFICATION_DURING_TURN) // if this is the human player, have the popup come up so that he can choose a new policy
-					if (isAlive() && isHuman() && getNumCities() > 0)
-						TestMidTurnPolicyNotification();
-#endif
-					break;
-				case YIELD_SCIENCE:
-					GetPlayerTechs()->GetCurrentResearch() == NO_TECH ? changeOverflowResearch(iYieldChange) : GET_TEAM(getTeam()).GetTeamTechs()->ChangeResearchProgress(GetPlayerTechs()->GetCurrentResearch(), iYieldChange, GetID());
-					break;
-				case YIELD_GOLD:
-					GetTreasury()->ChangeGold(iYieldChange);
-					break;
-					//case YIELD_DIPLO_CAPITAL:
-					//case YIELD_HEALTH:
-					//case YIELD_UNHEALTH:
-				default:
-					// No Message here.
-					break;
-				}
-
-			}
-		}
-	}
-	// City Loop
-	for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
-	{
-		// Apply One-Shot Yields to Cities that existed when the perk was adopted.
-		if (!GetPlayerPerks()->hasEverHadPerk(ePerk))
-		{
-			for (yield = 0; yield < NUM_YIELD_TYPES; yield++)
-			{
-				YieldTypes eYield = (YieldTypes)yield;
-				switch (eYield)
-				{
-				case YIELD_FOOD:
-					pLoopCity->changeFood(cityOneShotYields[YIELD_FOOD]);
-					TestMidTurnPopGrowth(pLoopCity, true/*bAlwaysShowNotification*/);
-					break;
-				case YIELD_PRODUCTION:
-					if (pLoopCity->isProductionProcess()) //check if we are currently having anything in the queue
-						pLoopCity->changeProduction(cityOneShotYields[YIELD_PRODUCTION]);
-					else //if not, add it to the overflow
-						pLoopCity->setOverflowProduction(pLoopCity->getOverflowProduction() + cityOneShotYields[YIELD_PRODUCTION]);
-					break;
-				case YIELD_CULTURE:
-					break;
-					//case YIELD_HEALTH:
-					//case YIELD_UNHEALTH:
-				}
-			}
-		}
-		for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
-		{
-			eBuilding = (BuildingTypes)iI;
-			if (eBuilding == NO_BUILDING)
-				continue;
-			CvBuildingEntry* pkBuilding = GC.getBuildingInfo(eBuilding);
-			if (!pkBuilding)
-				continue;
-			eBuildingClass = (BuildingClassTypes)pkBuilding->GetBuildingClassType();
-			if (eBuildingClass == NO_BUILDINGCLASS)
-				continue;
-			CvBuildingClassInfo* pkBuildingClassInfo = GC.getBuildingClassInfo(eBuildingClass);
-			if (!pkBuildingClassInfo)
-				continue;
-			iBuildingCount = pLoopCity->GetCityBuildings()->GetNumBuilding(eBuilding);
-			if (iBuildingCount > 0)
-			{
-				for (yield = 0; yield < NUM_YIELD_TYPES; yield++)
-				{
-					YieldTypes eYield = (YieldTypes)yield;
-					int iYieldChange = kPerk.GetBuildingClassYieldChange(eBuildingClass, eYield);
-					if (iYieldChange != 0)
-					{
-						pLoopCity->ChangeBaseYieldRateFromBuildings(eYield, iYieldChange * iBuildingCount * iChange);
-					}
-				}
-				change = kPerk.GetBuildingCityHitPointsChange(eBuildingClass);
-				if (change != 0)
-				{
-					pLoopCity->ChangeExtraHitPoints(change * iBuildingCount * iChange);
-				}
-				change = kPerk.GetBuildingCityStrengthChange(eBuildingClass);
-				if (change != 0)
-				{	
-					pLoopCity->GetCityBuildings()->ChangeBuildingDefense(change * iBuildingCount * iChange);
-				}
-				// Maintenance Free Buildings
-				if (kPerk.IsBuildingMaintenanceFree(eBuilding))
-				{
-					// Looking at it now, this is kinda dumb. I wonder why Firaxis did it like this.
-					pLoopCity->GetCityBuildings()->SetNumRealBuilding(eBuilding, 0); //Remove all the real Buildings
-					pLoopCity->GetCityBuildings()->SetNumFreeBuilding(eBuilding, iBuildingCount); // Add Back the free version of the building.
-				}
-			}
-		}
-	}
-	// Unit Loop
-	for (CvUnit* pLoopUnit = firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = nextUnit(&iLoop))
-	{
-
-	}
-
-	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
-	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
-}
-#endif
 #ifdef LEKMOD_REFORMATION_NOTIFICATION_MID_TURN
 //  -------------------------------------------------------------------------------
 //Check Reformation notification in a function - to add it to other places
@@ -28164,8 +28369,21 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_eConqueror;
 	kStream >> m_bHasAdoptedStateReligion;
 	kStream >> m_bAlliesGreatPersonBiasApplied;
+#if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION) && defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+	if (uiVersion >= 17)
+	{
+		kStream >> m_aiConversionMajorityOnceUsedKeys;
+	}
+	else
+	{
+		m_aiConversionMajorityOnceUsedKeys.clear();
+	}
+#endif
 	kStream >> m_eID;
 	kStream >> m_ePersonalityType;
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+	kStream >> m_aiWorldWonderYieldChanges;
+#endif
 	kStream >> m_aiCityYieldChange;
 	kStream >> m_aiCoastalCityYieldChange;
 	kStream >> m_aiCapitalYieldChange;
@@ -28220,6 +28438,15 @@ void CvPlayer::Read(FDataStream& kStream)
 	CvAssertMsg((0 < GC.getNumResourceInfos()), "GC.getNumResourceInfos() is not greater than zero but it is expected to be in CvPlayer::read");
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_paiNumResourceUsed.dirtyGet());
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_paiNumResourceTotal.dirtyGet());
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+	
+	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_paiMinorStrategicResourceFromBuildings.dirtyGet());
+#else
+	
+	std::vector<int> vDiscardMinorStrategicFromBuildings;
+	CvInfosSerializationHelper::ReadHashedDataArray(kStream, vDiscardMinorStrategicFromBuildings);
+	
+#endif
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_paiResourceGiftedToMinors.dirtyGet());
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_paiResourceExport.dirtyGet());
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_paiResourceImport.dirtyGet());
@@ -28267,9 +28494,6 @@ void CvPlayer::Read(FDataStream& kStream)
 #endif
 
 	m_pPlayerPolicies->Read(kStream);
-#if defined(BEYOND_EARTH)
-	m_pPlayerPerks->read(kStream);
-#endif
 	m_pEconomicAI->Read(kStream);
 	m_pCitySpecializationAI->Read(kStream);
 	m_pWonderProductionAI->Read(kStream);
@@ -28313,18 +28537,13 @@ void CvPlayer::Read(FDataStream& kStream)
 		{
 			m_pFlavorManager->AddFlavorRecipient(m_pPlayerTechs,        false /*bPropogateFlavors*/);
 			m_pFlavorManager->AddFlavorRecipient(m_pPlayerPolicies,     false /*bPropogateFlavors*/);
-#if defined(BEYOND_EARTH)
-			//m_pFlavorManager->AddFlavorRecipient(m_pPlayerPerks,		  false /*bPropogateFlavors*/);
-#endif
 			m_pFlavorManager->AddFlavorRecipient(m_pWonderProductionAI, false /*bPropogateFlavors*/);
 		}
 	}
 
 	kStream >> m_ppaaiSpecialistExtraYield;
 	kStream >> m_ppaaiImprovementYieldChange;
-#if defined(BEYOND_EARTH)
-	kStream >> m_ppaaiBuildingClassYieldChange;
-#endif
+
 	kStream >> m_UnitCycle;
 	kStream >> m_researchQueue;
 
@@ -28338,7 +28557,9 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_cities;
 	kStream >> m_units;
 	kStream >> m_armyAIs;
-
+#if defined(LEKMOD_AREA_BASED_CITY_YIELD)
+	kStream >> m_aPlotExtraYields;
+#endif
 	{
 		m_AIOperations.clear();
 		uint iSize;
@@ -28778,10 +28999,15 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_eConqueror;
 	kStream << m_bHasAdoptedStateReligion;
 	kStream << m_bAlliesGreatPersonBiasApplied;
+#if defined(LEKMOD_PROMO_YIELD_FROM_CONVERSION) && defined(LEKMOD_PROMO_CONVERSION_MAJORITY_ONLY_ONCE)
+	kStream << m_aiConversionMajorityOnceUsedKeys;
+#endif
 
 	kStream << m_eID;
 	kStream << m_ePersonalityType;
-
+#if defined(LEKMOD_EXPERIMENTAL_CHANGES)
+	kStream << m_aiWorldWonderYieldChanges;
+#endif
 	kStream << m_aiCityYieldChange;
 	kStream << m_aiCoastalCityYieldChange;
 	kStream << m_aiCapitalYieldChange;
@@ -28807,6 +29033,9 @@ void CvPlayer::Write(FDataStream& kStream) const
 	CvAssertMsg((0 < GC.getNumResourceInfos()), "GC.getNumResourceInfos() is not greater than zero but an array is being allocated in CvPlayer::write");
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes, int>(kStream, m_paiNumResourceUsed);
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes, int>(kStream, m_paiNumResourceTotal);
+#ifdef LEKMOD_CS_BUILDING_STRATEGIC_NO_ALLY_SHARE
+	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes, int>(kStream, m_paiMinorStrategicResourceFromBuildings);
+#endif
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes, int>(kStream, m_paiResourceGiftedToMinors);
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes, int>(kStream, m_paiResourceExport);
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes, int>(kStream, m_paiResourceImport);
@@ -28851,9 +29080,6 @@ void CvPlayer::Write(FDataStream& kStream) const
 #endif
 
 	m_pPlayerPolicies->Write(kStream);
-#if defined(BEYOND_EARTH)
-	m_pPlayerPerks->write(kStream);
-#endif
 	m_pEconomicAI->Write(kStream);
 	m_pCitySpecializationAI->Write(kStream);
 	m_pWonderProductionAI->Write(kStream);
@@ -28892,9 +29118,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 
 	kStream << m_ppaaiSpecialistExtraYield;
 	kStream << m_ppaaiImprovementYieldChange;
-#if defined(BEYOND_EARTH)
-	kStream << m_ppaaiBuildingClassYieldChange;
-#endif
+
 	kStream << m_UnitCycle;
 	kStream << m_researchQueue;
 
@@ -28907,6 +29131,9 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_cities;
 	kStream << m_units;
 	kStream << m_armyAIs;
+#if defined(LEKMOD_AREA_BASED_CITY_YIELD)
+	kStream << m_aPlotExtraYields;
+#endif
 
 	{
 		uint iSize = m_AIOperations.size();

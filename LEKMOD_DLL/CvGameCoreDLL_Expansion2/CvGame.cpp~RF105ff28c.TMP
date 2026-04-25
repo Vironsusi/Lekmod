@@ -1106,7 +1106,9 @@ void CvGame::uninit()
 	m_iNumVictoryVotesExpected = 0;
 	m_iVotesNeededForDiploVictory = 0;
 	m_iMapScoreMod = 0;
-
+#if defined(LEKMOD_LEGACY)
+	m_iGameEra = 0;
+#endif
 	m_uiInitialTime = 0;
 #ifdef GAME_UPDATE_TURN_TIMER_ONCE_PER_TURN
 	m_fPreviousTurnLen = 0.0f;
@@ -4649,6 +4651,7 @@ bool CvGame::canTrainNukes() const
 //	--------------------------------------------------------------------------------
 EraTypes CvGame::getCurrentEra() const
 {
+#if !defined(LEKMOD_LEGACY)
 	int iEra;
 	int iCount;
 	int iI;
@@ -4672,8 +4675,71 @@ EraTypes CvGame::getCurrentEra() const
 
 	return NO_ERA;
 }
+#else
+	return (EraTypes)m_iGameEra;
+}
+void CvGame::recalculateGameEra()
+{
+	std::vector<int> eras;
+	int iI;
 
+	for (iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iI);
+		if (!kPlayer.isAlive())
+			continue;
+		if (kPlayer.isMinorCiv() || kPlayer.isBarbarian()) // Don't count minors or barbarians, since they dont progess like Majors.
+			continue;
+		if (isOption("GAMEOPTION_AI_GIMP_NO_CULTURE") && !kPlayer.isHuman())
+			continue;
+	
+		const EraTypes eEra = kPlayer.GetCurrentEra();
+		if (eEra != NO_ERA)
+		{
+			eras.push_back((int)eEra);
+		}
+	}
 
+	if (eras.empty())
+		return;
+	// Ok, so sort it
+	std::sort(eras.begin(), eras.end());
+
+	const int numCountedPlayers = (int)eras.size();
+	// If even, take upper middle, if odd, take middle + 1
+	// This should result in a bias towards later eras
+	// and if 3/6 players are in Era 2 and 3/6 in Era 3, we want to go to Era 3
+	// and if 3/7 players are in Era 3 and 4/7 in Era 2, we want to go to Era 3
+	const int idx = (numCountedPlayers % 2 == 0) ? (numCountedPlayers / 2) : (numCountedPlayers / 2 + 1);
+	const int newEra = eras[std::min(idx, numCountedPlayers - 1)];
+
+	if (m_iGameEra == newEra)
+		return;
+
+	m_iGameEra = newEra;
+
+	if (!isOption(GAMEOPTION_NO_LEGACIES))
+	{
+		for (iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+		{
+			CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iI);
+			if (!kPlayer.isAlive())
+				continue;
+
+			if (!kPlayer.isHuman())
+			{
+				if (isOption("GAMEOPTION_AI_GIMP_NO_CULTURE"))
+					continue;
+				//kPlayer.GetPlayerLegacies()->DoChooseLegacy(); AI Function.
+			}
+			else // Push notification and popup to human players.
+			{
+				kPlayer.GetPlayerLegacies()->testLegacyNotification((EraTypes)m_iGameEra);
+			}
+		}
+	}
+}
+#endif
 //	--------------------------------------------------------------------------------
 TeamTypes CvGame::getActiveTeam()
 {
@@ -8331,12 +8397,17 @@ void CvGame::doTurn()
 	gDLL->DoTurn();
 
 	CvBarbarians::BeginTurn();
+
 	doUpdateCacheOnTurn();
+
 	DoUpdateCachedWorldReligionTechProgress();
+
 	updateScore();
 
+#ifndef AUI_YIELDS_APPLIED_AFTER_TURN_NOT_BEFORE
 #ifndef LEKMOD_v34 // Process deals after happiness is applied.
 	m_kGameDeals.DoTurn();
+#endif
 #endif
 
 	for (iI = 0; iI < MAX_TEAMS; iI++)
@@ -8356,23 +8427,33 @@ void CvGame::doTurn()
 #endif
 
 #ifdef AUI_GAME_FIX_MULTIPLAYER_BARBARIANS_SPAWN_AFTER_MOVING
-	if (!isOption(GAMEOPTION_DYNAMIC_TURNS) && !isOption(GAMEOPTION_SIMULTANEOUS_TURNS))
-	{
-		CvBarbarians::DoCamps();
-		CvBarbarians::DoUnits();
-	}
+#ifdef AUI_GAME_BETTER_HYBRID_MODE
+	if (!isAnySimultaneousTurns())
 #else
-	CvBarbarians::DoCamps();
-	CvBarbarians::DoUnits();
+	if (!isOption(GAMEOPTION_DYNAMIC_TURNS) && !isOption(GAMEOPTION_SIMULTANEOUS_TURNS))
+#endif
+	{
+#endif
+		CvBarbarians::DoCamps();
+
+		CvBarbarians::DoUnits();
+#ifdef AUI_GAME_FIX_MULTIPLAYER_BARBARIANS_SPAWN_AFTER_MOVING
+	}
 #endif
 
+#ifndef AUI_YIELDS_APPLIED_AFTER_TURN_NOT_BEFORE
 	GetGameReligions()->DoTurn();
 	GetGameTrade()->DoTurn();
+#endif
 	GetGameLeagues()->DoTurn();
+#ifndef AUI_YIELDS_APPLIED_AFTER_TURN_NOT_BEFORE
 	GetGameCulture()->DoTurn();
-
+#endif
 #ifdef MP_PLAYERS_VOTING_SYSTEM
 	GetMPVotingSystem()->DoTurn();
+#endif
+#if defined(LEKMOD_LEGACY)
+	recalculateGameEra();
 #endif
 
 #ifdef AUI_WARNING_FIXES
@@ -8581,13 +8662,12 @@ void CvGame::doTurn()
 		}
 	}
 #ifdef LEKMOD_v34 // Process deals after happiness is applied.
-	// process deals for hotseat and single player games.  In DYNAMIC_TURNS and SIMULTANEOUS_TURNS multiplayer games, deals are processed in updateMoves();
+	// Do hotseat here, since its turn based and not network based, so we don't want to do it in updateMoves();
 	if (isHotSeat() || !isGameMultiPlayer())
 	{
 		m_kGameDeals.DoTurn();
 	}
 #endif
-
 	LogGameState();
 #ifndef AUTOSAVE_END_OF_TURN
 	if(isNetworkMultiPlayer())
@@ -9475,14 +9555,18 @@ void CvGame::updateMoves()
 
 	if(activatePlayers)
 	{
+#ifdef AUI_GAME_BETTER_HYBRID_MODE
+		if (isAnySimultaneousTurns())
+#else
 		if (isOption(GAMEOPTION_DYNAMIC_TURNS) || isOption(GAMEOPTION_SIMULTANEOUS_TURNS))
+#endif
 		{//Activate human players who are playing simultaneous turns now that we've finished moves for the AI.
 #ifdef AUI_GAME_FIX_MULTIPLAYER_BARBARIANS_SPAWN_AFTER_MOVING
 			// Only spawn barbarians now, otherwise the barbarian player gets a turn to move/attack after its units spawn before the human players do
 			if (GC.getGame().getElapsedGameTurns() > 0)
 			{
-				CvBarbarians::DoCamps();
-				CvBarbarians::DoUnits();
+			CvBarbarians::DoCamps();
+			CvBarbarians::DoUnits();
 			}
 #endif
 			// KWG: This code should go into CheckPlayerTurnDeactivate
@@ -9508,13 +9592,19 @@ void CvGame::updateMoves()
 			{
 #endif
 				CvPlayer& player = GET_PLAYER((PlayerTypes)iI);
+#ifdef AUI_GAME_BETTER_HYBRID_MODE
+				if (!player.isTurnActive() && player.isHuman() && player.isAlive() && (player.getTurnOrder() == m_iCurrentTurnOrderActive))
+#else
 				if(!player.isTurnActive() && player.isHuman() && player.isAlive() && player.isSimultaneousTurns())
+#endif
 				{
 					player.setTurnActive(true);
 				}
 			}
+#ifndef AUI_YIELDS_APPLIED_AFTER_TURN_NOT_BEFORE
 #ifdef LEKMOD_v34 // Process deals after the player's turns are activated
 			m_kGameDeals.DoTurn();
+#endif
 #endif
 		}
 	}
@@ -10611,7 +10701,9 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_iNumVictoryVotesExpected;
 	kStream >> m_iVotesNeededForDiploVictory;
 	kStream >> m_iMapScoreMod;
-
+#if defined(LEKMOD_LEGACY)
+	kStream >> m_iGameEra;
+#endif
 	// m_uiInitialTime not saved
 #ifdef GAME_UPDATE_TURN_TIMER_ONCE_PER_TURN
 	kStream >> m_fPreviousTurnLen;
@@ -10879,7 +10971,9 @@ void CvGame::Write(FDataStream& kStream) const
 	kStream << m_iNumVictoryVotesExpected;
 	kStream << m_iVotesNeededForDiploVictory;
 	kStream << m_iMapScoreMod;
-
+#if defined(LEKMOD_LEGACY)
+	kStream << m_iGameEra;
+#endif
 	// m_uiInitialTime not saved
 #ifdef GAME_UPDATE_TURN_TIMER_ONCE_PER_TURN
 	kStream << m_fPreviousTurnLen;
@@ -11714,7 +11808,7 @@ void CvGame::DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor)
 	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
 	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
 
-	UnitTypes eUnitType = (UnitTypes) GC.getInfoTypeForString("UNIT_WORKER"); //antonjs: todo: XML/function
+	UnitTypes eUnitType = static_cast<UnitTypes>(GET_PLAYER(eBully).getCivilizationInfo().getCivilizationUnits(GC.getInfoTypeForString("UNITCLASS_WORKER")));
 
 	gDLL->sendMinorBullyUnit(eBully, eMinor, eUnitType);
 }
@@ -11730,9 +11824,19 @@ void CvGame::DoMinorBuyout(PlayerTypes eMajor, PlayerTypes eMinor)
 
 	gDLL->sendMinorBuyout(eMajor, eMinor);
 }
+#if defined(LEKMOD_LEGACY)
+//	--------------------------------------------------------------------------------
+/// choosing a legacy. This is done via the Network.SendIdeologyChoice(p, i) function so needs to be offset to not collide. Standarize the offset.
+int CvGame::GetLegacyOffset(LegacyTypes eLegacy)
+{
+	CvAssertMsg(eLegacy >= 0, "eLegacy is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eLegacy < GC.getNumLegacyInfos(), "eLegacy is expected to be within maximum bounds (invalid Index)");
+	// Add 10, then make negative so that it doesn't collide with ideology choices (should only ever be -1, 0, 1 or 2) 
+	// While legacies should always be > -10 since it starts at 0. allows for both infinite legacies and ideologies.
+	return (GC.getLegacyInfo(eLegacy)->GetID() + 10) * -1;
+}
 
-
-
+#endif
 //	--------------------------------------------------------------------------------
 /// Notification letting all non-party players know that two teams made a Research Agreement.  This is in CvGame because we only want it called once, and if it were in CvDealClasses it would be called twice, or have to be special-cased, so we'll special-case it here instead
 void CvGame::DoResearchAgreementNotification(TeamTypes eTeam1, TeamTypes eTeam2)
@@ -12713,7 +12817,58 @@ int CvGame::GetNumHiddenArchaeologySites() const
 	}
 	return iRtnValue;
 }
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS) // Relocate to CvGame, as this is Game-wide logic. not a lot of sense to keep on CvUnit or CvCity
+void CvGame::getCombatDamage(CvCombatInfo& kInfo)
+{
+	/*CvCombatInfo should have :
+	BATTLE_UNIT_ATTACKER, can be city or unit
+	BATTLE_UNIT_DEFENDER, can be city or unit
+	BattlePlot
+	*/
 
+	// This needs to account for the following:
+	// Attacker is City, Defender is Unit
+	// Attacker is Unit, Defender is City
+	// Attacker is Unit, Defender is Unit
+	// Attacker is City, Defender is City
+	if (kInfo.getUnit(BATTLE_UNIT_ATTACKER) != NULL) // Attacker is Unit
+	{
+		CvUnit* pAttacker = kInfo.getUnit(BATTLE_UNIT_ATTACKER);
+		if (kInfo.getUnit(BATTLE_UNIT_DEFENDER) != NULL) // Defender is Unit
+		{
+			CvUnit* pDefender = kInfo.getUnit(BATTLE_UNIT_DEFENDER);
+		}
+		else if (kInfo.getCity(BATTLE_UNIT_DEFENDER) != NULL) // Defender is City
+		{
+			CvCity* pDefender = kInfo.getCity(BATTLE_UNIT_DEFENDER);
+		}
+		else
+		{
+			CvAssertMsg(false, "Defender is neither Unit nor City");
+		}
+	}
+	else if (kInfo.getCity(BATTLE_UNIT_ATTACKER) != NULL) // Attacker is City
+	{
+		CvCity* pAttacker = kInfo.getCity(BATTLE_UNIT_ATTACKER);
+		if (kInfo.getUnit(BATTLE_UNIT_DEFENDER) != NULL) // Defender is Unit
+		{
+			CvUnit* pDefender = kInfo.getUnit(BATTLE_UNIT_DEFENDER);
+		}
+		else if (kInfo.getCity(BATTLE_UNIT_DEFENDER) != NULL) // Defender is City
+		{
+			CvCity* pDefender = kInfo.getCity(BATTLE_UNIT_DEFENDER);
+		}
+		else
+		{
+			CvAssertMsg(false, "Defender is neither Unit nor City");
+		}
+	}
+	else
+	{
+		CvAssertMsg(false, "Attacker is neither Unit nor City");
+	}
+}
+#endif
 //	--------------------------------------------------------------------------------
 PlayerTypes GetRandomMajorPlayer()
 {

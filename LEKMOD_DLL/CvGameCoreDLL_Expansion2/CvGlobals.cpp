@@ -1941,6 +1941,10 @@ CvGlobals::CvGlobals() :
 	m_pMilitaryAIStrategies(NULL),
 	m_pAIGrandStrategies(NULL),
 	m_pPolicies(NULL),
+#if defined(BEYOND_EARTH)
+	m_pPlayerPerks(NULL),
+	m_pUnitPerks(NULL),
+#endif
 	m_pTechs(NULL),
 	m_pBuildings(NULL),
 	m_pEmphases(NULL),
@@ -2220,6 +2224,10 @@ void CvGlobals::init()
 	m_pAIGrandStrategies = FNEW(CvAIGrandStrategyXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pAICityStrategies = FNEW(CvAICityStrategies, c_eCiv5GameplayDLL, 0);
 	m_pPolicies = FNEW(CvPolicyXMLEntries, c_eCiv5GameplayDLL, 0);
+#if defined(BEYOND_EARTH)
+	m_pPlayerPerks = FNEW(CvPlayerPerkXMLEntries, c_eCiv5GameplayDLL, 0);
+	m_pUnitPerks = FNEW(CvUnitPerkXMLEntries, c_eCiv5GameplayDLL, 0);
+#endif
 	m_pTechs = FNEW(CvTechXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pBuildings = FNEW(CvBuildingXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pUnits = FNEW(CvUnitXMLEntries, c_eCiv5GameplayDLL, 0);
@@ -2288,6 +2296,10 @@ void CvGlobals::uninit()
 	SAFE_DELETE(m_pMilitaryAIStrategies);
 	SAFE_DELETE(m_pAIGrandStrategies);
 	SAFE_DELETE(m_pPolicies);
+#if defined(BEYOND_EARTH)
+	SAFE_DELETE(m_pPlayerPerks);
+	SAFE_DELETE(m_pUnitPerks);
+#endif
 	SAFE_DELETE(m_pBuildings);
 	SAFE_DELETE(m_pUnits);
 	SAFE_DELETE(m_pProjects);
@@ -4246,7 +4258,46 @@ CvPolicyBranchEntry* CvGlobals::getPolicyBranchInfo(PolicyBranchTypes ePolicyBra
 	return m_pPolicies->GetPolicyBranchEntries()[ePolicyBranchNum];
 #endif
 }
-
+#if defined(BEYOND_EARTH)
+// PlayerPerks
+int CvGlobals::getNumPlayerPerkInfos() const
+{
+	return (int)m_pPlayerPerks->getPlayerPerkEntries().size();
+}
+std::vector<CvPlayerPerkEntry*>& CvGlobals::getPlayerPerkInfo()
+{
+	return m_pPlayerPerks->getPlayerPerkEntries();
+}
+CvPlayerPerkEntry* CvGlobals::getPlayerPerkInfo(PlayerPerkType ePlayerPerkNum)
+{
+	CvAssert(ePlayerPerkNum > -1);
+	CvAssert(ePlayerPerkNum < GC.getNumPlayerPerkInfos());
+	return m_pPlayerPerks->getPlayerPerkEntries()[ePlayerPerkNum];
+}
+CvPlayerPerkXMLEntries* CvGlobals::GetGamePlayerPerks() const
+{
+	return m_pPlayerPerks;
+}
+// UnitPerks
+int CvGlobals::getNumUnitPerkInfos() const
+{
+	return (int)m_pUnitPerks->getUnitPerkEntries().size();
+}
+std::vector<CvUnitPerkEntry*>& CvGlobals::getUnitPerkInfo()
+{
+	return m_pUnitPerks->getUnitPerkEntries();
+}
+CvUnitPerkEntry* CvGlobals::getUnitPerkInfo(UnitPerkType eUnitPerkNum)
+{
+	CvAssert(eUnitPerkNum > -1);
+	CvAssert(eUnitPerkNum < GC.getNumUnitPerkInfos());
+	return m_pUnitPerks->getUnitPerkEntries()[eUnitPerkNum];
+}
+CvUnitPerkXMLEntries* CvGlobals::GetGameUnitPerks() const
+{
+	return m_pUnitPerks;
+}
+#endif
 #ifdef AUI_WARNING_FIXES
 uint CvGlobals::getNumEmphasisInfos() const
 {

@@ -11892,111 +11892,65 @@ int CvUnit::baseMoves(DomainTypes eIntoDomain /* = NO_DOMAIN */) const
 	CvPlayerTraits* pTraits = thisPlayer.GetPlayerTraits();
 	DomainTypes eDomain = getDomainType();
 	CvPlayerPolicies *pPolicies = thisPlayer.GetPlayerPolicies();
-
+	int iMoves = m_pUnitInfo->GetMoves();
 	if((eIntoDomain == DOMAIN_SEA && CanEverEmbark()) || (eIntoDomain == NO_DOMAIN && isEmbarked()))
 	{
 		return GC.getEMBARKED_UNIT_MOVEMENT() + getExtraNavalMoves() + thisTeam.getEmbarkedExtraMoves() + thisTeam.getExtraMoves(eDomain) + pTraits->GetExtraEmbarkMoves() + pPolicies->GetNumericModifier(POLICYMOD_EMBARKED_EXTRA_MOVES);
 	}
-
-#ifdef AUI_WARNING_FIXES
-	int iExtraNavalMoves = 0;
-	if (eDomain == DOMAIN_SEA)
+	// Naval Moves
+	if (DOMAIN_SEA == eDomain)
 	{
-		iExtraNavalMoves += getExtraNavalMoves();
-
+		iMoves += getExtraNavalMoves();
 		// Work boats also get extra moves, and they don't have a combat class to receive a promotion from
 		if (m_iBaseCombat == 0)
 		{
-			iExtraNavalMoves += pTraits->GetExtraEmbarkMoves();
-#else
-	int m_iExtraNavalMoves = 0;
-	if(eDomain == DOMAIN_SEA)
+			iMoves += pTraits->GetExtraEmbarkMoves();
+		}
+	}
+	// Domain Move
+#if defined(BEYOND_EARTH)
+	iMoves += thisPlayer.GetPlayerPerks()->GetUnitDomainMoveChange(eDomain);
+#endif
+	// Golden Age Moves
+	if (thisPlayer.isGoldenAge())
 	{
-		m_iExtraNavalMoves += getExtraNavalMoves();
-
-		// Work boats also get extra moves, and they don't have a combat class to receive a promotion from
-		if(m_iBaseCombat == 0)
+		iMoves += pTraits->GetGoldenAgeMoveChange();
+	}
+	// UnitCombatType Moves
+	iMoves += pTraits->GetMovesChangeUnitCombat((UnitCombatTypes)(m_pUnitInfo->GetUnitCombatType()));
+#if defined(BEYOND_EARTH)
+	iMoves += thisPlayer.GetPlayerPerks()->GetUnitCombatMoveChange((UnitCombatTypes)(m_pUnitInfo->GetUnitCombatType()));
+#endif
+	// Friendly Territory Moves
+#if defined(LEKMOD_POLICIES_GLOBAL_MOVE_CHANGE) || defined(TRAITIFY)
+	if (plot() && plot()->IsFriendlyTerritory(getOwner()) )
+	{
+#if defined(LEKMOD_POLICIES_GLOBAL_MOVE_CHANGE)
+		iMoves += thisPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_GLOBAL_MOVE_CHANGE_FRIENDLY);
+#endif
+		if (GetBaseCombatStrength() == 0)
 		{
-			m_iExtraNavalMoves += pTraits->GetExtraEmbarkMoves();
+#if defined(TRAITIFY)
+			iMoves += thisPlayer.GetPlayerTraits()->GetFriendlyLandsCitizenMoveChange();
 #endif
 		}
 	}
-
-	int iExtraGoldenAgeMoves = 0;
-	if(thisPlayer.isGoldenAge())
-	{
-		iExtraGoldenAgeMoves = pTraits->GetGoldenAgeMoveChange();
-	}
-
-	int iExtraUnitCombatTypeMoves = pTraits->GetMovesChangeUnitCombat((UnitCombatTypes)(m_pUnitInfo->GetUnitCombatType()));
-
-
-
-#ifdef NQ_ART_OF_WAR_PROMOTION
-	if (plot() && eDomain == DOMAIN_LAND && !isEmbarked() && GetGreatGeneralOnOrAdjacentConfersMovement() > 0)
-	{
-		bool getsBonusMovementFromGeneral = false;
-		int pX = plot()->getX();
-		int pY = plot()->getY();
-		CvPlot* pLoopPlot;
-		CvUnit* pLoopUnit;
-		IDInfo* pUnitNode;
-
-		for (int iI = NO_DIRECTION; iI < NUM_DIRECTION_TYPES; iI++)
-		{
-			pLoopPlot = plotDirection(pX, pY, (DirectionTypes)iI);
-			if (pLoopPlot != NULL && pLoopPlot->getNumUnits() > 0)
-			{
-				pUnitNode = pLoopPlot->headUnitNode();
-				while (pUnitNode != NULL)
-				{
-					pLoopUnit = ::getUnit(*pUnitNode);
-					if (pLoopUnit && pLoopUnit->getOwner() == getOwner() && pLoopUnit->IsGreatGeneral())
-					{
-						getsBonusMovementFromGeneral = true;
-						break;
-					}
-					pUnitNode = pLoopPlot->nextUnitNode(pUnitNode);
-				}
-			}
-		}
-		if (getsBonusMovementFromGeneral)
-		{
-			iExtraUnitCombatTypeMoves += GetGreatGeneralOnOrAdjacentConfersMovement();
-		}
-	}
-#endif
-
-#ifdef TRAITIFY
-	int iExtraGlobalMoveChangeFriendlyCivilian = 0;
-
-	if (plot() && plot()->IsFriendlyTerritory(getOwner()) && GetBaseCombatStrength() == 0)
-	{
-		iExtraGlobalMoveChangeFriendlyCivilian += thisPlayer.GetPlayerTraits()->GetFriendlyLandsCitizenMoveChange();
-	}
-#endif
-
+#endif // LEKMOD_POLICIES_GLOBAL_MOVE_CHANGE || TRAITIFY
 #ifdef LEKMOD_POLICIES_GLOBAL_MOVE_CHANGE
-
-	int iExtraGlobalMoveChange = thisPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_GLOBAL_MOVE_CHANGE);
-
-	int iExtraGlobalMoveChangeFriendly = thisPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_GLOBAL_MOVE_CHANGE_FRIENDLY);
-
-	if (plot() && plot()->IsFriendlyTerritory(getOwner()))
-	{
-		iExtraGlobalMoveChange += iExtraGlobalMoveChangeFriendly;
-	}
-
-	int iExtraGlobalMoveChangeEnemy = thisPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_GLOBAL_MOVE_CHANGE_ENEMY);
-
+	// General Move Change
+	iMoves += thisPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_GLOBAL_MOVE_CHANGE);
+	// Enemy Territory Moves
 	if (plot() && !plot()->IsFriendlyTerritory(getOwner()))
 	{
 		CvPlot* pPlot = plot();
 		if(isEnemy(pPlot->getTeam(), pPlot))
 		{
-			iExtraGlobalMoveChange += iExtraGlobalMoveChangeEnemy;
+			iMoves += thisPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_GLOBAL_MOVE_CHANGE_ENEMY);
 		}
 	}
+#endif
+	iMoves += getExtraMoves();
+	iMoves += thisTeam.getExtraMoves(eDomain);
 #if defined(LEKMOD_SUBMERGE_MISSION)
 	int iMoves = (m_pUnitInfo->GetMoves() + getExtraMoves() + thisTeam.getExtraMoves(eDomain) + m_iExtraNavalMoves + iExtraGoldenAgeMoves + iExtraUnitCombatTypeMoves + iExtraGlobalMoveChange + iExtraGlobalMoveChangeFriendlyCivilian);
 
@@ -12014,19 +11968,11 @@ int CvUnit::baseMoves(DomainTypes eIntoDomain /* = NO_DOMAIN */) const
 	return IsSubmerged() ? iSubmergedMoves : iMoves;
 #else
 #ifdef TRAITIFY
-	return (m_pUnitInfo->GetMoves() + getExtraMoves() + thisTeam.getExtraMoves(eDomain) + m_iExtraNavalMoves + iExtraGoldenAgeMoves + iExtraUnitCombatTypeMoves + iExtraGlobalMoveChange + iExtraGlobalMoveChangeFriendlyCivilian);
+	return iMoves;
 #else
 	return (m_pUnitInfo->GetMoves() + getExtraMoves() + thisTeam.getExtraMoves(eDomain) + m_iExtraNavalMoves + iExtraGoldenAgeMoves + iExtraUnitCombatTypeMoves + iExtraGlobalMoveChange);
-#endif
-#endif
-#else
-
-#ifdef AUI_WARNING_FIXES
-	return (m_pUnitInfo->GetMoves() + getExtraMoves() + thisTeam.getExtraMoves(eDomain) + iExtraGoldenAgeMoves + iExtraUnitCombatTypeMoves);
-#else
-	return (m_pUnitInfo->GetMoves() + getExtraMoves() + thisTeam.getExtraMoves(eDomain) + iExtraGoldenAgeMoves + iExtraUnitCombatTypeMoves);
-#endif
-#endif
+#endif // TRAITIFY
+#endif // LEKMOD_SUBMERGE_MISSION
 }
 
 
@@ -16550,8 +16496,6 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 
 						if(getOwner() < MAX_MAJOR_CIVS)
 						{
-#ifdef NQ_CLEARING_CAMPS_GIVES_INFLUENCE_NEARBY
-#endif
 							// Completes a quest for anyone?
 							PlayerTypes eMinor;
 							for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)

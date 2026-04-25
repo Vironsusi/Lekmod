@@ -26,6 +26,9 @@
 #include "CvUnitCycler.h"
 
 class CvPlayerPolicies;
+#if defined(BEYOND_EARTH)
+class CvPlayerPerks;
+#endif
 class CvEconomicAI;
 class CvMilitaryAI;
 class CvCitySpecializationAI;
@@ -283,7 +286,9 @@ public:
 	void removeBuildingClass(BuildingClassTypes eBuildingClass);
 	void processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, CvArea* pArea);
 	int GetBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType);
-
+#if defined(BEYOND_EARTH)
+	void ChangeBuildingClassYieldChange(BuildingClassTypes eBuildingClass, YieldTypes eYieldType, int iChange);
+#endif
 	bool canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra = false, bool bTestVisible = false, bool bTestGold = true, bool bTestPlotOwner = true) const;
 
 #ifdef LEKMOD_NEW_ANCIENT_RUIN_REWARDS
@@ -1784,6 +1789,9 @@ public:
 #endif
 
 	CvPlayerPolicies* GetPlayerPolicies() const;
+#if defined(BEYOND_EARTH)
+	CvPlayerPerks* GetPlayerPerks() const;
+#endif
 	CvPlayerTraits* GetPlayerTraits() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
@@ -2352,7 +2360,9 @@ protected:
 
 	FAutoVariable< std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > >, CvPlayer> m_ppaaiSpecialistExtraYield;
 	FAutoVariable< std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > >, CvPlayer> m_ppaaiImprovementYieldChange;
-
+#if defined(BEYOND_EARTH)
+	FAutoVariable< std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > >, CvPlayer> m_ppaaiBuildingClassYieldChange;
+#endif
 	std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > > m_ppiImprovementYieldChange;
 	std::vector< Firaxis::Array<int, NUM_YIELD_TYPES > > m_ppiResourceYieldChange;
 	// Obsolete: only used to read old saves
@@ -2396,7 +2406,11 @@ protected:
 	// Policies
 	CvPlayerPolicies* m_pPlayerPolicies;
 	void processPolicies(PolicyTypes ePolicy, int iChange);
-
+#if defined(BEYOND_EARTH)
+	// Perks
+	CvPlayerPerks* m_pPlayerPerks;
+	void processPerks(PlayerPerkType ePerk, int iChange);
+#endif
 	// AI Strategies
 	CvEconomicAI* m_pEconomicAI;
 	CvMilitaryAI* m_pMilitaryAI;

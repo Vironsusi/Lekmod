@@ -3222,5 +3222,25 @@ enum GreatWorkSlotType
 {
 	NO_GREAT_WORK_SLOT = -1,
 };
+#if defined(BEYOND_EARTH)
+enum AffinityType
+{
+	NO_AFFINITY_TYPE = -1,
+};
 
+enum QuestType
+{
+	NO_QUEST_TYPE = -1,
+};
+
+enum PlayerPerkType
+{
+	NO_PLAYER_PERK_TYPE = -1,
+};
+
+enum UnitPerkType
+{
+	NO_UNIT_PERK_TYPE = -1,
+};
+#endif
 #endif //CVENUMS_H

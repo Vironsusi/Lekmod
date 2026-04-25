@@ -106,7 +106,17 @@ void InitializeArray(T*& pArray, const char* szTableName, T default = (T)0);
 	// RETURNS:
 	//	True on success.
 	bool SetYields(int*& pYieldsArray, const char* szTableName, const char* szFilterColumn, const char* szFilterValue);
-
+#if defined(BEYOND_EARTH)
+	//------------------------------------------------------------------------------
+	// Tables in Beyond Earth has Affinities basically everywhere
+	// This method fetches that affinity data into an integer array.
+	// CONDITIONS:
+	//	*'Affinities' table must exist.
+	//	*AffinityTable must have a 'AffinityType' column.
+	// RETURNS:
+	//	True on success.
+	bool SetAffinities(int*& pAffinitiesArray, const char* szTableName, const char* szFilterColumn, const char* szFilterValue);
+#endif
 	//! Retrieves the maximum number of a given column for a given table.
 	int MaxRows(const char* szTableName);
 

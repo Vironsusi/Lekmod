@@ -21,8 +21,6 @@
 #define fM_GLDNRT	1.618033989f		//!< (1 + sqrt(5))/2 (float), aka The Golden Ratio
 
 // Technical Improvements
-/// New GUID for NQMod
-#define NQM_GUID
 /// Enables Minidump Generation (originally for Civ4 by terkhen, ported to Civ5 by ls612)
 #define NQM_MINIDUMPS
 /*
@@ -1152,11 +1150,12 @@ TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TRAIT_VOTES
 // Prevent Helicopters from getting the Embark promotion upon upgrading
 #define LEKMOD_HELICOPTER_EMBARK_FIX
 
-
-
 // Generic define for temp changes
 #define CLEAN_UP
 // ------------------------------------------- Loup's Changes End -------------------------------------------------- \\
+
+// Changes made to recreate Beyond Earth.
+#define BEYOND_EARTH
 ////////////////////////
 //Benched or not working
 ////////////////////////

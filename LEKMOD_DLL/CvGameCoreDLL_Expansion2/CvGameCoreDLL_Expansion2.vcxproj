@@ -83,6 +83,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CvBeyondEarthInfos.cpp" />
     <ClCompile Include="_precompile.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Mod|Win32'">Create</PrecompiledHeader>
     </ClCompile>
@@ -252,6 +253,7 @@
     <ClInclude Include="CvAchievementUnlocker.h" />
     <ClInclude Include="CvAdvisorCounsel.h" />
     <ClInclude Include="CvAdvisorRecommender.h" />
+    <ClInclude Include="CvBeyondEarthInfos.h" />
     <ClInclude Include="CvAIOperation.h" />
     <ClInclude Include="CvArea.h" />
     <ClInclude Include="CvArmyAI.h" />
@@ -422,7 +424,6 @@
     <ClInclude Include="Lua\CvLuaTeamTech.h" />
     <ClInclude Include="Lua\CvLuaUnit.h" />
     <ClInclude Include="_Defines.h" />
-    <ClInclude Include="_FruityDefines.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CvGameCoreDLL.rc" />

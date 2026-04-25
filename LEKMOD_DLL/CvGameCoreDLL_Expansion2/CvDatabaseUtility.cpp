@@ -321,6 +321,17 @@ bool CvDatabaseUtility::SetYields(int*& pYieldsArray,
 	return PopulateArrayByValue(pYieldsArray, "Yields", szTableName,
 	                            "YieldType", szFilterColumn, szFilterValue, "Yield");
 }
+#if defined(BEYOND_EARTH)
+//------------------------------------------------------------------------------
+bool CvDatabaseUtility::SetAffinities(int*& pAffinitiesArray,
+									 const char* szTableName,
+									 const char* szFilterColumn,
+									 const char* szFilterValue)
+{
+	return PopulateArrayByValue(pAffinitiesArray, "Affinities", szTableName,
+								"AffinityType", szFilterColumn, szFilterValue, "Affinity");
+}
+#endif
 //------------------------------------------------------------------------------
 int CvDatabaseUtility::MaxRows(const char* szTableName)
 {

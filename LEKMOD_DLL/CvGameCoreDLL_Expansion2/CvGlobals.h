@@ -87,6 +87,12 @@ class CvAICityStrategyEntry;
 class CvPolicyXMLEntries;
 class CvPolicyEntry;
 class CvPolicyBranchEntry;
+#if defined(BEYOND_EARTH)
+class CvPlayerPerkEntry;
+class CvPlayerPerkXMLEntries;
+class CvUnitPerkEntry;
+class CvUnitPerkXMLEntries;
+#endif
 class CvTechXMLEntries;
 class CvTechEntry;
 class CvBuildingEntry;
@@ -661,7 +667,18 @@ public:
 #endif
 	std::vector<CvPolicyBranchEntry*>& getPolicyBranchInfo();
 	_Ret_maybenull_ CvPolicyBranchEntry* getPolicyBranchInfo(PolicyBranchTypes ePolicyBranchNum);
-
+#if defined(BEYOND_EARTH)
+	// PlayerPerks
+	int getNumPlayerPerkInfos() const;
+	std::vector<CvPlayerPerkEntry*>& getPlayerPerkInfo();
+	_Ret_maybenull_ CvPlayerPerkEntry* getPlayerPerkInfo(PlayerPerkType ePlayerPerkNum);
+	CvPlayerPerkXMLEntries* GetGamePlayerPerks() const;
+	// UnitPerks
+	int getNumUnitPerkInfos() const;
+	std::vector<CvUnitPerkEntry*>& getUnitPerkInfo();
+	_Ret_maybenull_ CvUnitPerkEntry* getUnitPerkInfo(UnitPerkType eUnitPerkNum);
+	CvUnitPerkXMLEntries* GetGameUnitPerks() const;
+#endif
 #ifdef AUI_WARNING_FIXES
 	uint getNumEmphasisInfos() const;
 #else
@@ -7973,6 +7990,10 @@ protected:
 	CvAIGrandStrategyXMLEntries* m_pAIGrandStrategies;
 	CvAICityStrategies* m_pAICityStrategies;
 	CvPolicyXMLEntries* m_pPolicies;
+#if defined(BEYOND_EARTH)
+	CvPlayerPerkXMLEntries* m_pPlayerPerks;
+	CvUnitPerkXMLEntries* m_pUnitPerks;
+#endif
 	CvTechXMLEntries* m_pTechs;
 	CvBuildingXMLEntries* m_pBuildings;
 	CvUnitXMLEntries* m_pUnits;
