@@ -277,7 +277,9 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(DoMinorBullyGold);
 	Method(DoMinorBullyUnit);
 	Method(DoMinorBuyout);
-
+#if defined(LEKMOD_LEGACY)
+	Method(GetLegacyOffset);
+#endif
 	Method(GetBestWondersPlayer);
 	Method(GetBestPoliciesPlayer);
 	Method(GetBestGreatPeoplePlayer);
@@ -1861,6 +1863,13 @@ int CvLuaGame::lDoMinorBuyout(lua_State* L)
 
 	return 1;
 }
+#if defined(LEKMOD_LEGACY)
+//int GetLegacyOffset(LegacyTypes eLegacy);
+int CvLuaGame::lGetLegacyOffset(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetLegacyOffset);
+}
+#endif
 //------------------------------------------------------------------------------
 //void GetBestWondersPlayer();
 int CvLuaGame::lGetBestWondersPlayer(lua_State* L)

@@ -266,7 +266,9 @@ protected:
 	static int lDoMinorBullyGold(lua_State* L);
 	static int lDoMinorBullyUnit(lua_State* L);
 	static int lDoMinorBuyout(lua_State* L);
-
+#if defined(LEKMOD_LEGACY)
+	static int lGetLegacyOffset(lua_State* L);
+#endif
 	static int lGetBestWondersPlayer(lua_State* L);
 	static int lGetBestPoliciesPlayer(lua_State* L);
 	static int lGetBestGreatPeoplePlayer(lua_State* L);

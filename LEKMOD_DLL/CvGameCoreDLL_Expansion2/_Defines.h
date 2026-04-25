@@ -966,6 +966,7 @@
 #define LEKMOD_POLICY_GREATPERSON_IMPROVEMENT_ADJACENCY_YIELD
 // No Combat Randomness Game Option
 #define LEKMOD_NO_COMBAT_RANDOMNESS
+#define GAMEOPTION_NO_COMBAT_RANDOMNESS "GAMEOPTION_LEKMOD_NO_COMBAT_RANDOMNESS"
 // Additional plot influence modifiers
 //#define LEKMOD_ADDITIONAL_PLOT_INFLUENCE_MODIFIERS
 // Culture per pop from buildings
@@ -1179,6 +1180,14 @@ TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_TRAIT_VOTES
 #define LEKMOD_HELICOPTER_EMBARK_FIX
 // New Tables for updating Unit Strength and Promotions based on era (Hetaroi)
 #define LEKMOD_ERA_BASED_UNIT_UPDATES
+// Stuff added to make the combat predictor better.
+// - Add a Range of damage if CombatRandomness is on, instead of a single number.
+// - If there is an interceptor, show how it impacts the attack.
+// - Display Earned XP and GG/Adm points from the combat to the predictor as well.
+// - If attacking at less than full health, show how much that changes final damage.
+// - If performing a melee attack that requires the unit to move and attack from a different plot, show the combat as being done on the new plot instead of the current one.
+// - FIX JAPAN
+#define LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS
 
 
 // Generic define for temp changes

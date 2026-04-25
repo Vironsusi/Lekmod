@@ -39,7 +39,6 @@ typedef FFastSmallFixedList< MissionQueueNode, 12, true, c_eCiv5GameplayDLL > Mi
 
 typedef FObjectHandle<CvUnit> UnitHandle;
 typedef FStaticVector<CvPlot*, 20, true, c_eCiv5GameplayDLL, 0> UnitMovementQueue;
-
 struct CvUnitCaptureDefinition
 {
 	PlayerTypes eOriginalOwner;		// Who first created the unit
@@ -182,7 +181,10 @@ public:
 #endif
 
 	bool IsAngerFreeUnit() const;
-
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+	CvCombatDamageRange getCombatDamageRange(int iStrength, int iOpponentStrength, int iCurrentDamage, bool bAttackerIsCity, bool bDefenderIsCity) const;
+	int getWoundedRatio(int iCurrentDamage, bool bAttackerIsCity) const;
+#endif
 	int getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDamage, bool bIncludeRand, bool bAttackerIsCity, bool bDefenderIsCity) const;
 	void fightInterceptor(const CvPlot& pPlot);
 	void move(CvPlot& pPlot, bool bShow);
@@ -535,8 +537,8 @@ public:
 
 	int GetAirStrikeDefenseDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
 
-	CvUnit* GetBestInterceptor(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
-	int GetInterceptorCount(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
+	CvUnit* GetBestInterceptor(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly = false, bool bVisibleInterceptorsOnly = false) const;
+	int GetInterceptorCount(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly = false, bool bVisibleInterceptorsOnly = false) const;
 	int GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
 
 	int GetCombatLimit() const;

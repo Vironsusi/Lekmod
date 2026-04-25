@@ -49,6 +49,9 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 
 	Method(GetCombatDamage);
 	Method(GetFireSupportUnit);
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+	Method(GetCombatDamageRange);
+#endif
 
 	Method(CanAutomate);
 	Method(CanScrap);
@@ -731,6 +734,24 @@ int CvLuaUnit::lGetFireSupportUnit(lua_State* L)
 
 	return 1;
 }
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+//CvCombatDamageRange getCombatDamageRange(int iStrength, int iOpponentStrength, int iCurrentDamage, bool bAttackerIsCity, bool bDefenderIsCity);
+// Note: This method returns a struct, so we need to push the individual members onto the stack instead of returning a single value
+int CvLuaUnit::lGetCombatDamageRange(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	const int iStrength = lua_tointeger(L, 2);
+	const int iOpponentStrength = lua_tointeger(L, 3);
+	const int iCurrentDamage = lua_tointeger(L, 4);
+	const bool bAttackerIsCity = lua_toboolean(L, 5);
+	const bool bDefenderIsCity = lua_toboolean(L, 6);
+	CvCombatDamageRange damageRange = pkUnit->getCombatDamageRange(iStrength, iOpponentStrength, iCurrentDamage, bAttackerIsCity, bDefenderIsCity);
+	lua_pushinteger(L, damageRange.iMin);
+	lua_pushinteger(L, damageRange.iMax);
+	lua_pushinteger(L, damageRange.iAverage);
+	return 3; // We are returning three values (min, max, average)
+}
+#endif
 //------------------------------------------------------------------------------
 //bool canAutomate(AutomateTypes eAutomate);
 int CvLuaUnit::lCanAutomate(lua_State* L)

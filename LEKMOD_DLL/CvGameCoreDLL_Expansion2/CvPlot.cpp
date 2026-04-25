@@ -8503,7 +8503,6 @@ int CvPlot::calculateYield(YieldTypes eYield, bool bDisplay)
 		{
 			if(pWorkingCity != NULL)
 			{
-		
 				//pPlot = plotDirection(getX(), getY(), DIRECTION_NORTHEAST);
 				pWorkingCity = getWorkingCity();
 				//CvCity* pOwningCity = getOwningCity(pPlot);
@@ -8518,7 +8517,6 @@ int CvPlot::calculateYield(YieldTypes eYield, bool bDisplay)
 					iYield += (iNumWorldWonders / iTemp);
 				}
 #endif
-		
 			}
 		}
 		// Extra yield for terrain

@@ -30,7 +30,7 @@
 //	---------------------------------------------------------------------------
 static int GetPostCombatDelay()
 {
-	return CvPreGame::quickCombat()?POST_QUICK_COMBAT_DELAY:POST_COMBAT_DELAY;
+	return CvPreGame::quickCombat() ? POST_QUICK_COMBAT_DELAY : POST_COMBAT_DELAY;
 }
 
 //	---------------------------------------------------------------------------
@@ -101,29 +101,23 @@ static CvCombatMemberEntry* AddCombatMember(CvCombatMemberEntry* pkArray, int* p
 void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender, CvPlot& plot, CvCombatInfo* pkCombatInfo)
 {
 	int iMaxHP = GC.getMAX_HIT_POINTS();
-
 	pkCombatInfo->setUnit(BATTLE_UNIT_ATTACKER, &kAttacker);
-	pkCombatInfo->setUnit(BATTLE_UNIT_DEFENDER, pkDefender);
 	pkCombatInfo->setPlot(&plot);
+	pkCombatInfo->setDefenderRetaliates(true); // Defender always retaliates in melee combat.
 
-	// Attacking a City
-	if(plot.isCity())
+	if(plot.isCity()) // Unit vs. City
 	{
-		// Unit vs. City (non-ranged so the city will retaliate
+		// Unit vs. City (non-ranged so the city will retaliate)
 		CvCity* pkCity = plot.getPlotCity();
+		pkCombatInfo->setCity(BATTLE_UNIT_DEFENDER, pkCity);
 		int iMaxCityHP = pkCity->GetMaxHitPoints();
-
 		int iAttackerStrength = kAttacker.GetMaxAttackStrength(kAttacker.plot(), &plot, NULL);
 		int iDefenderStrength = pkCity->getStrengthValue();
 
-#ifdef LEKMOD_NO_COMBAT_RANDOMNESS
-		bool bIncludeRand = !GC.getGame().isOption("GAMEOPTION_LEKMOD_NO_COMBAT_RANDOMNESS");
-		int iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderStrength, kAttacker.getDamage(), bIncludeRand, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ true);
-		int iDefenderDamageInflicted = kAttacker.getCombatDamage(iDefenderStrength, iAttackerStrength, pkCity->getDamage(), bIncludeRand, /*bAttackerIsCity*/ true, /*bDefenderIsCity*/ false);
-#else
-		int iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderStrength, kAttacker.getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ true);
-		int iDefenderDamageInflicted = kAttacker.getCombatDamage(iDefenderStrength, iAttackerStrength, pkCity->getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ true, /*bDefenderIsCity*/ false);
-#endif
+		GC.getGame().getCombatDamage(*pkCombatInfo);
+		// set in getCombatDamage, but some manipulation may be needed so store these values before they are overwritten
+		int iAttackerDamageInflicted = pkCombatInfo->getDamageInflicted(BATTLE_UNIT_ATTACKER);
+		int iDefenderDamageInflicted = pkCombatInfo->getDamageInflicted(BATTLE_UNIT_DEFENDER);
 
 		int iAttackerTotalDamageInflicted = iAttackerDamageInflicted + pkCity->getDamage();
 		int iDefenderTotalDamageInflicted = iDefenderDamageInflicted + kAttacker.getDamage();
@@ -135,76 +129,42 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 			iDefenderTotalDamageInflicted = iMaxHP - 1;
 		}
 
+		// Attacker Damage
 		pkCombatInfo->setFinalDamage(BATTLE_UNIT_ATTACKER, iDefenderTotalDamageInflicted);
 		pkCombatInfo->setDamageInflicted(BATTLE_UNIT_ATTACKER, iAttackerDamageInflicted);
+		// Defender Damage
 		pkCombatInfo->setFinalDamage(BATTLE_UNIT_DEFENDER, iAttackerTotalDamageInflicted);
 		pkCombatInfo->setDamageInflicted(BATTLE_UNIT_DEFENDER, iDefenderDamageInflicted);
-		
-		int iExperience = /*5*/ GC.getEXPERIENCE_ATTACKING_CITY_MELEE();
-
-		pkCombatInfo->setExperience(BATTLE_UNIT_ATTACKER, iExperience);
-		
-#if defined(LEKMOD_AI_XP_CAP) // Melee Combat, City.
-		int iMaxExperience;
-		if (GC.getGame().isOption("GAMEOPTION_AI_XP_CAP"))
-		{
-			iMaxExperience = (!GET_PLAYER(pkCity->getOwner()).isHuman()) ? 30 : MAX_INT;
-		}
-		else
-		{
-			iMaxExperience = (GET_PLAYER(pkCity->getOwner()).isMinorCiv()) ? 30 : MAX_INT; // NQMP GJS - cap XP from fighting CS to 30
-		}
-#else
-		int iMaxExperience = (GET_PLAYER(pkCity->getOwner()).isMinorCiv()) ? 30 : MAX_INT; // NQMP GJS - cap XP from fighting CS to 30
-#endif
-		pkCombatInfo->setMaxExperienceAllowed(BATTLE_UNIT_ATTACKER, iMaxExperience);
+		// Attacker Experience
+		pkCombatInfo->setExperience(BATTLE_UNIT_ATTACKER, GC.getEXPERIENCE_ATTACKING_CITY_MELEE());
+		pkCombatInfo->setMaxExperienceAllowed(BATTLE_UNIT_ATTACKER, pkCity->getMaxXPValue());
 		pkCombatInfo->setInBorders(BATTLE_UNIT_ATTACKER, plot.getOwner() == pkCity->getOwner());
 #ifdef NQ_NO_GG_POINTS_FROM_CS_OR_BARBS
-		bool bIsGlobalXPAwarded = !kAttacker.isBarbarian() && !GET_PLAYER(kAttacker.getOwner()).isMinorCiv() && !pkCity->isBarbarian() && !GET_PLAYER(pkCity->getOwner()).isMinorCiv();
-		if (GC.getGame().isOption("GAMEOPTION_AI_XP_CAP")) // Melee Combat, City.
-		{
-			bIsGlobalXPAwarded = bIsGlobalXPAwarded && (GET_PLAYER(pkCity->getOwner()).isHuman());
-		}
-		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, bIsGlobalXPAwarded);
+		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, pkCity->canEarnGlobalXP());
 #else
-		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, !kAttacker.isBarbarian());
+		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, kAttacker.isBarbarian());
 #endif
-
-		pkCombatInfo->setExperience(BATTLE_UNIT_DEFENDER, 0);
+		// Defender Experience
+		pkCombatInfo->setExperience(BATTLE_UNIT_DEFENDER, 0); // Cities don't gain XP (Hmmm, could be fun).
 		pkCombatInfo->setMaxExperienceAllowed(BATTLE_UNIT_DEFENDER, kAttacker.maxXPValue());
 		pkCombatInfo->setInBorders(BATTLE_UNIT_DEFENDER, plot.getOwner() == kAttacker.getOwner());
 #ifdef NQ_NO_GG_POINTS_FROM_CS_OR_BARBS
-		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_DEFENDER, bIsGlobalXPAwarded);
+		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_DEFENDER, kAttacker.canEarnGlobalXP());
 #else
 		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_DEFENDER, !pkCity->isBarbarian());
 #endif
 
-		pkCombatInfo->setAttackIsRanged(false);
-		pkCombatInfo->setDefenderRetaliates(true);
+		
 	}
-	// Attacking a Unit
-	else
+	else // Unit vs. Unit
 	{
-		// Unit vs. Unit
 		CvAssert(pkDefender != NULL);
-
+		pkCombatInfo->setUnit(BATTLE_UNIT_DEFENDER, pkDefender);
 #ifdef NQ_HEAVY_CHARGE_DOWNHILL
 		bool isAttackingFromHigherElevation;
 #endif
 		int iDefenderStrength = pkDefender->GetMaxDefenseStrength(&plot, &kAttacker);
-		int iAttackerStrength = 0;
-		if(kAttacker.GetMaxRangedCombatStrength(NULL, /*pCity*/ NULL, true, true) > 0 && kAttacker.getDomainType() == DOMAIN_AIR)
-		{
-			iAttackerStrength = kAttacker.GetMaxRangedCombatStrength(NULL, /*pCity*/ NULL, true, true);
-			if(pkDefender->getDomainType() != DOMAIN_AIR)
-			{
-				iDefenderStrength /= 2;
-			}
-		}
-		else
-		{
-			iAttackerStrength = kAttacker.GetMaxAttackStrength(kAttacker.plot(), &plot, pkDefender);
-		}
+		int iAttackerStrength = kAttacker.GetMaxAttackStrength(kAttacker.plot(), &plot, pkDefender);
 
 #ifndef AUI_UNIT_FIX_HEAVY_CHARGE_BONUS_INTEGRATED_INTO_STACKS
 #ifdef NQ_HEAVY_CHARGE_DOWNHILL
@@ -212,8 +172,7 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 			(kAttacker.plot()->isMountain() && !pkDefender->plot()->isMountain()) ||
 			(kAttacker.plot()->isHills() && pkDefender->plot()->isFlatlands());
 		
-		if ((kAttacker.IsCanHeavyCharge() || (kAttacker.GetHeavyChargeDownhill() > 0 && isAttackingFromHigherElevation))
-			&& !pkDefender->CanFallBackFromMelee(kAttacker))
+		if ((kAttacker.IsCanHeavyCharge() || (kAttacker.GetHeavyChargeDownhill() > 0 && isAttackingFromHigherElevation)) && !pkDefender->CanFallBackFromMelee(kAttacker))
 		{
 			iAttackerStrength = (iAttackerStrength * 150) / 100;
 		}
@@ -301,8 +260,6 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 		pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, !pkDefender->isBarbarian());
 #endif
 
-		pkCombatInfo->setAttackIsRanged(false);
-
 #ifdef NQ_HEAVY_CHARGE_DOWNHILL
 		isAttackingFromHigherElevation = false;
 		if (kAttacker.GetHeavyChargeDownhill() > 0)
@@ -338,7 +295,6 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 		}
 
 		pkCombatInfo->setAttackerAdvances(bAdvance);
-		pkCombatInfo->setDefenderRetaliates(true);
 	}
 
 	GC.GetEngineUserInterface()->setDirty(UnitInfo_DIRTY_BIT, true);
@@ -689,59 +645,12 @@ void CvUnitCombat::GenerateRangedCombatInfo(CvUnit& kAttacker, CvUnit* pkDefende
 #else
 		iDamage = kAttacker.GetRangeCombatDamage(pkDefender, /*pCity*/ NULL, /*bIncludeRand*/ true);
 #endif
-
-#ifdef DEL_RANGED_COUNTERATTACKS
-		iTotalDamage = pkDefender->getDamage() + iDamage;
-
-		if (GC.getGame().isOption("GAMEOPTION_ENABLE_RANGED_COUNTERATTACKS"))
-		{
-			if (!kAttacker.isRangedSupportFire() && !pkDefender->IsCityAttackOnly() &&
-				// Ranged unit counterattacks
-				(pkDefender->canRangeStrike() && pkDefender->canEverRangeStrikeAt(pFromPlot->getX(), pFromPlot->getY())) || 
-				// Melee unit counterattacks
-				(pkDefender->IsCanAttackWithMove() && plot.isAdjacent(pFromPlot) && pkDefender->PlotValid(pFromPlot) && pkDefender->PlotValid(&plot)))
-			{
-				if (pkDefender->IsCanAttackRanged())
-				{
-					iDamageToAttacker = pkDefender->GetRangeCombatDamage(&kAttacker, NULL, true);
-				}
-				else if (iTotalDamage < iMaxHP)
-				{
-					// Melee unit (defender) is counterattacking by attacking into the plot from which they were bombarded, where the attacker is
-					int iAttackerStrength = kAttacker.GetMaxDefenseStrength(pFromPlot, pkDefender);
-					int iDefenderStrength = pkDefender->GetMaxAttackStrength(&plot, pFromPlot, &kAttacker);
-					iDamageToAttacker = pkDefender->getCombatDamage(iDefenderStrength, iAttackerStrength, iTotalDamage, /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
-				}
-			}
-
-			iTotalDamageToAttacker = iDamageToAttacker + kAttacker.getDamage();
-
-			// Will both units be killed by this? If so, take drastic corrective measures
-			if (iTotalDamage >= iMaxHP && iTotalDamageToAttacker >= iMaxHP)
-			{
-				// He who hath the least amount of damage survives with 1 HP left
-				if (iTotalDamage > iTotalDamageToAttacker)
-				{
-					iDamageToAttacker = iMaxHP - kAttacker.getDamage() - 1;
-					iTotalDamageToAttacker = iMaxHP - 1;
-					iTotalDamage = iMaxHP;
-				}
-				else
-				{
-					iDamage = iMaxHP - pkDefender->getDamage() - 1;
-					iTotalDamage = iMaxHP - 1;
-					iTotalDamageToAttacker = iMaxHP;
-				}
-			}
-		}
-#else
 		if(iDamage + pkDefender->getDamage() > GC.getMAX_HIT_POINTS())
 		{
 			iDamage = GC.getMAX_HIT_POINTS() - pkDefender->getDamage();
 		}
 
 		iTotalDamage = std::max(pkDefender->getDamage(), pkDefender->getDamage() + iDamage);
-#endif
 	}
 	else // City defender
 	{
@@ -1923,7 +1832,7 @@ void CvUnitCombat::ResolveAirUnitVsCombat(const CvCombatInfo& kCombatInfo, uint 
 				kCombatInfo.getInBorders(BATTLE_UNIT_INTERCEPTOR),
 				kCombatInfo.getUpdateGlobal(BATTLE_UNIT_INTERCEPTOR));
 		}
-	}
+	} 
 	
 #else
 	int iInterceptionDamage = kCombatInfo.getDamageInflicted(BATTLE_UNIT_INTERCEPTOR);

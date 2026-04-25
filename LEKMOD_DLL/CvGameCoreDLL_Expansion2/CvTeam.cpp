@@ -114,10 +114,21 @@ void CvTeam::init(TeamTypes eID)
 	UpdateLegacyResourceRevealFromTechAndPolicy();
 
 	ResourceTypes eResource;
-	TechTypes eTradeTech;
+	TechTypes eRevealTech, eTradeTech;
 	for (int resource = 0; resource < GC.getNumResourceInfos(); ++resource)
 	{
 		eResource = static_cast<ResourceTypes>(resource);
+		eRevealTech = static_cast<TechTypes>(GC.getResourceInfo(eResource)->getTechReveal());
+		// No Tech or Tech is met, either way the resource is revealed.
+		if (eRevealTech == NO_TECH || m_pTeamTechs->HasTech(eRevealTech))
+		{
+			PolicyTypes eRevealPolicy = static_cast<PolicyTypes>(GC.getResourceInfo(eResource)->getPolicyReveal());
+			// No Policy or Policy is met, either way the resource is revealed.
+			if (eRevealPolicy == NO_POLICY || HavePolicyInTeam(eRevealPolicy))
+			{
+				m_abResourceRevealed[resource] = true;
+			}
+		}
 		eTradeTech = static_cast<TechTypes>(GC.getResourceInfo(eResource)->getTechCityTrade());
 		if (eTradeTech == NO_TECH || m_pTeamTechs->HasTech(eTradeTech))
 		{
@@ -6028,6 +6039,10 @@ void CvTeam::setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, b
 				if (pResourceInfo->getTechCityTrade() == eIndex)
 				{
 					SetResourceTrade(eResource, bNewValue);
+				}
+				if (pResourceInfo->getTechReveal() == eIndex)
+				{
+					SetResourceRevealed(eResource, bNewValue);
 				}
 			}
 #endif

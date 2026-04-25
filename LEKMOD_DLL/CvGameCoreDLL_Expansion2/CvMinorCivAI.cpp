@@ -8403,8 +8403,12 @@ void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX,
 	iNumUnits = 0;
 	for(pLoopUnit = GetPlayer()->firstUnit(&iLoopUnit); pLoopUnit != NULL; pLoopUnit = GetPlayer()->nextUnit(&iLoopUnit))
 	{
-		GET_PLAYER(eMajor).DoDistanceGift(GetPlayer()->GetID(), pLoopUnit);
-		iNumUnits++;
+		// No Free Great People.
+		if (!pLoopUnit->IsGreatPerson())
+		{
+			GET_PLAYER(eMajor).DoDistanceGift(GetPlayer()->GetID(), pLoopUnit);
+			iNumUnits++;
+		}
 	}
 
 	// Take all their cities, don't show notifications
@@ -9119,7 +9123,6 @@ void CvMinorCivAI::DoMajorBullyUnit(PlayerTypes eBully, UnitTypes eUnitType)
 			CvAssertMsg(false, "eUnitType is not expected to be NO_UNIT. Please send Anton your save file and version.");
 			return;
 		}
-
 		// Minor must have Capital
 		CvCity* pCapital = GetPlayer()->getCapitalCity();
 		if(pCapital == NULL)

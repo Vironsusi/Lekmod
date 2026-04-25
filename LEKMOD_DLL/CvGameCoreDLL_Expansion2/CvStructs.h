@@ -350,6 +350,9 @@ public:
 	bool getAttackerAdvancedVisualization() const;
 	void setAttackerAdvancedVisualization(bool bAdvance);
 
+	bool IsCombatPrediction() const;
+	void setCombatPrediction(bool bCombatPrediction);
+
 	CvCombatMemberEntry* getDamageMembers();
 	const CvCombatMemberEntry* getDamageMembers() const;
 	int getDamageMemberCount() const;
@@ -382,6 +385,7 @@ protected:
 	bool		m_bVisualize;									//!< The combat should be visualized
 
 	bool		m_bAttackedAdvancedVis;							//!< If true, the attacker has already advanced its visualization of the unit (happened during combat sim).
+	bool		m_bCombatPrediction;							//!< If true, this combat info is being used for combat prediction and not actual combat.
 
 	CvCombatMemberEntry	m_kCombatMembers[BATTLE_UNIT_COUNT];
 	// Units/cities damaged in the attack.  0 for most attacks that have just the normal defenders.  Primarily used with area attacks such as the various nuclear attacks.
@@ -389,7 +393,15 @@ protected:
 	int			m_iDamageMemberCount;
 	CvCombatMemberEntry	m_kDamageMembers[MAX_DAMAGE_MEMBER_COUNT];
 };
-
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+struct CvCombatDamageRange
+{
+	int iMin;
+	int iMax;
+	int iAverage;
+	CvCombatDamageRange() : iMin(0), iMax(0), iAverage(0) {}
+};
+#endif
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  CLASS:      CvMissionDefinition
 //!  \brief		Base mission definition struct

@@ -132,7 +132,7 @@ local function OnConfirmYes()
   if Controls.ChooseConfirm then Controls.ChooseConfirm:SetHide(true) end
 
   -- Encode via Ideology path: (ID + 10) * -1
-  local offsetID = (g_SelectedID + 10) * -1
+  local offsetID = Game.GetLegacyOffset(g_SelectedID)
   Network.SendIdeologyChoice(pid, offsetID)
 
   print(string.format("ChooseLegacyPopup: chosen ID=%d encoded=%d player=%d",

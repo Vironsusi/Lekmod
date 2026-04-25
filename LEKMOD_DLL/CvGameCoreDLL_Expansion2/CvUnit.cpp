@@ -3716,16 +3716,33 @@ bool CvUnit::IsAngerFreeUnit() const
 
 	return false;
 }
-
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+// Helper for getCombatDamageRange that calculates the wounded ratio for a unit, which is used to determine how much damage it will do when attacking while damaged
+int CvUnit::getWoundedRatio(int iCurrentDamage, bool bAttackerIsCity) const
+{
+	int woundedRatio;
+	int woundedMultiplier = /*33*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
+	if (bAttackerIsCity)
+	{
+		return GC.getMAX_HIT_POINTS();		// JON: Cities don't do less damage when wounded
+	}
+	else
+	{
+		woundedMultiplier += GET_PLAYER(getOwner()).GetWoundedUnitDamageMod();
+		woundedRatio = GC.getMAX_HIT_POINTS() - (iCurrentDamage * woundedMultiplier / 100);
+	}
+	return woundedRatio;
+}
+#endif
 //	---------------------------------------------------------------------------
 int CvUnit::getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDamage, bool bIncludeRand, bool bAttackerIsCity, bool bDefenderIsCity) const
 {
 	VALIDATE_OBJECT
 	// The roll will vary damage between 40 and 60 (out of 100) for two units of identical strength
-
+#if !defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
 	int iDamageRatio;
 
-	int iWoundedDamageMultiplier = /*50*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
+	int iWoundedDamageMultiplier = /*33*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
 
 	if(bAttackerIsCity)
 	{
@@ -3738,51 +3755,26 @@ int CvUnit::getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDa
 
 		iDamageRatio = GC.getMAX_HIT_POINTS() - (iCurrentDamage * iWoundedDamageMultiplier / 100);
 	}
-
-#ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
-	int iDamage = /*400*/ GC.getATTACK_SAME_STRENGTH_MIN_DAMAGE();
 #else
-	int iDamage = 0;
-
-	iDamage = /*400*/ GC.getATTACK_SAME_STRENGTH_MIN_DAMAGE() * iDamageRatio / GC.getMAX_HIT_POINTS();
+	int iDamageRatio = getWoundedRatio(iCurrentDamage, bAttackerIsCity);
 #endif
-
+	int iDamage = /*2400*/ GC.getATTACK_SAME_STRENGTH_MIN_DAMAGE() * iDamageRatio / GC.getMAX_HIT_POINTS();
 	// Don't use rand when calculating projected combat results
 	int iRoll = 0;
 	if(bIncludeRand)
 	{
-#ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
-		if (GC.getGame().isOption("GAMEOPTION_USE_BINOM_RNG_FOR_COMBAT_ROLLS"))
-		{
-			int iAverageDamage = iDamage + (GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE() / 2);
-			int iSigma = GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE() / 6;
-			int iMaxRoll = iSigma*iSigma * 4 + 1;
-			iRoll = iAverageDamage + GC.getGame().getJonRandNumBinom(iMaxRoll, "Unit Combat Damage") - (iMaxRoll / 2) - iDamage;
-		}
-		else
-#endif
 		iRoll = /*400*/ GC.getGame().getJonRandNum(GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Unit Combat Damage");
-
-#ifndef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 		iRoll *= iDamageRatio;
 		iRoll /= GC.getMAX_HIT_POINTS();
-#endif
 	}
 	else
 	{
-		iRoll = /*400*/ GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE();
-		iRoll -= 1;	// Subtract 1 here, because this is the amount normally "lost" when doing a rand roll
-#ifndef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
+		iRoll = /*1200*/ GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE() -1; // Subtract 1 here, because this is the amount normally "lost" when doing a rand roll
 		iRoll *= iDamageRatio;
 		iRoll /= GC.getMAX_HIT_POINTS();
-#endif
 		iRoll /= 2;	// The divide by 2 is to provide the average damage
 	}
 	iDamage += iRoll;
-#ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
-	iDamage = MAX(1, MIN(iDamage, GC.getMAX_HIT_POINTS() * 100)) * iDamageRatio / GC.getMAX_HIT_POINTS();
-#endif
-
 	// Calculations performed to dampen amount of damage by units that are close in strength
 	// RATIO = (((((ME / OPP) + 3) / 4) ^ 4) + 1) / 2
 	// Examples:
@@ -12618,6 +12610,7 @@ void CvUnit::SetBaseCombatStrength(int iCombat)
 {
 	VALIDATE_OBJECT
 	m_iBaseCombat = iCombat;
+	getUnitInfo().DoUpdatePower(m_iBaseCombat, false);
 }
 
 //	--------------------------------------------------------------------------------
@@ -12636,12 +12629,13 @@ void CvUnit::ChangeBaseCombatStrength(int iChange)
 {
 	VALIDATE_OBJECT
 	m_iBaseCombat += iChange;
+	getUnitInfo().DoUpdatePower(m_iBaseCombat, false);
 }
 #endif
 //	--------------------------------------------------------------------------------
 int CvUnit::GetBaseCombatStrengthConsideringDamage() const
 {
-	int iWoundedDamageMultiplier = /*50*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
+	int iWoundedDamageMultiplier = /*33*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
 
 	// Mod (Policies, etc.) - lower means Units are less bothered by damage
 	iWoundedDamageMultiplier += GET_PLAYER(getOwner()).GetWoundedUnitDamageMod();
@@ -12678,10 +12672,8 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 #endif
 	// If the empire is unhappy, then Units get a combat penalty
 	if(kPlayer.IsEmpireUnhappy())
-	{
 		iModifier += GetUnhappinessCombatPenalty();
-	}
-
+	
 	// Over our strategic resource limit?
 	iTempModifier = GetStrategicResourceCombatPenalty();
 	if(iTempModifier != 0)
@@ -12691,28 +12683,21 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 	if(IsNearGreatGeneral() && !IsIgnoreGreatGeneralBenefit())
 	{
 		iModifier += kPlayer.GetGreatGeneralCombatBonus();
-		iModifier += kPlayer.GetPlayerTraits()->GetGreatGeneralExtraBonus();
 
 		if(IsStackedGreatGeneral())
-		{
 			iModifier += GetGreatGeneralCombatModifier();
-		}
 	}
 
 	// Reverse Great General nearby
 	int iReverseGGModifier = GetReverseGreatGeneralModifier();
 	if(iReverseGGModifier != 0)
-	{
 		iModifier += iReverseGGModifier;
-	}
-
+	
 	// Improvement with combat bonus (from trait) nearby
 	int iNearbyImprovementModifier = GetNearbyImprovementModifier();
 	if(iNearbyImprovementModifier != 0)
-	{
 		iModifier += iNearbyImprovementModifier;
-	}
-
+	
 	// Adjacent Friendly military Unit?
 	if(IsFriendlyUnitAdjacent(/*bCombatUnit*/ true))
 		iModifier += GetAdjacentModifier();
@@ -12772,7 +12757,6 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 							}
 						}
 					}
-					
 				}
 #endif
 			}
@@ -13080,7 +13064,7 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 					}
 				}	
 			}
-			if (IsNearUnitWithPromotion(eGreatGeneralPromotion, 2, false /*bSameDomain*/, true /*bSamePlayer*/))
+			if (IsNearUnitWithPromotion(eGreatGeneralPromotion, GC.getGREAT_GENERAL_RANGE(), false /*bSameDomain*/, true /*bSamePlayer*/))
 			{
 				iTempModifier = GET_PLAYER(getOwner()).GetPlayerTraits()->GetGreatGeneralSiegeBonus();
 				iModifier += iTempModifier;
@@ -13457,6 +13441,7 @@ int CvUnit::GetBaseRangedCombatStrength() const
 	VALIDATE_OBJECT
 #if !defined(LEKMOD_LEGACY)
 	return m_pUnitInfo->GetRangedCombat();
+}
 #else
 	return m_iBaseRangedCombat;
 }
@@ -13464,6 +13449,7 @@ void CvUnit::ChangeBaseRangedCombatStrength(int iChange)
 {
 	VALIDATE_OBJECT
 	m_iBaseRangedCombat += iChange;
+	getUnitInfo().DoUpdatePower(m_iBaseRangedCombat, true);
 }
 #endif
 //	--------------------------------------------------------------------------------
@@ -13512,7 +13498,6 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 	if(IsNearGreatGeneral() && !IsIgnoreGreatGeneralBenefit())
 	{
 		iModifier += kPlayer.GetGreatGeneralCombatBonus();
-		iModifier += pTraits->GetGreatGeneralExtraBonus();
 
 		if(IsStackedGreatGeneral())
 		{
@@ -14212,7 +14197,7 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 			iDefenderStrength = pDefender->GetMaxRangedCombatStrength(this, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
 
 			// Ranged units take less damage from one another
-			iDefenderStrength *= /*125*/ GC.getRANGE_ATTACK_RANGED_DEFENDER_MOD();
+			iDefenderStrength *= /*100*/ GC.getRANGE_ATTACK_RANGED_DEFENDER_MOD();
 			iDefenderStrength /= 100;
 		}
 		else
@@ -14229,7 +14214,7 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 	// The roll will vary damage between 30 and 40 (out of 100) for two units of identical strength
 
 	// Note, 0 is valid - means we don't do anything
-	int iWoundedDamageMultiplier = /*50*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
+	int iWoundedDamageMultiplier = /*33*/ GC.getWOUNDED_DAMAGE_MULTIPLIER();
 	iWoundedDamageMultiplier += kPlayer.GetWoundedUnitDamageMod();
 
 
@@ -14238,44 +14223,25 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 		iAttackerDamageRatio = 0;
 
 	int iAttackerDamage = /*250*/ GC.getRANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE();
-#ifndef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 	iAttackerDamage *= iAttackerDamageRatio;
 	iAttackerDamage /= GC.getMAX_HIT_POINTS();
-#endif
 
 	int iAttackerRoll = 0;
 	if(bIncludeRand)
 	{
-#ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
-		if (GC.getGame().isOption("GAMEOPTION_USE_BINOM_RNG_FOR_COMBAT_ROLLS"))
-		{
-			int iAverageDamage = iAttackerDamage + (GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE() / 2);
-			int iSigma = GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE() / 6;
-			int iMaxRoll = iSigma*iSigma * 4 + 1;
-			iAttackerRoll = iAverageDamage + GC.getGame().getJonRandNumBinom(iMaxRoll, "Unit Ranged Combat Damage") - (iMaxRoll / 2) - iAverageDamage;
-		}
-		else
-#endif
 		iAttackerRoll = /*300*/ GC.getGame().getJonRandNum(GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Unit Ranged Combat Damage");
-#ifndef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 		iAttackerRoll *= iAttackerDamageRatio;
 		iAttackerRoll /= GC.getMAX_HIT_POINTS();
-#endif
 	}
 	else
 	{
 		iAttackerRoll = /*300*/ GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE();
 		iAttackerRoll -= 1;	// Subtract 1 here, because this is the amount normally "lost" when doing a rand roll
-#ifndef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
 		iAttackerRoll *= iAttackerDamageRatio;
 		iAttackerRoll /= GC.getMAX_HIT_POINTS();
-#endif
 		iAttackerRoll /= 2;	// The divide by 2 is to provide the average damage
 	}
 	iAttackerDamage += iAttackerRoll;
-#ifdef NQM_COMBAT_RNG_USE_BINOM_RNG_OPTION
-	iAttackerDamage = MAX(1, MIN(iAttackerDamage, GC.getMAX_HIT_POINTS() * 100)) * iAttackerDamageRatio / GetMaxHitPoints();
-#endif
 
 	double fStrengthRatio = (iDefenderStrength > 0)?(double(iAttackerStrength) / iDefenderStrength):double(iAttackerStrength);
 
@@ -14396,7 +14362,7 @@ int CvUnit::GetAirStrikeDefenseDamage(const CvUnit* pAttacker, bool bIncludeRand
 CvUnit* CvUnit::GetBestInterceptor(const CvPlot& interceptPlot, CvUnit* pkDefender /* = NULL */, bool bLandInterceptorsOnly /*false*/, bool bVisibleInterceptorsOnly /*false*/) const
 {
 	VALIDATE_OBJECT
-		CvUnit* pLoopUnit;
+	CvUnit* pLoopUnit;
 	CvUnit* pBestUnit;
 	int iValue;
 	int iBestValue;
@@ -14475,39 +14441,47 @@ int CvUnit::GetInterceptorCount(const CvPlot& interceptPlot, CvUnit* pkDefender 
 	for(iI = 0; iI < MAX_PLAYERS; iI++)
 	{
 		CvPlayerAI& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
-		if(kLoopPlayer.isAlive())
+		if (!kLoopPlayer.isAlive())
+			continue;
+		TeamTypes eLoopTeam = kLoopPlayer.getTeam();
+		if (isEnemy(eLoopTeam) && !isInvisible(eLoopTeam, false, false))
 		{
-			TeamTypes eLoopTeam = kLoopPlayer.getTeam();
-			if(isEnemy(eLoopTeam) && !isInvisible(eLoopTeam, false, false))
+			for(pLoopUnit = kLoopPlayer.firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = kLoopPlayer.nextUnit(&iLoop))
 			{
-				for(pLoopUnit = kLoopPlayer.firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = kLoopPlayer.nextUnit(&iLoop))
+				// Not the Defender or NULL
+				if (pLoopUnit == pkDefender)
+					continue;
+				//Dying!
+				if (pLoopUnit->isDelayedDeath())
+					continue;
+				// Can't intercept!
+				if (!pLoopUnit->canAirDefend())
+					continue;
+				// Busy!
+				if (pLoopUnit->isInCombat())
+					continue;
+
+				// Must not have already intercepted this turn
+				if (pLoopUnit->isOutOfInterceptions())
+					continue;
+
+				// Must either be a non-air Unit, or an air Unit that hasn't moved this turn
+				if((pLoopUnit->getDomainType() != DOMAIN_AIR) || !(pLoopUnit->hasMoved()))
 				{
-					// Must be able to intercept
-					if(pLoopUnit != pkDefender && !pLoopUnit->isDelayedDeath() && pLoopUnit->canAirDefend() && !pLoopUnit->isInCombat())
+					// Must either be a non-air Unit or an air Unit on intercept
+					if((pLoopUnit->getDomainType() != DOMAIN_AIR) || (pLoopUnit->GetActivityType() == ACTIVITY_INTERCEPT))
 					{
-						// Must not have already intercepted this turn
-						if(!pLoopUnit->isOutOfInterceptions())
+						// Check input booleans
+						if (!bLandInterceptorsOnly || pLoopUnit->getDomainType() == DOMAIN_LAND)
 						{
-							// Must either be a non-air Unit, or an air Unit that hasn't moved this turn
-							if((pLoopUnit->getDomainType() != DOMAIN_AIR) || !(pLoopUnit->hasMoved()))
+							if (!bVisibleInterceptorsOnly || pLoopUnit->plot()->isVisible(getTeam()))
 							{
-								// Must either be a non-air Unit or an air Unit on intercept
-								if((pLoopUnit->getDomainType() != DOMAIN_AIR) || (pLoopUnit->GetActivityType() == ACTIVITY_INTERCEPT))
+								// Test range
+								if(plotDistance(pLoopUnit->getX(), pLoopUnit->getY(), interceptPlot.getX(), interceptPlot.getY()) <= pLoopUnit->getUnitInfo().GetAirInterceptRange())
 								{
-									// Check input booleans
-									if (!bLandInterceptorsOnly || pLoopUnit->getDomainType() == DOMAIN_LAND)
+									if (pLoopUnit->currInterceptionProbability() > 0)
 									{
-										if (!bVisibleInterceptorsOnly || pLoopUnit->plot()->isVisible(getTeam()))
-										{
-											// Test range
-											if(plotDistance(pLoopUnit->getX(), pLoopUnit->getY(), interceptPlot.getX(), interceptPlot.getY()) <= pLoopUnit->getUnitInfo().GetAirInterceptRange())
-											{
-												if (pLoopUnit->currInterceptionProbability() > 0)
-												{
-													iReturnValue++;
-												}
-											}
-										}
+										iReturnValue++;
 									}
 								}
 							}
@@ -14795,6 +14769,9 @@ int CvUnit::maxXPValue() const
 	return iMaxValue;
 }
 #if defined(NQ_NO_GG_POINTS_FROM_CS_OR_BARBS)
+// Cast into the opposite side of the CombatInfo class
+// Attackers shouldnt get GG points if they are attacking barbs or cs, or AIs
+// Defenders shouldnt get GG points if they are defending against barbs or cs, or AIs
 bool CvUnit::canEarnGlobalXP() const
 {
 	VALIDATE_OBJECT
@@ -16974,31 +16951,22 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 #if defined(LEKMOD_LEGACY) // Gonna Do something wonky, probably gonna get rid of this
 	int iRange = GC.getGREAT_GENERAL_RANGE();
 	PromotionTypes eGreatGeneralPromotion = (PromotionTypes)GC.getInfoTypeForString("PROMOTION_GREAT_GENERAL", true /*bHideAssert*/);
-	if (IsNearUnitWithPromotion(eGreatGeneralPromotion, iRange, false, true))
+	PromotionTypes eLegacyPromotion = (PromotionTypes)GET_PLAYER(getOwner()).GetPlayerLegacies()->GetPromotionNearbyGeneralUnitCombat(getUnitCombatType());
+	if (IsNearUnitWithPromotion(eGreatGeneralPromotion, iRange, false, true) && eLegacyPromotion != NO_PROMOTION)
 	{
-		// This returns an ID of the legacy promotion for our unit combat type, or NO_PROMOTION
-		PromotionTypes eLegacyPromotion = (PromotionTypes)GET_PLAYER(getOwner()).GetPlayerLegacies()->GetPromotionNearbyGeneralUnitCombat(getUnitCombatType());
-		if (eLegacyPromotion != NO_PROMOTION)
+		if (!isHasPromotion(eLegacyPromotion)) // We don't have it, so give it
 		{
-			if (!isHasPromotion(eLegacyPromotion)) // We don't have it, so give it
-			{
-				setHasPromotion(eLegacyPromotion, true);
-			}
+			setHasPromotion(eLegacyPromotion, true);
 		}
 	}
-	else // Not near a general, so remove any legacy promotions we have from them
+	else if (eLegacyPromotion != NO_PROMOTION) // Not near a general, so remove any legacy promotions we have from them
 	{
-		// This returns an ID of the legacy promotion for our unit combat type, or NO_PROMOTION
-		PromotionTypes eLegacyPromotion = (PromotionTypes)GET_PLAYER(getOwner()).GetPlayerLegacies()->GetPromotionNearbyGeneralUnitCombat(getUnitCombatType());
-		if (eLegacyPromotion != NO_PROMOTION)
+		if (isHasPromotion(eLegacyPromotion) && !IsPromotionChosenByPlayer(eLegacyPromotion) && !getUnitInfo().GetFreePromotions(eLegacyPromotion)) // chosen by player or free on the unit itself, so keep it
 		{
-			if (isHasPromotion(eLegacyPromotion) && !IsPromotionChosenByPlayer(eLegacyPromotion) && !getUnitInfo().GetFreePromotions(eLegacyPromotion)) // chosen by player or free on the unit itself, so keep it
-			{
-				setHasPromotion(eLegacyPromotion, false);
-			}
+			setHasPromotion(eLegacyPromotion, false);
 		}
 	}
-	if (isHasPromotion(eGreatGeneralPromotion))
+	else if (isHasPromotion(eGreatGeneralPromotion) && eLegacyPromotion != NO_PROMOTION)
 	{
 		CvPlot* pLoopPlot;
 		IDInfo* pUnitNode;
@@ -17010,47 +16978,6 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 			{
 				pLoopPlot = plotXYWithRangeCheck(pOldPlot->getX(), pOldPlot->getY(), iX, iY, iRange);
 
-				if (pLoopPlot == NULL)
-					continue;
-				if (pLoopPlot->getNumUnits() <= 0)
-					continue;
-
-				pUnitNode = pLoopPlot->headUnitNode();
-
-				while (pUnitNode != NULL)
-				{
-					pLoopUnit = ::getUnit(*pUnitNode);
-					pUnitNode = pLoopPlot->nextUnitNode(pUnitNode);
-					if (pLoopUnit == NULL)
-						continue;
-					if (pLoopUnit->getOwner() != getOwner())
-						continue;
-					if (pLoopUnit->getUnitCombatType() == NO_UNITCOMBAT)
-						continue;
-					PromotionTypes eLegacyPromotion = (PromotionTypes)GET_PLAYER(getOwner()).GetPlayerLegacies()->GetPromotionNearbyGeneralUnitCombat(pLoopUnit->getUnitCombatType());
-					if (eLegacyPromotion == NO_PROMOTION)
-						continue;
-
-					// Re-check from the unit's current position whether it is near ANY valid Great General
-					if (pLoopUnit->IsNearUnitWithPromotion(eGreatGeneralPromotion, iRange, false, true))
-					{
-						if (!pLoopUnit->isHasPromotion(eLegacyPromotion))
-							pLoopUnit->setHasPromotion(eLegacyPromotion, true);
-					}
-					else
-					{
-						// chosen by player or free on the unit itself, so keep it
-						if (pLoopUnit->isHasPromotion(eLegacyPromotion) && !pLoopUnit->IsPromotionChosenByPlayer(eLegacyPromotion) && !pLoopUnit->getUnitInfo().GetFreePromotions(eLegacyPromotion))
-							pLoopUnit->setHasPromotion(eLegacyPromotion, false);
-					}
-				}
-			}
-		}
-		for (int iX = -iRange; iX <= iRange; iX++)
-		{
-			for (int iY = -iRange; iY <= iRange; iY++)
-			{
-				pLoopPlot = plotXYWithRangeCheck(getX(), getY(), iX, iY, iRange);
 				if (pLoopPlot == NULL)
 					continue;
 				if (pLoopPlot->getNumUnits() <= 0)
@@ -17139,14 +17066,14 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 			{
 				if (oldCanBully[iI * (MAX_MINOR_CIVS - MAX_MAJOR_CIVS) + jJ - MAX_MAJOR_CIVS] != GET_PLAYER((PlayerTypes)jJ).GetMinorCivAI()->CanMajorBullyGold((PlayerTypes)iI))
 				{
-					PlayerTypes eLoopMinor = (PlayerTypes)jJ;
-					if (GET_PLAYER(eLoopMinor).isAlive())
+					CvPlayer& kMinor = GET_PLAYER((PlayerTypes)jJ);
+					if (kMinor.isAlive())
 					{
-						if (GET_PLAYER(eLoopMinor).getCapitalCity())
+						if (kMinor.getCapitalCity())
 						{
-							if (GET_PLAYER(eLoopMinor).getCapitalCity()->plot())
+							if (kMinor.getCapitalCity()->plot())
 							{
-								GET_PLAYER(eLoopMinor).getCapitalCity()->plot()->updateFog();
+								kMinor.getCapitalCity()->plot()->updateFog();
 								break;
 							}
 						}	
@@ -19470,39 +19397,21 @@ int CvUnit::GetReverseGreatGeneralModifier()const
 	CvUnit* pLoopUnit;
 
 	// Look around this Unit to see if there's a Great General nearby
-#ifdef AUI_HEXSPACE_DX_LOOPS
-	int iMaxDX, iX;
-	for (int iY = -iGreatGeneralRange; iY <= iGreatGeneralRange; iY++)
-	{
-		iMaxDX = iGreatGeneralRange - MAX(0, iY);
-		for (iX = -iGreatGeneralRange - MIN(0, iY); iX <= iMaxDX; iX++) // MIN() and MAX() stuff is to reduce loops (hexspace!)
-		{
-			// No need for range check because loops are set up properly
-#ifdef AUI_UNIT_EXTRA_IN_OTHER_PLOT_HELPERS
-			pLoopPlot = plotXY(pAtPlot->getX(), pAtPlot->getY(), iX, iY);
-#else
-			pLoopPlot = plotXY(getX(), getY(), iX, iY);
-#endif
-#else
 	for(int iX = -iGreatGeneralRange; iX <= iGreatGeneralRange; iX++)
 	{
 		for(int iY = -iGreatGeneralRange; iY <= iGreatGeneralRange; iY++)
 		{
 			pLoopPlot = plotXYWithRangeCheck(getX(), getY(), iX, iY, iGreatGeneralRange);
-#endif
-
 			if(pLoopPlot != NULL)
 			{
 				// If there are Units here, loop through them
 				if(pLoopPlot->getNumUnits() > 0)
 				{
 					pUnitNode = pLoopPlot->headUnitNode();
-
 					while(pUnitNode != NULL)
 					{
 						pLoopUnit = ::getUnit(*pUnitNode);
-						pUnitNode = pLoopPlot->nextUnitNode(pUnitNode);
-						
+						pUnitNode = pLoopPlot->nextUnitNode(pUnitNode);			
 						// Owned by an enemy
 						if(pLoopUnit && GET_TEAM(getTeam()).isAtWar(pLoopUnit->getTeam()))
 						{
@@ -19510,17 +19419,12 @@ int CvUnit::GetReverseGreatGeneralModifier()const
 							int iMod = pLoopUnit->getNearbyEnemyCombatMod();
 							if(iMod != 0)
 							{
-								
 								// Same domain -> changed to the defined domain from CMP ~EAP -- insert if needed into below :  && !pLoopUnit->isEmbarked() 
 								if (pLoopUnit->getGiveDomain() != NO_DOMAIN && !pLoopUnit->isEmbarked() &&  (pLoopUnit->getGiveDomain() == getDomainType()))
 								{
 									// Within range?
 									int iRange = pLoopUnit->getNearbyEnemyCombatRange();
-#ifdef AUI_FIX_HEX_DISTANCE_INSTEAD_OF_PLOT_DISTANCE
-									if (hexDistance(iX, iY) <= iRange)
-#else
 									if(plotDistance(getX(), getY(), pLoopPlot->getX(), pLoopPlot->getY()) <= iRange)
-#endif
 									{
 										return iMod;
 									}

@@ -190,9 +190,10 @@ CvCombatInfo::CvCombatInfo() :
 	m_iNuclearDamageLevel(0),
 	m_bVisualize(false),
 	m_bAttackedAdvancedVis(false),
+	m_bCombatPrediction(false),
 	m_iDamageMemberCount(0)
 {
-	for(int i=0; i<BATTLE_UNIT_COUNT; i++)
+	for(int i=0; i < BATTLE_UNIT_COUNT; i++)
 	{
 		m_pUnits[i] = NULL;
 		m_pCities[i] = NULL;
@@ -218,6 +219,7 @@ CvCombatInfo& CvCombatInfo::operator=(const CvCombatInfo& rhs)
 	m_iNuclearDamageLevel = rhs.m_iNuclearDamageLevel;
 	m_bVisualize = rhs.m_bVisualize;
 	m_bAttackedAdvancedVis = rhs.m_bAttackedAdvancedVis;
+	m_bCombatPrediction = rhs.m_bCombatPrediction;
 
 	for(int i=0; i<BATTLE_UNIT_COUNT; i++)
 	{
@@ -256,14 +258,7 @@ void CvCombatInfo::setUnit(BattleUnitTypes unitType, CvUnit* unit)
 CvCity* CvCombatInfo::getCity(BattleUnitTypes unitType) const
 {
 	checkBattleUnitType(unitType);
-	if(m_pCities[unitType])
-		return m_pCities[unitType];
-	else if(unitType == BATTLE_UNIT_DEFENDER && m_pTargetPlot)
-	{
-		if(m_pTargetPlot->isCity())
-			return m_pTargetPlot->getPlotCity();
-	}
-	return NULL;
+	return m_pCities[unitType];
 }
 
 void CvCombatInfo::setCity(BattleUnitTypes unitType, CvCity* pkCity)
@@ -437,6 +432,16 @@ bool CvCombatInfo::getAttackerAdvancedVisualization() const
 void CvCombatInfo::setAttackerAdvancedVisualization(bool bAdvance)
 {
 	m_bAttackedAdvancedVis = bAdvance;
+}
+
+bool CvCombatInfo::IsCombatPrediction() const
+{
+	return m_bCombatPrediction;
+}
+
+void CvCombatInfo::setCombatPrediction(bool bCombatPrediction)
+{
+	m_bCombatPrediction = bCombatPrediction;
 }
 
 bool CvCombatInfo::getAttackIsNuclear() const

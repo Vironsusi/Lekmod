@@ -1591,83 +1591,6 @@ int PathCost(CvAStarNode* parent, CvAStarNode* node, int data, const void* point
 					if(pToPlot->isVisibleEnemyDefender(pUnit))
 #endif
 					{
-#ifdef AUI_ASTAR_CONSIDER_DAMAGE_WHEN_ATTACKING
-						int iDealtDamage = 0;
-						int iSelfDamage = 0;
-						CvCity* pCity = pToPlot->getPlotCity();
-						if (pCity)
-						{
-							int iAttackerStrength = pUnit->GetMaxAttackStrength(pFromPlot, pToPlot, NULL);
-							int iDefenderStrength = pCity->getStrengthValue();
-
-							iDealtDamage = pUnit->getCombatDamage(iAttackerStrength, iDefenderStrength, pUnit->getDamage(), /*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ true);
-							iSelfDamage = pUnit->getCombatDamage(iDefenderStrength, iAttackerStrength, pCity->getDamage(), /*bIncludeRand*/ false, /*bAttackerIsCity*/ true, /*bDefenderIsCity*/ false);
-
-							// Will both the attacker die, and the city fall? If so, the unit wins
-							if (iDealtDamage + pCity->getDamage() >= pCity->GetMaxHitPoints())
-							{
-								if (pUnit->isNoCapture())
-									iDealtDamage = pCity->GetMaxHitPoints() - pCity->getDamage() - 1;
-								if (iSelfDamage >= pUnit->GetCurrHitPoints())
-									iSelfDamage = pUnit->GetCurrHitPoints() - 1;
-							}
-					}
-						else
-						{
-							CvUnit* pDefender = pToPlot->getVisibleEnemyDefender(pUnit);
-							if (pDefender && pDefender->IsCanDefend())
-							{
-								// handle the Zulu special thrown spear first attack
-								if (pUnit->isRangedSupportFire() && pUnit->canEverRangeStrikeAt(pToPlot->getX(), pToPlot->getY()))
-									iDealtDamage = pUnit->GetRangeCombatDamage(pDefender, /*pCity*/ NULL, /*bIncludeRand*/ false);
-
-								if (iDealtDamage < pDefender->GetCurrHitPoints())
-								{
-									int iAttackerStrength = pUnit->GetMaxAttackStrength(pFromPlot, pToPlot, pDefender);
-									int iDefenderStrength = pDefender->GetMaxDefenseStrength(pToPlot, pUnit);
-
-#ifdef NQ_HEAVY_CHARGE_DOWNHILL
-									bool isAttackingFromHigherElevation = 
-										((pUnit->plot()->isMountain() && !pDefender->plot()->isMountain()) || // attacking from mountain to non-mountain
-										(pUnit->plot()->isHills() && pDefender->plot()->isFlatlands())); // attacking from hills to flatlands
-									if ((pUnit->IsCanHeavyCharge() || (pUnit->GetHeavyChargeDownhill() > 0 && isAttackingFromHigherElevation))
-										&& !pDefender->CanFallBackFromMelee(*pUnit))
-#else
-									if (pUnit->IsCanHeavyCharge() && !pDefender->CanFallBackFromMelee(*pUnit))
-#endif
-										iAttackerStrength = (iAttackerStrength * 150) / 100;
-
-									iSelfDamage = pDefender->getCombatDamage(iDefenderStrength, iAttackerStrength, pDefender->getDamage() + iDealtDamage, /*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
-									iDealtDamage = pUnit->getCombatDamage(iAttackerStrength, iDefenderStrength, pUnit->getDamage(), /*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
-
-									// Will both units be killed by this? :o If so, take drastic corrective measures
-									if (iDealtDamage >= pDefender->GetCurrHitPoints() && iSelfDamage >= pUnit->GetCurrHitPoints())
-									{
-										// He who hath the least amount of damage survives with 1 HP left
-										if (iDealtDamage + pDefender->getDamage() > iSelfDamage + pUnit->getDamage())
-											iSelfDamage = pUnit->GetCurrHitPoints() - 1;
-										else
-											iDealtDamage = pDefender->GetCurrHitPoints() - 1;
-									}
-								}
-							}
-						}
-						if (iSelfDamage > pUnit->GetCurrHitPoints())
-							iSelfDamage = pUnit->GetMaxHitPoints();
-						if (iDealtDamage > GC.getMAX_HIT_POINTS())
-							iDealtDamage = GC.getMAX_HIT_POINTS();
-						iCost += iSelfDamage * PATH_DAMAGE_WEIGHT * pUnit->GetMaxHitPoints() / 100 + (GC.getMAX_HIT_POINTS() - iDealtDamage) * PATH_DAMAGE_WEIGHT / 10;
-#elif defined(AUI_ASTAR_FIX_DEFENSE_PENALTIES_CONSIDERED_FOR_UNITS_WITHOUT_DEFENSE_BONUS)
-						int iDefenseBonus = pFromPlot->defenseModifier(eUnitTeam, false);
-						if (iDefenseBonus > 0)
-						{
-							if (pUnit->noDefensiveBonus())
-								iDefenseBonus = 0;
-							else if (iDefenseBonus > 200)
-								iDefenseBonus = 200;
-						}
-						iCost += PATH_DEFENSE_WEIGHT * (200 - iDefenseBonus);
-#else
 #if defined(AUI_ASTAR_MINOR_OPTIMIZATION)
 						iCost += (PATH_DEFENSE_WEIGHT * MAX(0, (200 - ((pUnit->noDefensiveBonus()) ? 0 : pFromPlot->defenseModifier(eUnitTeam, false)))));
 #else
@@ -1690,7 +1613,6 @@ int PathCost(CvAStarNode* parent, CvAStarNode* node, int data, const void* point
 								iCost += (PATH_MOVEMENT_WEIGHT * iMovesLeft);
 							}
 						}
-#endif
 					}
 				}
 			}
@@ -2690,72 +2612,6 @@ int IgnoreUnitsCost(CvAStarNode* parent, CvAStarNode* node, int data, const void
 					if(pToPlot->isVisibleEnemyDefender(pUnit))
 #endif
 					{
-#ifdef AUI_ASTAR_CONSIDER_DAMAGE_WHEN_ATTACKING
-						int iDealtDamage = 0;
-						int iSelfDamage = 0;
-						CvCity* pCity = pToPlot->getPlotCity();
-						if (pCity)
-						{
-							int iAttackerStrength = pUnit->GetMaxAttackStrength(pFromPlot, pToPlot, NULL);
-							int iDefenderStrength = pCity->getStrengthValue();
-
-							iDealtDamage = pUnit->getCombatDamage(iAttackerStrength, iDefenderStrength, pUnit->getDamage(), /*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ true);
-							iSelfDamage = pUnit->getCombatDamage(iDefenderStrength, iAttackerStrength, pCity->getDamage(), /*bIncludeRand*/ false, /*bAttackerIsCity*/ true, /*bDefenderIsCity*/ false);
-
-							// Will both the attacker die, and the city fall? If so, the unit wins
-							if (iDealtDamage + pCity->getDamage() >= pCity->GetMaxHitPoints())
-							{
-								if (pUnit->isNoCapture())
-									iDealtDamage = pCity->GetMaxHitPoints() - pCity->getDamage() - 1;
-								if (iSelfDamage >= pUnit->GetCurrHitPoints())
-									iSelfDamage = pUnit->GetCurrHitPoints() - 1;
-							}
-						}
-						else
-						{
-							CvUnit* pDefender = pToPlot->getVisibleEnemyDefender(pUnit);
-							if (pDefender && pDefender->IsCanDefend())
-							{
-								// handle the Zulu special thrown spear first attack
-								if (pUnit->isRangedSupportFire() && pUnit->canEverRangeStrikeAt(pToPlot->getX(), pToPlot->getY()))
-									iDealtDamage = pUnit->GetRangeCombatDamage(pDefender, /*pCity*/ NULL, /*bIncludeRand*/ false);
-
-								if (iDealtDamage < pDefender->GetCurrHitPoints())
-								{
-									int iAttackerStrength = pUnit->GetMaxAttackStrength(pFromPlot, pToPlot, pDefender);
-									int iDefenderStrength = pDefender->GetMaxDefenseStrength(pToPlot, pUnit);
-
-#ifdef NQ_HEAVY_CHARGE_DOWNHILL
-									bool isAttackingFromHigherElevation = 
-										((pUnit->plot()->isMountain() && !pDefender->plot()->isMountain()) || // attacking from mountain to non-mountain
-										(pUnit->plot()->isHills() && pDefender->plot()->isFlatlands())); // attacking from hills to flatlands
-									if ((pUnit->IsCanHeavyCharge() || (pUnit->GetHeavyChargeDownhill() > 0 && isAttackingFromHigherElevation))
-										&& !pDefender->CanFallBackFromMelee(*pUnit))
-#else
-									if (pUnit->IsCanHeavyCharge() && !pDefender->CanFallBackFromMelee(*pUnit))
-#endif
-										iAttackerStrength = (iAttackerStrength * 150) / 100;
-									iSelfDamage = pDefender->getCombatDamage(iDefenderStrength, iAttackerStrength, pDefender->getDamage() + iDealtDamage, /*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
-									iDealtDamage = pUnit->getCombatDamage(iAttackerStrength, iDefenderStrength, pUnit->getDamage(), /*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
-
-									// Will both units be killed by this? :o If so, take drastic corrective measures
-									if (iDealtDamage >= pDefender->GetCurrHitPoints() && iSelfDamage >= pUnit->GetCurrHitPoints())
-									{
-										// He who hath the least amount of damage survives with 1 HP left
-										if (iDealtDamage + pDefender->getDamage() > iSelfDamage + pUnit->getDamage())
-											iSelfDamage = pUnit->GetCurrHitPoints() - 1;
-										else
-											iDealtDamage = pDefender->GetCurrHitPoints() - 1;
-									}
-								}
-							}
-						}
-						if (iSelfDamage > pUnit->GetCurrHitPoints())
-							iSelfDamage = pUnit->GetMaxHitPoints();
-						if (iDealtDamage > GC.getMAX_HIT_POINTS())
-							iDealtDamage = GC.getMAX_HIT_POINTS();
-						iCost += iSelfDamage * PATH_DAMAGE_WEIGHT * pUnit->GetMaxHitPoints() / 100 + (GC.getMAX_HIT_POINTS() - iDealtDamage) * PATH_DAMAGE_WEIGHT / 10;
-#else
 #ifdef AUI_ASTAR_FIX_DEFENSE_PENALTIES_CONSIDERED_FOR_UNITS_WITHOUT_DEFENSE_BONUS
 						int iDefenseBonus = pFromPlot->defenseModifier(eUnitTeam, false);
 						if (iDefenseBonus > 0)
@@ -2788,7 +2644,6 @@ int IgnoreUnitsCost(CvAStarNode* parent, CvAStarNode* node, int data, const void
 								iCost += (PATH_MOVEMENT_WEIGHT * iMovesLeft);
 							}
 						}
-#endif
 					}
 				}
 			}

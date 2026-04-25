@@ -13751,35 +13751,50 @@ void CvCity::updateStrengthValue()
 }
 
 //	--------------------------------------------------------------------------------
-int CvCity::getStrengthValue(bool bForRangeStrike) const
+int CvCity::getStrengthValue(bool bForRangeStrike, CvString* toolTipSink) const
 {
 	VALIDATE_OBJECT
 	// Strike strikes are weaker
 	if(bForRangeStrike)
 	{
+		CvGame& kGame = GC.getGame();
+		CvCityBuildings* pkCityBuildings = GetCityBuildings();
+		int iTemp, iBuildingDefense;
 		int iValue = m_iStrengthValue;
 
-		iValue -= m_pCityBuildings->GetBuildingDefense();
+		iBuildingDefense -= pkCityBuildings->GetBuildingDefense();
 #ifdef NQ_BUILDING_DEFENSE_FROM_CITIZENS
-		// subtract defense per citizen here as well (city strikes don't use defense values)
-		iValue -= (m_pCityBuildings->GetBuildingDefensePerCitizen() * getPopulation());
+		iBuildingDefense -= (m_pCityBuildings->GetBuildingDefensePerCitizen() * getPopulation());
 #endif
-#if defined(LEKMOD_GARRISON_YIELD_EFFECTS) // Subtract the raw amount of strength from garrisoned units, (city strikes don't use defense values)
-		if (GetGarrisonedUnit()) // a bit of a duplication, but I wanted to subtract it above getCITY_RANGED_ATTACK_STRENGTH_MULTIPLIER for consistency
+#if defined(LEKMOD_GARRISON_YIELD_EFFECTS) // getStrengthValue()
+		if (GetGarrisonedUnit())
 		{
-			iValue -= m_pCityBuildings->GetGarrisonStrengthBonus();
+			iBuildingDefense -= m_pCityBuildings->GetGarrisonStrengthBonus();
 		}
 #endif
+		if (iBuildingDefense != 0 && toolTipSink)
+		{
+			kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_CITY_STRENGTH_BUILDING_DEFENSE", iBuildingDefense);
+		}
 
 		CvAssertMsg(iValue > 0, "City strength should always be greater than zero. Please show Jon this and send your last 5 autosaves.");
-
-		iValue *= /*40*/ GC.getCITY_RANGED_ATTACK_STRENGTH_MULTIPLIER();
+		iTemp = /*75*/ GC.getCITY_RANGED_ATTACK_STRENGTH_MULTIPLIER();
+		iValue *= iTemp;
 		iValue /= 100;
+		if (iTemp != 0 && toolTipSink)
+		{
+			kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_CITY_STRENGTH_RANGED_ATTACK_MODIFIER", iTemp);
+		}
 
 		if(GetGarrisonedUnit())
 		{
-			iValue *= (100 + GET_PLAYER(m_eOwner).GetGarrisonedCityRangeStrikeModifier());
+			iTemp = (100 + GET_PLAYER(m_eOwner).GetGarrisonedCityRangeStrikeModifier());
+			iValue *= iTemp;
 			iValue /= 100;
+			if (toolTipSink && iTemp != 100)
+			{
+				kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_CITY_STRENGTH_GARRISONED_MODIFIER", iTemp);
+			}
 		}
 
 		// Religion city strike mod
@@ -13800,6 +13815,10 @@ int CvCity::getStrengthValue(bool bForRangeStrike) const
 				{
 					iValue *= (100 + iReligionCityStrikeMod);
 					iValue /= 100;
+					if (iReligionCityStrikeMod != 0 && toolTipSink)
+					{
+						kGame.BuildProdModHelpText(toolTipSink, "TXT_KEY_CITY_STRENGTH_RELIGION_MODIFIER", iReligionCityStrikeMod);
+					}
 				}
 			}
 		}
@@ -20043,7 +20062,50 @@ bool CvCity::isFighting() const
 {
 	return getCombatUnit() != NULL;
 }
+#if defined(NQ_NO_GG_POINTS_FROM_CS_OR_BARBS)
+// ----------------------------------------------------------------------------
+// pushed into the attacker side of CombatInfo, so we can see if the attacker should earn XP from this combat or not
+int CvCity::getMaxXPValue() const
+{
+	int iMaxValue;
+	// By default, there's no max XP value
+	iMaxValue = INT_MAX;
+	// But if we're a barbarian or minor civ city, cap the XP value to prevent farming promotions from attacking them
+	if (isBarbarian() || GET_PLAYER(getOwner()).isMinorCiv())
+	{
+		iMaxValue = std::min(iMaxValue, GC.getBARBARIAN_MAX_XP_VALUE());
+	}
+#if defined(LEKMOD_AI_XP_CAP)
+	if (GC.getGame().isOption("GAMEOPTION_AI_XP_CAP"))
+	{
+		// If the defender is not human, cap the XP value to prevent farming promotions from attacking AI cities
+		if (!GET_PLAYER(getOwner()).isHuman())
+		{
+			iMaxValue = std::min(iMaxValue, GC.getBARBARIAN_MAX_XP_VALUE());
+		}
+	}
+#endif
+	return iMaxValue;
+}
 
+// ----------------------------------------------------------------------------
+// pushed into the opposite side of CombatInfo, so we can see if the attacker/defender should earn GG points from this combat or not
+bool CvCity::canEarnGlobalXP() const
+{
+	// Never earn Global XP if we're attacking/defending from a barbarian or minor civ city
+	if (isBarbarian() || GET_PLAYER(getOwner()).isMinorCiv())
+		return false;
+#if defined(LEKMOD_AI_XP_CAP)
+	if (GC.getGame().isOption("GAMEOPTION_AI_XP_CAP"))
+	{
+		// Don't earn XP if the attacker/defender is not human, to prevent humans from earning XP from attacking/defending from AI cities
+		if (!GET_PLAYER(getOwner()).isHuman())
+			return false;
+	}
+#endif
+	return true;
+}
+#endif
 /* Error Hunting Attempt
 bool CvCity::HasBuildingClass() const
 {

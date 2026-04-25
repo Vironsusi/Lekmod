@@ -11808,7 +11808,7 @@ void CvGame::DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor)
 	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
 	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
 
-	UnitTypes eUnitType = (UnitTypes) GC.getInfoTypeForString("UNIT_WORKER"); //antonjs: todo: XML/function
+	UnitTypes eUnitType = static_cast<UnitTypes>(GET_PLAYER(eBully).getCivilizationInfo().getCivilizationUnits(GC.getInfoTypeForString("UNITCLASS_WORKER")));
 
 	gDLL->sendMinorBullyUnit(eBully, eMinor, eUnitType);
 }
@@ -11824,9 +11824,19 @@ void CvGame::DoMinorBuyout(PlayerTypes eMajor, PlayerTypes eMinor)
 
 	gDLL->sendMinorBuyout(eMajor, eMinor);
 }
+#if defined(LEKMOD_LEGACY)
+//	--------------------------------------------------------------------------------
+/// choosing a legacy. This is done via the Network.SendIdeologyChoice(p, i) function so needs to be offset to not collide. Standarize the offset.
+int CvGame::GetLegacyOffset(LegacyTypes eLegacy)
+{
+	CvAssertMsg(eLegacy >= 0, "eLegacy is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eLegacy < GC.getNumLegacyInfos(), "eLegacy is expected to be within maximum bounds (invalid Index)");
+	// Add 10, then make negative so that it doesn't collide with ideology choices (should only ever be -1, 0, 1 or 2) 
+	// While legacies should always be > -10 since it starts at 0. allows for both infinite legacies and ideologies.
+	return (GC.getLegacyInfo(eLegacy)->GetID() + 10) * -1;
+}
 
-
-
+#endif
 //	--------------------------------------------------------------------------------
 /// Notification letting all non-party players know that two teams made a Research Agreement.  This is in CvGame because we only want it called once, and if it were in CvDealClasses it would be called twice, or have to be special-cased, so we'll special-case it here instead
 void CvGame::DoResearchAgreementNotification(TeamTypes eTeam1, TeamTypes eTeam2)
@@ -12807,7 +12817,56 @@ int CvGame::GetNumHiddenArchaeologySites() const
 	}
 	return iRtnValue;
 }
-
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS) // Relocate to CvGame, as this is Game-wide logic. not a lot of sense to keep on CvUnit or CvCity
+void CvGame::getCombatDamage(CvCombatInfo& kInfo)
+{
+	// Prediction never uses randomness, but if we're not doing a prediction, then we want to include randomness (unless the game option is on)
+	bool bIncludeRandom = isOption(GAMEOPTION_NO_COMBAT_RANDOMNESS) && !kInfo.IsCombatPrediction();
+	/*CvCombatInfo should have :
+	BATTLE_UNIT_ATTACKER, can be city or unit
+	BATTLE_UNIT_DEFENDER, can be city or unit
+	BATTLE_UNIT_INTERCEPTOR, can be unit or null
+	BattlePlot
+	*/
+	if (kInfo.getUnit(BATTLE_UNIT_ATTACKER) != NULL) // Attacker is Unit
+	{
+		CvUnit& attacker = *kInfo.getUnit(BATTLE_UNIT_ATTACKER);
+		if (kInfo.getUnit(BATTLE_UNIT_DEFENDER) != NULL) // Defender is Unit
+		{
+			CvUnit& defender = *kInfo.getUnit(BATTLE_UNIT_DEFENDER);
+		}
+		else if (kInfo.getCity(BATTLE_UNIT_DEFENDER) != NULL) // Defender is City
+		{
+			CvCity& defender = *kInfo.getCity(BATTLE_UNIT_DEFENDER);
+		}
+		else
+		{
+			CvAssertMsg(false, "Defender is neither Unit nor City");
+		}
+	}
+	else if (kInfo.getCity(BATTLE_UNIT_ATTACKER) != NULL) // Attacker is City
+	{
+		CvCity& attacker = *kInfo.getCity(BATTLE_UNIT_ATTACKER);
+		if (kInfo.getUnit(BATTLE_UNIT_DEFENDER) != NULL) // Defender is Unit
+		{
+			CvUnit& defender = *kInfo.getUnit(BATTLE_UNIT_DEFENDER);
+		}
+		else if (kInfo.getCity(BATTLE_UNIT_DEFENDER) != NULL) // Defender is City
+		{
+			CvCity& defender = *kInfo.getCity(BATTLE_UNIT_DEFENDER);
+		}
+		else
+		{
+			CvAssertMsg(false, "Defender is neither Unit nor City");
+		}
+	}
+	else
+	{
+		CvAssertMsg(false, "Attacker is neither Unit nor City");
+	}
+	// Interceptions?
+}
+#endif
 //	--------------------------------------------------------------------------------
 PlayerTypes GetRandomMajorPlayer()
 {

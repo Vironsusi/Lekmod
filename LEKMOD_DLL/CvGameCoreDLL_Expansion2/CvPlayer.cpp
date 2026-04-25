@@ -757,6 +757,9 @@ void CvPlayer::init(PlayerTypes eID)
 #if defined(LEKMOD_FIX_PATRO_FOOD)
 		ChangeCityStateBonusModifier(GetPlayerTraits()->GetCityStateBonusModifier()); // Siam Trait. Still directly referenced in several places, just put here for stacking with patro finisher.
 #endif
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+		ChangeGreatGeneralCombatBonus(GetPlayerTraits()->GetGreatGeneralExtraBonus()); // China Trait
+#endif
 		for(iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
 		{
 #if !defined(LEKMOD_CITY_YIELDS_TRAITS)
@@ -800,8 +803,11 @@ void CvPlayer::init(PlayerTypes eID)
 		{
 			changeFreeBuildingCount(eFreeBuilding, 1);
 		}
-
+#if !defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
 		SetGreatGeneralCombatBonus(GC.getGREAT_GENERAL_STRENGTH_MOD());
+#else
+		ChangeGreatGeneralCombatBonus(GC.getGREAT_GENERAL_STRENGTH_MOD());
+#endif
 	}
 
 	m_aiPlots.clear();
@@ -10363,7 +10369,7 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 		{
 			iTempMod = getUnitCombatProductionModifiers((UnitCombatTypes) pUnitEntry->GetUnitCombatType());
 			iMultiplier += iTempMod;
-#if !defined(LEKMOD_v34)
+#if !defined(LEKMOD_v34) // Correct Typo
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_COBMAT_CLASS_PLAYER", iTempMod);
 #else
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_UNIT_COMBAT_CLASS_PLAYER", iTempMod);
@@ -18487,8 +18493,13 @@ void CvPlayer::SetGreatGeneralCombatBonus(int iValue)
 {
 	m_iGreatGeneralCombatBonus = iValue;
 }
-
-
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+//////////////////////////////////////////////////////////////////////////
+void CvPlayer::ChangeGreatGeneralCombatBonus(int iChange)
+{
+	SetGreatGeneralCombatBonus(GetGreatGeneralCombatBonus() + iChange);
+}
+#endif
 //////////////////////////////////////////////////////////////////////////
 // ***** Great People Spawning *****
 //////////////////////////////////////////////////////////////////////////
@@ -28499,8 +28510,8 @@ void CvPlayer::processLegacies(LegacyTypes eLegacy, int iChange)
 		ResourceTypes eResource = (ResourceTypes)iI;
 		if (kLegacy.IsRevealResource(eResource))
 		{
-			GET_TEAM(getTeam()).SetResourceRevealed(eResource, (bool)iChange);
-			GET_TEAM(getTeam()).SetResourceTrade(eResource, (bool)iChange);
+			GET_TEAM(getTeam()).SetResourceRevealed(eResource, iChange == 1 ? true : false);
+			GET_TEAM(getTeam()).SetResourceTrade(eResource, iChange == 1 ? true : false);
 		}
 	}
 	CvGameReligions* pGameReligions = GC.getGame().GetGameReligions();

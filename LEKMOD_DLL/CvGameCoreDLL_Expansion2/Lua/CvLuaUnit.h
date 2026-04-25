@@ -48,6 +48,9 @@ protected:
 
 	static int lGetCombatDamage(lua_State* L);
 	static int lGetFireSupportUnit(lua_State* L);
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+	static int lGetCombatDamageRange(lua_State* L);
+#endif
 
 	static int lCanAutomate(lua_State* L);
 	static int lCanScrap(lua_State* L);

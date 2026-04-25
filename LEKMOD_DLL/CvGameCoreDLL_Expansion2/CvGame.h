@@ -566,7 +566,9 @@ public:
 	void DoMinorBullyGold(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBuyout(PlayerTypes eMajor, PlayerTypes eMinor);
-
+#if defined(LEKMOD_LEGACY)
+	int GetLegacyOffset(LegacyTypes eLegacy);
+#endif
 	void DoResearchAgreementNotification(TeamTypes eTeam1, TeamTypes eTeam2);
 
 	int GetResearchAgreementCost(PlayerTypes ePlayer1, PlayerTypes ePlayer2);
@@ -633,7 +635,9 @@ public:
 	bool IsArchaeologyTriggered() const;
 	int GetNumArchaeologySites() const;
 	int GetNumHiddenArchaeologySites() const;
-	
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+	void getCombatDamage(CvCombatInfo& kInfo);
+#endif
 #if defined (CAN_PARADROP_HALF_TIMER) || defined (CAN_SET_INTERCEPT_HALF_TIMER)
 	FTimer  m_endTurnTimer;
 	int     m_endTurnTimerSemaphore;

@@ -12,7 +12,6 @@
 
 #include "CvUnit.h"
 #include "CvPlot.h"
-
 // Combat controller for CvUnits
 class CvUnitCombat
 {

@@ -2025,15 +2025,13 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 	//float fSpyLevelDeltaTwo = 2.25;
 	//float fSpyLevelDeltaThree = 3.0f;
 
-	float fNobodyBonus = GC.getESPIONAGE_COUP_NOBODY_BONUS();
-	float fMultiplyConstant = GC.getESPIONAGE_COUP_MULTIPLY_CONSTANT();
-	float fSpyLevelDeltaZero = GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_ZERO();
-	float fSpyLevelDeltaOne = GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_ONE();
-	float fSpyLevelDeltaTwo = GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_TWO();
-#ifndef NQM_PRUNING
-	float fSpyLevelDeltaThree = GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_THREE();
-	float fSpyLevelDeltaFour = GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_FOUR();
-#endif
+	float fNobodyBonus =		/*0.5*/ GC.getESPIONAGE_COUP_NOBODY_BONUS();
+	float fMultiplyConstant =	/*3.0*/ GC.getESPIONAGE_COUP_MULTIPLY_CONSTANT();
+	float fSpyLevelDeltaZero =	/*0.0*/ GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_ZERO();
+	float fSpyLevelDeltaOne =	/*1.5*/ GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_ONE();
+	float fSpyLevelDeltaTwo =  /*2.25*/ GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_TWO();
+	float fSpyLevelDeltaThree = /*2.6*/ GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_THREE();
+	float fSpyLevelDeltaFour =	/*2.8*/ GC.getESPIONAGE_COUP_SPY_LEVEL_DELTA_FOUR();
 
 	float fAllySpyValue = 0.0f;
 	float fMySpyValue = 0.0;
@@ -2051,14 +2049,12 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 	case 2:
 		fMySpyValue = fSpyLevelDeltaTwo;
 		break;
-#ifndef NQM_PRUNING
 	case 3:
 		fMySpyValue = fSpyLevelDeltaThree;
 		break;
 	case 4:
 		fMySpyValue = fSpyLevelDeltaFour;
 		break;
-#endif
 	}
 
 	switch (iAllySpyRank)

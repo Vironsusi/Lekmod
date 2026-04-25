@@ -181,7 +181,7 @@ public:
 	// Derived fields (not in XML)
 	int GetCargoSpace() const;  // (from free promotions)
 	int GetPower() const;
-	void DoUpdatePower();
+	void DoUpdatePower(int iBaseCombat, bool bRanged);
 
 	UnitMoveRate GetMoveRate(int numHexes) const;
 

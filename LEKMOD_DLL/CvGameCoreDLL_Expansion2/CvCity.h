@@ -800,7 +800,17 @@ public:
 	int GetNumMountainsNearCity(int iRange, bool bReqireOwnership) const;
 #endif
 	void updateStrengthValue();
-	int getStrengthValue(bool bForRangeStrike = false) const;
+	int getStrengthValue(bool bForRangeStrike = false, CvString* toolTipSink = NULL) const;
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+	int getBaseStrengthValue() const;
+	void SetBaseStrengthValue(int iValue);
+	int getStrengthFromBuildings() const;
+	void SetStrengthFromBuildings(int iValue);
+	int getStrengthFromTechnology() const;
+	void SetStrengthFromTechnology(int iValue);
+	int getStrengthFromGarrison() const;
+	void SetStrengthFromGarrison(int iValue);
+#endif
 	int GetPower() const;
 
 	int getDamage() const;
@@ -972,6 +982,8 @@ public:
 	void			setCombatUnit(CvUnit* pUnit, bool bAttacking = false);
 	void			clearCombat();
 	bool			isFighting() const;
+	int				getMaxXPValue() const;
+	bool			canEarnGlobalXP() const;
 	///
 	bool HasBuilding(BuildingTypes iBuildingType) const;
 	bool HasBuildingClass(BuildingClassTypes iBuildingClassType) const;

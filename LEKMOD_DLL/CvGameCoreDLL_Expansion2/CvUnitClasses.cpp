@@ -462,7 +462,7 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	}
 
 	// Calculate military Power and cache it
-	DoUpdatePower();
+	DoUpdatePower(m_iRangedCombat > 0 ? m_iRangedCombat : m_iCombat, m_iRangedCombat > 0);
 
 	return true;
 }
@@ -1289,20 +1289,23 @@ int CvUnitEntry::GetPower() const
 	return m_iCachedPower;
 }
 
-/// Update military Power
-void CvUnitEntry::DoUpdatePower()
+/// Update military Power, Now adjustable for units that gain or lose strength for a variety of reasons
+void CvUnitEntry::DoUpdatePower(int iBaseCombat, bool bRanged)
 {
 	int iPower;
-
+	int iRangedStrength;
 // ***************
 // Main Factors - Strength & Moves
 // ***************
 
 	// We want a Unit that has twice the strength to be roughly worth 3x as much with regards to Power
-	iPower = int(pow((double) GetCombat(), 1.5));
+	iPower = int(pow((double)iBaseCombat, 1.5));
 
 	// Ranged Strength
-	int iRangedStrength = int(pow((double) GetRangedCombat(), 1.45));
+	if (bRanged)
+	{
+		iRangedStrength = int(pow((double)iBaseCombat, 1.45));
+	}
 
 	// Naval ranged attacks are less useful
 	if(GetDomainType() == DOMAIN_SEA)

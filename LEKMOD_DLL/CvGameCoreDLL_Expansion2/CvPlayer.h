@@ -916,7 +916,9 @@ public:
 
 	int GetGreatGeneralCombatBonus() const;
 	void SetGreatGeneralCombatBonus(int iValue);
-
+#if defined(LEKMOD_COMBAT_PREDICTOR_IMPROVEMENTS)
+	void ChangeGreatGeneralCombatBonus(int iChange);
+#endif
 	// Unit Killed in Combat
 	void DoUnitKilledCombat(PlayerTypes eKilledPlayer, UnitTypes eUnit);
 

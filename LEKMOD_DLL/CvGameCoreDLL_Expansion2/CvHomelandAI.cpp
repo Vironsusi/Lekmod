@@ -3867,7 +3867,7 @@ void CvHomelandAI::ExecuteProphetMoves()
 #if !defined(TRAITIFY)
 			else if (pUnit->CanEnhanceReligion(pUnit->plot()))
 #else
-			else if (pUnit->CanFoundReligion(pUnit->plot()) && !GET_PLAYER(pUnit->getOwner()).GetPlayerTraits()->IsBannedUnitMission((MissionTypes)GC.getInfoTypeForString("MISSION_ENHANCE_RELIGION")))
+			else if (pUnit->CanEnhanceReligion(pUnit->plot()) && !GET_PLAYER(pUnit->getOwner()).GetPlayerTraits()->IsBannedUnitMission((MissionTypes)GC.getInfoTypeForString("MISSION_ENHANCE_RELIGION")))
 #endif
 			{
 				CvString strLogString;
